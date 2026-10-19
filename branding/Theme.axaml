@@ -1,0 +1,104 @@
+<!--
+  MyRGB theme: the Root Labs "Lab Notebook" palette, dark UI.
+  Merge it into Application.Resources (see BRAND.txt, "Applying the theme"). Keys the app already uses
+  (RgbGradient, RgbGradientVertical, SurfaceBrush, SurfaceRaisedBrush, HairlineBrush, MutedBrush) keep
+  their names, so swapping this in changes the look without touching any view.
+  The hex values here and in tokens.css are the same tokens; change both together.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Surfaces, darkest to lightest. -->
+    <Color x:Key="ChromeColor">#040E13</Color>          <!-- title bar, status bar, nav rail -->
+    <Color x:Key="BaseColor">#071117</Color>            <!-- window background -->
+    <Color x:Key="SurfaceColor">#0D181E</Color>         <!-- cards, panels -->
+    <Color x:Key="SurfaceRaisedColor">#162127</Color>   <!-- buttons, inputs, raised rows -->
+    <Color x:Key="SurfaceHoverColor">#1C2830</Color>
+    <Color x:Key="HairlineColor">#223039</Color>
+    <Color x:Key="HairlineStrongColor">#2E404B</Color>
+    <Color x:Key="OverlayColor">#D0010406</Color>       <!-- scrim behind dialogs -->
+
+    <!-- Text. -->
+    <Color x:Key="InkColor">#E2EAE5</Color>
+    <Color x:Key="InkSecondaryColor">#BCC7C7</Color>
+    <Color x:Key="MutedColor">#829298</Color>
+    <Color x:Key="SubtleColor">#58666C</Color>
+
+    <!-- Brand: Root green. The system accent (focus, toggles, selection, links). -->
+    <Color x:Key="AccentColor">#56DB8F</Color>
+    <Color x:Key="AccentHoverColor">#85F3AF</Color>
+    <Color x:Key="OnAccentColor">#051B0E</Color>        <!-- text and glyphs on an accent fill -->
+    <Color x:Key="AccentWashColor">#0F3620</Color>      <!-- selected nav item, accent tint -->
+
+    <!-- The three LEDs. Only for things that mean "light". -->
+    <Color x:Key="LedRedColor">#FF5D6E</Color>
+    <Color x:Key="LedGreenColor">#56DB8F</Color>
+    <Color x:Key="LedBlueColor">#42A3FD</Color>
+
+    <!-- Status. -->
+    <Color x:Key="SuccessColor">#56DB8F</Color>
+    <Color x:Key="WarningColor">#FCB442</Color>
+    <Color x:Key="DangerColor">#F75D59</Color>
+    <Color x:Key="InfoColor">#4ABAF4</Color>
+    <Color x:Key="InfoWashColor">#132938</Color>
+    <Color x:Key="DangerWashColor">#391917</Color>
+
+    <!-- Brushes. The first five keep the names App.axaml already uses. -->
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#0D181E" />
+    <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#162127" />
+    <SolidColorBrush x:Key="HairlineBrush" Color="#223039" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#829298" />
+
+    <SolidColorBrush x:Key="ChromeBrush" Color="#040E13" />
+    <SolidColorBrush x:Key="BaseBrush" Color="#071117" />
+    <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#1C2830" />
+    <SolidColorBrush x:Key="HairlineStrongBrush" Color="#2E404B" />
+    <SolidColorBrush x:Key="OverlayBrush" Color="#D0010406" />
+    <SolidColorBrush x:Key="InkBrush" Color="#E2EAE5" />
+    <SolidColorBrush x:Key="InkSecondaryBrush" Color="#BCC7C7" />
+    <SolidColorBrush x:Key="SubtleBrush" Color="#58666C" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#56DB8F" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#85F3AF" />
+    <SolidColorBrush x:Key="OnAccentBrush" Color="#051B0E" />
+    <SolidColorBrush x:Key="AccentWashBrush" Color="#0F3620" />
+    <SolidColorBrush x:Key="LedRedBrush" Color="#FF5D6E" />
+    <SolidColorBrush x:Key="LedGreenBrush" Color="#56DB8F" />
+    <SolidColorBrush x:Key="LedBlueBrush" Color="#42A3FD" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#56DB8F" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#FCB442" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#F75D59" />
+    <SolidColorBrush x:Key="InfoBrush" Color="#4ABAF4" />
+    <SolidColorBrush x:Key="InfoWashBrush" Color="#132938" />
+    <SolidColorBrush x:Key="DangerWashBrush" Color="#391917" />
+
+    <!-- Red to green to blue around the hue wheel. The in-between stops keep it from going muddy.
+         Only for things that mean "light": the primary action, the selected-nav pipe, the tour. -->
+    <LinearGradientBrush x:Key="RgbGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#FF5D6E" />
+        <GradientStop Offset="0.25" Color="#FFA746" />
+        <GradientStop Offset="0.5" Color="#56DB8F" />
+        <GradientStop Offset="0.75" Color="#28D6DF" />
+        <GradientStop Offset="1" Color="#42A3FD" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="RgbGradientVertical" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#FF5D6E" />
+        <GradientStop Offset="0.25" Color="#FFA746" />
+        <GradientStop Offset="0.5" Color="#56DB8F" />
+        <GradientStop Offset="0.75" Color="#28D6DF" />
+        <GradientStop Offset="1" Color="#42A3FD" />
+    </LinearGradientBrush>
+
+    <!-- Fluent reads these for its own accent fills (toggles, sliders, focus, selection).
+         In the dark variant it fills with the Light shades and puts dark text on them. -->
+    <Color x:Key="SystemAccentColor">#56DB8F</Color>
+    <Color x:Key="SystemAccentColorLight1">#7BE9A5</Color>
+    <Color x:Key="SystemAccentColorLight2">#9EF1BB</Color>
+    <Color x:Key="SystemAccentColorLight3">#BEF8D1</Color>
+    <Color x:Key="SystemAccentColorDark1">#3BB974</Color>
+    <Color x:Key="SystemAccentColorDark2">#2C965D</Color>
+    <Color x:Key="SystemAccentColorDark3">#1E7546</Color>
+
+    <!-- Type. The font files ship in Assets/Fonts (copied there by tools/make-icons.ps1 -Install). -->
+    <FontFamily x:Key="BrandSans">avares://MyRGB/Assets/Fonts#Manrope</FontFamily>
+    <FontFamily x:Key="BrandMono">avares://MyRGB/Assets/Fonts#JetBrains Mono</FontFamily>
+</ResourceDictionary>

@@ -1,0 +1,158 @@
+MYRGB BRAND GUIDE
+=================
+
+MyRGB is a Root Labs product. It uses the Root Labs "Lab Notebook" identity (dark slate, terminal
+green, JetBrains Mono and Manrope, the root@labs:~$ prompt) and adds one thing of its own: three LEDs.
+
+See logo/png/myrgb-lockup-dark.png for the lockup.
+
+
+THE MARK
+--------
+
+The Root Labs chip with its die swapped for three LED bars: red, green, blue. The middle bar is Root
+green, which is how the product ties back to the lab.
+
+  logo/myrgb-mark-{dark,light}.svg       The mark alone. "dark" is for dark backgrounds, "light" for
+                                         light ones.
+  logo/myrgb-wordmark-{dark,light}.svg   "MyRGB" in Manrope ExtraBold, with R, G and B in their LED
+                                         colors.
+  logo/myrgb-logo-{dark,light}.svg       Mark plus wordmark. The default logo.
+  logo/myrgb-lockup-{dark,light}.svg     Logo plus "by root@labs:~$". Use it where Root Labs isn't
+                                         already on the page: the README, the installer, release notes.
+  icon/app-icon.svg                      App icon, 64 px and up.
+  icon/app-icon-32.svg                   App icon, 20 to 48 px. Drops the pins so it stays sharp.
+  icon/app-icon-16.svg                   App icon, 16 px. Just the three bars on the tile.
+  streamdeck/glyph-*.svg                 Stream Deck glyphs, drawn in white and recolored by the
+                                         build script.
+
+PNG exports sit in a png/ folder next to their sources. Edit only the SVG sources and the fonts,
+never the PNGs. Then run:
+
+  .\tools\make-icons.ps1             rebuild everything under branding/
+  .\tools\make-icons.ps1 -Install    also copy the icon, mark and fonts into the app, and the images
+                                     into the Stream Deck plugin
+
+The wordmark, logo and lockup SVGs are built by that script too. Their text is outlined from the
+bundled fonts, so they look the same on machines that don't have Manrope installed.
+
+Usage rules
+
+  * Leave clear space around the mark of at least one LED bar's width (about 1/9 of the mark).
+  * Keep the bars red, green, blue, in that order. Don't recolor the mark to match a page.
+  * On a photo or a busy background, use the mark on its tile (the app icon) instead.
+  * The lockup always reads "by root@labs:~$" in JetBrains Mono, with "root@labs" in Root green.
+    That's the Root Labs wordmark, so don't restyle it.
+  * Smallest sizes: the mark at 24 px, the logo at 96 px wide, the lockup at 200 px wide.
+
+
+COLOR
+-----
+
+Dark UI comes first. The light values are for documents, print and the website's light theme.
+Theme.axaml (the app) and tokens.css (anything HTML) hold the same tokens; change both together.
+
+  Token            Dark       Light      Use
+  ---------------  ---------  ---------  ------------------------------------------
+  Chrome           #040E13    #EDEBE6    Title bar, status bar
+  Base             #071117    #FAF8F4    Window background
+  Surface          #0D181E    #FFFFFF    Cards, panels
+  SurfaceRaised    #162127    #F5F3EF    Buttons, inputs, chips
+  SurfaceHover     #1C2830    #EDEBE6    Hover on surfaces
+  Hairline         #223039    #D1CEC5    Borders, dividers
+  HairlineStrong   #2E404B    #B9B5AA    Hovered borders
+  Ink              #E2EAE5    #1D1A14    Primary text
+  InkSecondary     #BCC7C7    #3D3A34    Body copy
+  Muted            #829298    #595549    Hints, captions, labels
+  Subtle           #58666C    #8A8578    Disabled, off states
+  Accent           #56DB8F    #007A3A    Root green: focus, toggles, selection, links
+  AccentHover      #85F3AF    #00602D    Hover on accent
+  OnAccent         #051B0E    #FFFFFF    Text on an accent or gradient fill
+  AccentWash       #0F3620    #D2F6DD    Selected nav item, accent tint
+  LedRed           #FF5D6E    #DE394B    The mark and the wordmark
+  LedGreen         #56DB8F    #009956    The mark and the wordmark
+  LedBlue          #42A3FD    #0D7DD4    The mark and the wordmark
+  Success          #56DB8F    #007A3A    Connected, controlled, ready
+  Warning          #FCB442    #BB7400    Needs attention, low battery
+  Danger           #F75D59    #CC3336    Errors, critical battery
+  Info             #4ABAF4    #0D7DD4    Tips, charging
+
+RgbGradient runs #FF5D6E, #FFA746, #56DB8F, #28D6DF, #42A3FD. The in-between stops keep it vivid,
+because a straight red to green blend goes muddy. Use it only for things that mean "light": the
+primary button, the selected-nav pipe and the welcome tour. Everything else is green or neutral. If
+a whole screen is gradient, nothing on it stands out.
+
+Presets and live device colors are the user's colors. Show them exactly as they are, with no tint or
+overlay.
+
+
+TYPE
+----
+
+Both fonts are under the SIL Open Font License 1.1, which allows bundling them in an open-source app
+as long as the license ships with them. It does: fonts/OFL-*.txt.
+
+  Manrope           All UI text. ExtraBold for the wordmark and page titles, Bold or SemiBold for
+                    headings, Regular and Medium for everything else.
+  JetBrains Mono    Anything technical or literal: paths, URLs, ports, device IDs, version numbers,
+                    and the root@labs:~$ prompt.
+
+Manrope comes from github.com/googlefonts/manrope and JetBrains Mono from
+github.com/JetBrains/JetBrainsMono. Both are static TTFs, because Avalonia can't pick weights out of
+a variable font.
+
+
+VOICE
+-----
+
+Write like someone who built it and uses it every day.
+
+  * Say what happens. "Corsair iCUE is running. It can override MyRGB's lighting on its devices."
+  * Use short sentences and contractions: don't, isn't, you're.
+  * Write in sentence case. Buttons start with a verb: "Save as new", "Open uninstaller".
+  * If something's wrong, say what to do next. Don't apologize and don't blame the user.
+  * Name hardware and vendor apps exactly as their makers do: "Corsair iCUE", "Logitech G HUB".
+
+Don't
+
+  * Use em-dashes. Use a period, a comma, a colon or parentheses instead.
+  * Write hype: "stunning", "seamless", "unleash", "next-level".
+  * Say "successfully". The result is the confirmation.
+  * Use exclamation marks in system text.
+  * Write "it's not X, it's Y" lines, neat three-part slogans, or a moral at the end.
+
+
+DO AND DON'T
+------------
+
+  Do: use the lockup on the README and the installer.
+  Don't: put the Root Labs chip logo next to the MyRGB mark. The mark already is the chip.
+
+  Do: keep surfaces neutral and let the user's colors be the bright thing.
+  Don't: add glows, neon or rainbow borders to the chrome.
+
+  Do: use Root green for focus and state.
+  Don't: use the RGB gradient for state, warnings or links.
+
+  Do: use JetBrains Mono for paths and IDs.
+  Don't: set body copy in mono.
+
+  Do: re-run make-icons.ps1 after changing a source.
+  Don't: edit the PNGs, or the wordmark, logo and lockup SVGs, by hand.
+
+
+APPLYING THE THEME
+------------------
+
+Theme.axaml is a plain ResourceDictionary. The brushes the app already uses (RgbGradient,
+RgbGradientVertical, SurfaceBrush, SurfaceRaisedBrush, HairlineBrush, MutedBrush) keep their keys,
+and Fluent's SystemAccentColor values are overridden so stock controls pick up Root green. The fonts
+are exposed as the BrandSans and BrandMono resources. To wire it in:
+
+  1. Add <AvaloniaXaml Include="../../branding/Theme.axaml" Link="Theme.axaml" /> to
+     MyRGB.App.csproj, then merge avares://MyRGB/Theme.axaml into Application.Resources.
+  2. Run tools/make-icons.ps1 -Install. It copies the icon, mark.png and the fonts into Assets/.
+  3. Set FontFamily to {StaticResource BrandSans} on :is(TopLevel), and Foreground on Button.accent
+     to OnAccentBrush.
+  4. Replace the hard-coded hex colors in MainWindow.axaml, and the status colors in Controls/ and
+     ViewModels/, with the tokens above. The images in preview/ show the result.

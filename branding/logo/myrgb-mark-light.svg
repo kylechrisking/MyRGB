@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- MyRGB mark, for light backgrounds. Source of truth: edit here, then run tools/make-icons.ps1. -->
+  <g fill="none" stroke="#1D1A14" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M45 14V28M60 14V28M75 14V28M16 45H30M16 60H30M16 75H30M104 45H90M104 60H90M104 75H90"/>
+    <path d="M45 88V96L37.5 103.5M60 88V101.5M75 88V96L82.5 103.5"/>
+    <rect x="30" y="28" width="60" height="60" rx="12"/>
+  </g>
+  <g fill="#1D1A14">
+    <circle cx="35" cy="106" r="4.5"/>
+    <circle cx="60" cy="106" r="4.5"/>
+    <circle cx="85" cy="106" r="4.5"/>
+  </g>
+  <clipPath id="die"><rect x="41" y="39" width="38" height="38" rx="4"/></clipPath>
+  <g clip-path="url(#die)">
+    <rect x="41" y="39" width="12.67" height="38" fill="#DE394B"/>
+    <rect x="53.67" y="39" width="12.66" height="38" fill="#009956"/>
+    <rect x="66.33" y="39" width="12.67" height="38" fill="#0D7DD4"/>
+  </g>
+</svg>

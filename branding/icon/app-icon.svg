@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- App icon, used for 64 px and up. The mark on a graph-paper tile. -->
+  <defs>
+    <clipPath id="tile"><rect x="8" y="8" width="240" height="240" rx="56"/></clipPath>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#0D181E"/>
+  <g clip-path="url(#tile)" stroke="#162127" stroke-width="2">
+    <path d="M8 40H248M8 72H248M8 104H248M8 136H248M8 168H248M8 200H248M8 232H248"/>
+    <path d="M40 8V248M72 8V248M104 8V248M136 8V248M168 8V248M200 8V248M232 8V248"/>
+  </g>
+  <rect x="9" y="9" width="238" height="238" rx="55" fill="none" stroke="#223039" stroke-width="2"/>
+  <g transform="translate(128 128) scale(1.8) translate(-60 -61)">
+    <g fill="none" stroke="#E2EAE5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M45 14V28M60 14V28M75 14V28M16 45H30M16 60H30M16 75H30M104 45H90M104 60H90M104 75H90"/>
+      <path d="M45 88V96L37.5 103.5M60 88V101.5M75 88V96L82.5 103.5"/>
+      <rect x="30" y="28" width="60" height="60" rx="12"/>
+    </g>
+    <g fill="#E2EAE5">
+      <circle cx="35" cy="106" r="4.5"/>
+      <circle cx="60" cy="106" r="4.5"/>
+      <circle cx="85" cy="106" r="4.5"/>
+    </g>
+    <clipPath id="die"><rect x="41" y="39" width="38" height="38" rx="4"/></clipPath>
+    <g clip-path="url(#die)">
+      <rect x="41" y="39" width="12.67" height="38" fill="#FF5D6E"/>
+      <rect x="53.67" y="39" width="12.66" height="38" fill="#56DB8F"/>
+      <rect x="66.33" y="39" width="12.67" height="38" fill="#42A3FD"/>
+    </g>
+  </g>
+</svg>

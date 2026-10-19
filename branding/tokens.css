@@ -1,0 +1,64 @@
+/* MyRGB design tokens, for the website, docs and anything else built in HTML.
+   Same values as Theme.axaml; change both together. Dark is the default, light is for documents and print. */
+
+:root, :root[data-theme="dark"] {
+  --myrgb-chrome: #040E13;
+  --myrgb-base: #071117;
+  --myrgb-surface: #0D181E;
+  --myrgb-surface-raised: #162127;
+  --myrgb-surface-hover: #1C2830;
+  --myrgb-hairline: #223039;
+  --myrgb-hairline-strong: #2E404B;
+
+  --myrgb-ink: #E2EAE5;
+  --myrgb-ink-secondary: #BCC7C7;
+  --myrgb-muted: #829298;
+  --myrgb-subtle: #58666C;
+
+  --myrgb-accent: #56DB8F;
+  --myrgb-accent-hover: #85F3AF;
+  --myrgb-on-accent: #051B0E;
+  --myrgb-accent-wash: #0F3620;
+
+  --myrgb-led-red: #FF5D6E;
+  --myrgb-led-green: #56DB8F;
+  --myrgb-led-blue: #42A3FD;
+
+  --myrgb-success: #56DB8F;
+  --myrgb-warning: #FCB442;
+  --myrgb-danger: #F75D59;
+  --myrgb-info: #4ABAF4;
+
+  --myrgb-gradient: linear-gradient(90deg, #FF5D6E, #FFA746, #56DB8F, #28D6DF, #42A3FD);
+  --myrgb-sans: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --myrgb-mono: "JetBrains Mono", Consolas, monospace;
+}
+
+:root[data-theme="light"] {
+  --myrgb-chrome: #EDEBE6;
+  --myrgb-base: #FAF8F4;
+  --myrgb-surface: #FFFFFF;
+  --myrgb-surface-raised: #F5F3EF;
+  --myrgb-surface-hover: #EDEBE6;
+  --myrgb-hairline: #D1CEC5;
+  --myrgb-hairline-strong: #B9B5AA;
+
+  --myrgb-ink: #1D1A14;
+  --myrgb-ink-secondary: #3D3A34;
+  --myrgb-muted: #595549;
+  --myrgb-subtle: #8A8578;
+
+  --myrgb-accent: #007A3A;
+  --myrgb-accent-hover: #00602D;
+  --myrgb-on-accent: #FFFFFF;
+  --myrgb-accent-wash: #D2F6DD;
+
+  --myrgb-led-red: #DE394B;
+  --myrgb-led-green: #009956;
+  --myrgb-led-blue: #0D7DD4;
+
+  --myrgb-success: #007A3A;
+  --myrgb-warning: #BB7400;
+  --myrgb-danger: #CC3336;
+  --myrgb-info: #0D7DD4;
+}
