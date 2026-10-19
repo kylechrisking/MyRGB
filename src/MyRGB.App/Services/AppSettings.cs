@@ -16,6 +16,9 @@ public sealed class AppSettings
     public int Fps { get; set; } = 30;
     public bool StartMinimized { get; set; }
 
+    /// <summary>Keep presets in sync across PCs while signed in.</summary>
+    public bool SyncPresets { get; set; } = true;
+
     /// <summary>False until the first-run tour has been finished or skipped.</summary>
     public bool HasSeenWelcome { get; set; }
     public int ApiPort { get; set; } = LocalApiServer.DefaultPort;

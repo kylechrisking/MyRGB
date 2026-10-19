@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MyRGB.Api;
 using MyRGB.Battery;
+using MyRGB.Cloud;
 using MyRGB.Core;
 using MyRGB.Core.Devices;
 using MyRGB.Core.Effects;
@@ -27,6 +28,9 @@ public sealed class AppHostOptions
     /// <summary>Replaces reading Installed apps and running processes.</summary>
     public Func<IReadOnlyList<DetectedVendorApp>>? DetectVendorApps { get; init; }
 
+    /// <summary>Replaces the account service.</summary>
+    public Func<ICloud>? Cloud { get; init; }
+
     public bool EnableApi { get; init; } = true;
 }
 
@@ -40,6 +44,7 @@ public sealed class AppHost : IAsyncDisposable
     private readonly SettingsStore _store;
     private readonly ILogger _log;
     private CancellationTokenSource? _saveDebounce;
+    private CancellationTokenSource? _syncDebounce;
 
     public AppHost(AppHostOptions? options = null)
     {
@@ -74,9 +79,30 @@ public sealed class AppHost : IAsyncDisposable
             _options.BatteryProviders?.Invoke() ?? [new RazerBatteryProvider(), new LogitechBatteryProvider()],
             Logs.CreateLogger<BatteryMonitor>());
 
+        Cloud = _options.Cloud?.Invoke()
+                ?? (CloudConfig.Load() is { } cloud ? new SupabaseCloud(cloud, _options.DataDirectory) : new OfflineCloud());
+        Sync = new PresetSync(Cloud, Presets, _options.DataDirectory);
+
         Lights.StateChanged += (_, _) => ScheduleSave();
-        Presets.Changed += (_, _) => ScheduleSave();
+        Presets.Changed += (_, _) => { ScheduleSave(); ScheduleSync(); };
         Layout.Changed += (_, _) => ScheduleSave();
+        Cloud.UserChanged += (_, _) => { if (Cloud.User is not null) ScheduleSync(TimeSpan.Zero); };
+    }
+
+    public ICloud Cloud { get; }
+    public PresetSync Sync { get; }
+
+    /// <summary>Sync presets a few seconds after the last change, so a burst of edits is one upload.</summary>
+    public void ScheduleSync(TimeSpan? delay = null)
+    {
+        if (Cloud.User is null || !Settings.SyncPresets) return;
+        var cts = new CancellationTokenSource();
+        Interlocked.Exchange(ref _syncDebounce, cts)?.Cancel();
+        _ = Task.Delay(delay ?? TimeSpan.FromSeconds(5), cts.Token).ContinueWith(async t =>
+        {
+            if (t.IsCanceled) return;
+            if (await Sync.SyncAsync() is { } error) _log.LogWarning("Preset sync: {Error}", error);
+        }, TaskScheduler.Default);
     }
 
     public AppSettings Settings { get; }
@@ -116,6 +142,8 @@ public sealed class AppHost : IAsyncDisposable
         Engine.Activate(preset);
         Engine.Start();
         Batteries.Start();
+
+        ScheduleSync(TimeSpan.FromSeconds(3)); // pick up edits made on other PCs since last time
 
         if (_options.EnableApi) await StartApiAsync();
         else ApiError = "disabled";
@@ -213,6 +241,8 @@ public sealed class AppHost : IAsyncDisposable
         SaveNow();
         Engine.Dispose();
         await Batteries.DisposeAsync();
+        _syncDebounce?.Cancel();
+        (Cloud as IDisposable)?.Dispose();
         if (Api is not null) await Api.DisposeAsync();
         await Devices.DisposeAsync();
         Logs.Dispose();

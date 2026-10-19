@@ -1,0 +1,71 @@
+MyRGB accounts: setting up the service
+=======================================
+
+MyRGB's accounts are optional. Builds without the settings below simply hide sign-in, sync,
+Community and the contact form. Everything else works the same.
+
+The service is a Supabase project. The app only ever holds two public values, the project URL and
+its publishable (anon) key. Row-level security in supabase/migrations decides what each signed-in
+user may read and write. The service_role key must never go into the app, this repository or a
+build log.
+
+
+1. Create the project
+---------------------
+- Create a project at https://supabase.com (name: MyRGB).
+- Project Settings > API: note the Project URL and the publishable (anon) key.
+
+
+2. Create the tables and rules
+------------------------------
+- SQL Editor > New query: paste supabase/migrations/20261019000000_accounts.sql and run it.
+  (Or, with the Supabase CLI: supabase link, then supabase db push.)
+- Table Editor should now show profiles, synced_presets, shared_presets, preset_reports and
+  support_messages, each marked "RLS enabled".
+
+
+3. Sign-in providers
+--------------------
+Authentication > Sign In / Providers. For each provider you want:
+
+  Google:  Google Cloud Console > APIs & Services > Credentials > Create OAuth client ID,
+           type "Web application". Authorized redirect URI: the callback URL Supabase shows on
+           the Google provider page. Paste the client ID and secret into Supabase.
+  GitHub:  GitHub > Settings > Developer settings > OAuth Apps > New. Callback URL: the one
+           Supabase shows. Paste the client ID and secret into Supabase.
+  Discord: Discord Developer Portal > New application > OAuth2. Redirect: the one Supabase
+           shows. Paste the client ID and secret into Supabase.
+
+Provider secrets live only in Supabase. They are never part of MyRGB.
+
+
+4. Redirect URLs
+----------------
+Authentication > URL Configuration > Redirect URLs: add all three. MyRGB listens on the first
+free one of these ports while you sign in:
+
+  http://localhost:6744/callback
+  http://localhost:6745/callback
+  http://localhost:6746/callback
+
+Set Site URL to https://www.rootlabs.us.
+
+
+5. Build MyRGB with accounts on
+-------------------------------
+The URL and key are read from the build environment, never from the repository:
+
+  $env:MYRGB_SUPABASE_URL = "https://<project>.supabase.co"
+  $env:MYRGB_SUPABASE_KEY = "<publishable key>"
+  dotnet build MyRGB.slnx
+
+For release builds on GitHub Actions, store both as repository secrets with those names.
+For quick testing, setting the same two environment variables before starting MyRGB works too.
+
+
+6. Reading support messages and reports
+---------------------------------------
+Table Editor > support_messages and preset_reports. Users can only write these; only the
+project's team can read them. Reply to support messages using the email on the user's account
+(Authentication > Users). To hide a community preset, set hidden = true on its row in
+shared_presets.

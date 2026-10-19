@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:MyRGB.App.ViewModels"
         xmlns:ctl="using:MyRGB.App.Controls"
+        xmlns:presets="using:MyRGB.Core.Presets"
         x:Class="MyRGB.App.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="MyRGB"
@@ -183,7 +184,7 @@
     <DockPanel>
       <!-- Top bar: brand, now-playing chip, global controls -->
       <Border DockPanel.Dock="Top" Background="#0F0F18" Padding="20,12" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1">
-        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
             <Image Source="/Assets/icon.png" Width="28" Height="28" />
             <TextBlock Text="MyRGB" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
@@ -211,6 +212,19 @@
           <TextBlock Grid.Column="4" Classes="muted" Text="{Binding Brightness, StringFormat='Brightness {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
           <Slider Grid.Column="5" Width="150" Minimum="0" Maximum="100" Value="{Binding Brightness}" VerticalAlignment="Center" Margin="0,0,22,0" />
           <ToggleSwitch Grid.Column="6" IsChecked="{Binding Enabled}" OnContent="Lights on" OffContent="Lights off" VerticalAlignment="Center" />
+          <Button Grid.Column="7" Classes="ghost" Command="{Binding NavigateCommand}" CommandParameter="account" Margin="18,0,0,0"
+                  VerticalAlignment="Center" IsVisible="{Binding CloudAvailable}" Padding="6,5,12,5" CornerRadius="18"
+                  ToolTip.Tip="Your MyRGB account">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Width="24" Height="24" CornerRadius="12" Background="{StaticResource RgbGradient}">
+                <TextBlock Text="{Binding Account.Initial}" FontSize="12" FontWeight="Bold" Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding Account.IsSignedIn}" />
+              </Border>
+              <TextBlock Text="{Binding Account.DisplayName}" VerticalAlignment="Center" IsVisible="{Binding Account.IsSignedIn}"
+                         MaxWidth="120" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="Sign in" VerticalAlignment="Center" IsVisible="{Binding !Account.IsSignedIn}" />
+            </StackPanel>
+          </Button>
         </Grid>
       </Border>
 
@@ -418,6 +432,96 @@
                           </Grid>
                         </Grid>
                       </Button>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </TabItem>
+
+        <!-- ===== Community ===== -->
+        <TabItem IsVisible="{Binding CloudAvailable}">
+          <TabItem.Header>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{x:Static ctl:NavIcons.Community}" />
+              <TextBlock Text="Community" VerticalAlignment="Center" />
+            </StackPanel>
+          </TabItem.Header>
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,16">
+              <StackPanel Spacing="4">
+                <TextBlock Classes="h1" Text="Community" />
+                <TextBlock Classes="muted" TextWrapping="Wrap" Text="Presets other MyRGB users made. Install one to add it to your presets; anyone can browse, and sharing needs an account." />
+              </StackPanel>
+              <TextBox Grid.Column="1" Text="{Binding Community.Search}" PlaceholderText="Search presets" Width="220" VerticalAlignment="Center" Margin="16,0,10,0" />
+              <ComboBox Grid.Column="2" ItemsSource="{Binding Community.SortOptions}" SelectedItem="{Binding Community.Sort}" VerticalAlignment="Center" MinWidth="150" />
+            </Grid>
+
+            <!-- Share one of your own presets -->
+            <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,16" Padding="16,12">
+              <Grid>
+                <StackPanel Spacing="8" IsVisible="{Binding Community.IsSignedIn}">
+                  <TextBlock Classes="section" Text="Share a preset" />
+                  <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Community.HasShareable}">
+                    <ComboBox ItemsSource="{Binding Community.Shareable}" SelectedItem="{Binding Community.ToShare}" MinWidth="220">
+                      <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="presets:Preset">
+                          <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                      </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBox Text="{Binding Community.ShareDescription}" PlaceholderText="Say something about it (optional)" Width="360" MaxLength="280" />
+                    <Button Classes="accent" Content="Share" Command="{Binding Community.ShareCommand}" />
+                  </StackPanel>
+                  <TextBlock Classes="muted" Text="Make a preset in the Studio first; then you can share it here." IsVisible="{Binding !Community.HasShareable}" />
+                  <TextBlock Classes="muted" Text="{Binding Community.ShareStatus}" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !Community.IsSignedIn}">
+                  <TextBlock Classes="body" Text="Sign in to share your own presets with everyone." VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="ghost" Content="Sign in" Command="{Binding NavigateCommand}" CommandParameter="account" />
+                </Grid>
+              </Grid>
+            </Border>
+
+            <TextBlock DockPanel.Dock="Top" Classes="muted" Text="{Binding Community.Status}" Margin="2,0,0,8" />
+            <TextBlock DockPanel.Dock="Top" Classes="body" Text="Nobody has shared a preset that matches yet." IsVisible="{Binding Community.IsEmpty}" />
+
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding Community.Items}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SharedPresetViewModel">
+                    <Border Classes="tile" Height="NaN" Width="260" Padding="10">
+                      <StackPanel Spacing="8">
+                        <Border Background="{Binding Swatch}" CornerRadius="9" Height="84" />
+                        <StackPanel Spacing="1" Margin="4,0">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="muted">
+                            <Run Text="{Binding Author}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding Downloads}" />
+                          </TextBlock>
+                          <TextBlock Classes="muted" Text="{Binding Description}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                                     IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
+                          <TextBlock Classes="muted" Text="{Binding Unsupported}" Foreground="#FFBE46" IsVisible="{Binding !Supported}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2,0">
+                          <Button Classes="accent" Content="Install" Command="{Binding InstallCommand}" />
+                          <Button Classes="link" Content="Remove" Command="{Binding RemoveCommand}" IsVisible="{Binding IsMine}" />
+                          <Button Classes="link" Content="Report" Command="{Binding AskReportCommand}" IsVisible="{Binding CanReport}" />
+                        </StackPanel>
+                        <StackPanel Spacing="6" IsVisible="{Binding Reporting}" Margin="2,0">
+                          <TextBox Text="{Binding ReportReason}" PlaceholderText="What's wrong with it?" MaxLength="500" />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Button Classes="ghost" Content="Send report" Command="{Binding SendReportCommand}" />
+                            <Button Classes="link" Content="Cancel" Command="{Binding CancelReportCommand}" />
+                          </StackPanel>
+                        </StackPanel>
+                        <TextBlock Classes="muted" Text="{Binding Status}" TextWrapping="Wrap" Margin="2,0" />
+                      </StackPanel>
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -757,6 +861,68 @@
             <StackPanel Spacing="14" MaxWidth="760" HorizontalAlignment="Left">
               <TextBlock Classes="h1" Text="Settings" Margin="0,0,0,6" />
 
+              <!-- Account (only in builds with the account service) -->
+              <Border Classes="panel" IsVisible="{Binding CloudAvailable}">
+                <StackPanel Spacing="12">
+                  <TextBlock Classes="section" Text="Account" />
+
+                  <StackPanel Spacing="10" IsVisible="{Binding Account.IsSignedOut}">
+                    <TextBlock Classes="body" Text="An account is optional. Sign in to keep your presets in sync across PCs, share presets with the community, and contact Root Labs. MyRGB never sees your password: you sign in on the provider's own page in your browser." />
+                    <ItemsControl ItemsSource="{Binding Account.Providers}" IsEnabled="{Binding !Account.IsBusy}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProviderButton">
+                          <Button Classes="ghost" Content="{Binding Label}" Command="{Binding Command}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Account.IsBusy}">
+                      <TextBlock Classes="muted" Text="{Binding Account.Status}" VerticalAlignment="Center" />
+                      <Button Classes="link" Content="Cancel" Command="{Binding Account.CancelSignInCommand}" />
+                    </StackPanel>
+                  </StackPanel>
+
+                  <StackPanel Spacing="12" IsVisible="{Binding Account.IsSignedIn}">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource RgbGradient}">
+                        <TextBlock Text="{Binding Account.Initial}" FontSize="17" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Account.DisplayName}" FontWeight="SemiBold" />
+                        <TextBlock Classes="muted">
+                          <Run Text="{Binding Account.Email}" />
+                          <Run Text="  ·  " />
+                          <Run Text="{Binding Account.ProviderText}" />
+                        </TextBlock>
+                      </StackPanel>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                      <ToggleSwitch IsChecked="{Binding Account.SyncPresets}" OnContent="Sync my presets across PCs" OffContent="Sync my presets across PCs" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Classes="muted" Text="{Binding Account.SyncStatus}" VerticalAlignment="Center" />
+                        <Button Classes="ghost" Content="Sync now" Command="{Binding Account.SyncNowCommand}" IsEnabled="{Binding Account.SyncPresets}" />
+                      </StackPanel>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !Account.ConfirmingDelete}">
+                      <Button Classes="ghost" Content="Sign out" Command="{Binding Account.SignOutCommand}" />
+                      <Button Classes="link" Content="Delete my account…" Command="{Binding Account.AskDeleteCommand}" />
+                    </StackPanel>
+                    <Border Background="#2A1620" BorderBrush="#7A3048" BorderThickness="1" CornerRadius="10" Padding="14,12" IsVisible="{Binding Account.ConfirmingDelete}">
+                      <StackPanel Spacing="10">
+                        <TextBlock Classes="body" Text="This permanently deletes your account, your synced presets and any presets you shared. Presets on this PC stay. It can't be undone." />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <Button Classes="ghost" Content="Delete my account" Command="{Binding Account.DeleteAccountCommand}" Foreground="#FF8FA8" />
+                          <Button Classes="link" Content="Cancel" Command="{Binding Account.CancelDeleteCommand}" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                  <TextBlock Classes="muted" Text="{Binding Account.Status}" TextWrapping="Wrap" IsVisible="{Binding !Account.IsBusy}" />
+                </StackPanel>
+              </Border>
+
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Startup" />
@@ -791,6 +957,21 @@
                   <TextBlock Classes="section" Text="Help" />
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Button Classes="ghost" Content="Show the welcome tour" Command="{Binding OpenTourCommand}" />
+                  </StackPanel>
+                  <StackPanel Spacing="8" IsVisible="{Binding CloudAvailable}" Margin="0,8,0,0">
+                    <TextBlock Text="Contact Root Labs" FontWeight="SemiBold" />
+                    <StackPanel Spacing="8" IsVisible="{Binding Contact.IsSignedIn}">
+                      <TextBox Text="{Binding Contact.Subject}" PlaceholderText="Subject" MaxLength="120" />
+                      <TextBox Text="{Binding Contact.Message}" PlaceholderText="How can we help? Include your device models if it's about hardware." AcceptsReturn="True" TextWrapping="Wrap" Height="110" MaxLength="5000" />
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Classes="accent" Content="Send" Command="{Binding Contact.SendCommand}" />
+                        <TextBlock Classes="muted" Text="{Binding Contact.Status}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !Contact.IsSignedIn}">
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Sign in to send Root Labs a message. Replies go to the email on your account." VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="link" Content="Sign in ›" Command="{Binding NavigateCommand}" CommandParameter="account" />
+                    </Grid>
                   </StackPanel>
                 </StackPanel>
               </Border>

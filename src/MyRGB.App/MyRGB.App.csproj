@@ -33,5 +33,6 @@
     <ProjectReference Include="..\MyRGB.Providers.Corsair\MyRGB.Providers.Corsair.csproj" />
     <ProjectReference Include="..\MyRGB.Api\MyRGB.Api.csproj" />
     <ProjectReference Include="..\MyRGB.Battery\MyRGB.Battery.csproj" />
+    <ProjectReference Include="..\MyRGB.Cloud\MyRGB.Cloud.csproj" />
   </ItemGroup>
 </Project>

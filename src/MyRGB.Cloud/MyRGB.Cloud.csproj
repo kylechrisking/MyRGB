@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.13" />
+    <ProjectReference Include="..\MyRGB.Core\MyRGB.Core.csproj" />
+    <InternalsVisibleTo Include="MyRGB.Tests" />
+  </ItemGroup>
+
+  <!-- Release builds get the account service's public URL and key from the build environment
+       (CI secrets), never from the repository. Without them, MyRGB builds with accounts off. -->
+  <ItemGroup Condition="'$(MYRGB_SUPABASE_URL)' != '' and '$(MYRGB_SUPABASE_KEY)' != ''">
+    <AssemblyMetadata Include="SupabaseUrl" Value="$(MYRGB_SUPABASE_URL)" />
+    <AssemblyMetadata Include="SupabaseKey" Value="$(MYRGB_SUPABASE_KEY)" />
+  </ItemGroup>
+</Project>

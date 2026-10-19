@@ -67,7 +67,7 @@ public sealed record AlertViewModel(bool Warning, string Text, string? ActionLab
 public sealed partial class MainViewModel : ObservableObject
 {
     // Sidebar order. Keep in sync with the TabItems in MainWindow.axaml.
-    public const int HomeTab = 0, PresetsTab = 1, StudioTab = 2, LayoutTab = 3, DevicesTab = 4, VendorsTab = 5, SettingsTab = 6;
+    public const int HomeTab = 0, PresetsTab = 1, CommunityTab = 2, StudioTab = 3, LayoutTab = 4, DevicesTab = 5, VendorsTab = 6, SettingsTab = 7;
 
     private const int LowBattery = 20;
 
@@ -79,6 +79,9 @@ public sealed partial class MainViewModel : ObservableObject
         _host = host;
         Studio = new StudioViewModel(host);
         Vendors = new VendorAppsViewModel(host);
+        Account = new AccountViewModel(host);
+        Community = new CommunityViewModel(host, Account);
+        Contact = new ContactViewModel(host, Account);
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
         _startWithWindows = StartupRegistration.IsEnabled;
@@ -101,6 +104,17 @@ public sealed partial class MainViewModel : ObservableObject
     public AppHost Host => _host;
     public StudioViewModel Studio { get; }
     public VendorAppsViewModel Vendors { get; }
+    public AccountViewModel Account { get; }
+    public CommunityViewModel Community { get; }
+    public ContactViewModel Contact { get; }
+
+    /// <summary>Builds without an account service hide Community and the account panels.</summary>
+    public bool CloudAvailable => _host.Cloud.IsConfigured;
+
+    partial void OnSelectedTabChanged(int value)
+    {
+        if (value == CommunityTab && !Community.LoadedOnce) _ = Community.Load();
+    }
     public ObservableCollection<PresetCardViewModel> Presets { get; } = [];
     public ObservableCollection<PresetCardViewModel> QuickPresets { get; } = [];
     public ObservableCollection<DeviceRowViewModel> Devices { get; } = [];
@@ -168,7 +182,8 @@ public sealed partial class MainViewModel : ObservableObject
             "layout" => LayoutTab,
             "devices" => DevicesTab,
             "vendors" => VendorsTab,
-            "settings" => SettingsTab,
+            "community" => CommunityTab,
+            "settings" or "account" => SettingsTab,
             _ => SelectedTab,
         };
     }

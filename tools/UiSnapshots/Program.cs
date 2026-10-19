@@ -6,6 +6,8 @@ using MyRGB.App.Services;
 using MyRGB.App.ViewModels;
 using MyRGB.Core;
 using MyRGB.Core.Devices;
+using MyRGB.Cloud;
+using MyRGB.Core.Presets;
 using MyRGB.Core.Vendors;
 
 // Usage: UiSnapshots <output folder>
@@ -40,6 +42,7 @@ var host = new AppHost(new AppHostOptions
     Providers = (_, _) => [new FakeProvider()],
     BatteryProviders = () => [new FakeBatteries()],
     DetectVendorApps = () => VendorAppCatalog.Detect(installed, ["iCUE"]),
+    Cloud = () => new FakeCloud(),
 });
 // Stay on this thread: it's Avalonia's UI thread, and awaiting would resume elsewhere.
 host.StartAsync().GetAwaiter().GetResult();
@@ -71,6 +74,7 @@ vm.Welcome!.SkipCommand.Execute(null);
 
 vm.SelectedTab = MainViewModel.HomeTab; Shoot("02-home");
 vm.SelectedTab = MainViewModel.PresetsTab; Shoot("03-presets");
+vm.SelectedTab = MainViewModel.CommunityTab; Thread.Sleep(300); Shoot("03b-community");
 vm.EditPreset("ocean"); Shoot("04-studio");
 vm.SelectedTab = MainViewModel.LayoutTab; Shoot("05-layout");
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
@@ -149,4 +153,35 @@ sealed class FakeBatteries : IBatteryProvider
         public string Name => name;
         public Task<BatteryStatus?> ReadAsync(CancellationToken ct) => Task.FromResult<BatteryStatus?>(status);
     }
+}
+
+/// <summary>A signed-in account with a small community gallery, all in memory.</summary>
+sealed class FakeCloud : ICloud
+{
+    private static Preset P(string name, string effect, params (string, string)[] s) =>
+        new() { Id = name, Name = name, EffectId = effect, Settings = s.ToDictionary(x => x.Item1, x => x.Item2) };
+
+    private readonly List<SharedPreset> _shared =
+    [
+        new(Guid.NewGuid(), "Synthwave Sunset", "Pink to purple, slow drift. Great with a dark desk.", "gradient",
+            P("Synthwave Sunset", "gradient", ("from", "#FF2E97"), ("to", "#6A00FF")), ["#FF2E97", "#D11FB8", "#A010D8", "#7A04F0", "#6A00FF"], 1284, DateTimeOffset.Now.AddDays(-20), Guid.NewGuid(), "neonfox"),
+        new(Guid.NewGuid(), "Deep Sea", "", "plasma", P("Deep Sea", "plasma", ("palette", "Ocean")), ["#001A50", "#0060D0", "#00C8E0", "#0090C0", "#003070"], 865, DateTimeOffset.Now.AddDays(-9), Guid.NewGuid(), "marlin"),
+        new(Guid.NewGuid(), "Toxic", "Green waves on black.", "color-wave", P("Toxic", "color-wave", ("color", "#7CFF00")), ["#000500", "#3A8000", "#7CFF00", "#3A8000", "#000500"], 402, DateTimeOffset.Now.AddDays(-3), Guid.NewGuid(), "kilowatt"),
+        new(Guid.NewGuid(), "Ember", "Warm fire for late nights.", "fire", P("Ember", "fire"), ["#300000", "#A01000", "#FF5000", "#FF9020", "#FFC040"], 233, DateTimeOffset.Now.AddDays(-1), Guid.NewGuid(), "dusk"),
+    ];
+
+    public bool IsConfigured => true;
+    public CloudUser? User { get; } = new(Guid.NewGuid(), "Alex Rivera", "alex@example.com", "google");
+    public event EventHandler? UserChanged { add { } remove { } }
+    public Task SignInAsync(string provider, CancellationToken ct) => Task.CompletedTask;
+    public Task SignOutAsync() => Task.CompletedTask;
+    public Task DeleteAccountAsync(CancellationToken ct) => Task.CompletedTask;
+    public Task<IReadOnlyList<RemotePreset>> GetSyncedPresetsAsync(CancellationToken ct) => Task.FromResult<IReadOnlyList<RemotePreset>>([]);
+    public Task PutSyncedPresetsAsync(IReadOnlyCollection<RemotePreset> presets, CancellationToken ct) => Task.CompletedTask;
+    public Task<IReadOnlyList<SharedPreset>> BrowseAsync(string? search, CommunitySort sort, CancellationToken ct) => Task.FromResult<IReadOnlyList<SharedPreset>>(_shared);
+    public Task ShareAsync(Preset preset, IReadOnlyList<string> swatch, string description, CancellationToken ct) => Task.CompletedTask;
+    public Task DeleteSharedAsync(Guid id, CancellationToken ct) => Task.CompletedTask;
+    public Task CountInstallAsync(Guid id, CancellationToken ct) => Task.CompletedTask;
+    public Task ReportAsync(Guid id, string reason, CancellationToken ct) => Task.CompletedTask;
+    public Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct) => Task.CompletedTask;
 }
