@@ -1,0 +1,120 @@
+# Registers the scheduled task MyRGB uses to start OpenRGB with admin rights, hidden.
+# RGB RAM and other SMBus devices are only reachable through the PawnIO driver, which OpenRGB can
+# open only when elevated. A task set to "run with highest privileges" lets MyRGB start it on demand
+# (schtasks /run) without a UAC prompt every time. Run this once, elevated; -Remove undoes it.
+#
+# The installer runs this (hidden, elevated) with -InstallPawnIO -CopyTo -User -LogPath: the task must
+# never run an exe from a user-writable folder, so OpenRGB is copied to Program Files first.
+param(
+    [string]$OpenRgbPath = (Join-Path $env:LOCALAPPDATA 'Programs\OpenRGB\OpenRGB Windows 64-bit\OpenRGB.exe'),
+    [int]$Port = 6742,
+    # Copy OpenRGB's folder here (admin-only) and point the task at the copy.
+    [string]$CopyTo,
+    # Download the official PawnIO installer, check its hash and signature, and install it silently.
+    [switch]$InstallPawnIO,
+    # Account the task runs as; the installer passes the user who started it (UAC may elevate as another admin).
+    [string]$User = [Security.Principal.WindowsIdentity]::GetCurrent().Name,
+    [string]$LogPath,
+    [switch]$Remove
+)
+
+$ErrorActionPreference = 'Stop'
+$taskPath = '\MyRGB\'
+$taskName = 'OpenRGB'
+# ProgramData, not AppData: packaged/sandboxed shells get AppData writes redirected, and the task wouldn't see them.
+$launcher = Join-Path $env:ProgramData 'MyRGB\openrgb-hidden.vbs'
+$machineDir = Join-Path $env:ProgramFiles 'MyRGB'
+
+# Pinned PawnIO release. Its installer may not be redistributed, so it is fetched from the official release.
+$pawnIoUrl = 'https://github.com/namazso/PawnIO.Setup/releases/download/2.2.0/PawnIO_setup.exe'
+$pawnIoSha256 = '1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032'
+$pawnIoSigner = 'F380DCC9F706E2756A5047B832FFE719E1BC35F5' # namazso.eu code-signing certificate
+
+function Log([string]$message) {
+    Write-Output $message
+    if ($LogPath) { Add-Content -Path $LogPath -Value "$(Get-Date -Format s) $message" -Encoding UTF8 }
+}
+
+function Install-PawnIO {
+    if (Get-Service PawnIO -ErrorAction SilentlyContinue) { Log 'PawnIO already installed.'; return }
+    # An admin-only folder, so nothing unelevated can swap the file between the check and the run.
+    $dir = Join-Path $machineDir 'download'
+    New-Item -ItemType Directory -Force $dir | Out-Null
+    $exe = Join-Path $dir 'PawnIO_setup.exe'
+    Log "Downloading $pawnIoUrl"
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest $pawnIoUrl -OutFile $exe -UseBasicParsing
+    try {
+        $hash = (Get-FileHash $exe -Algorithm SHA256).Hash
+        if ($hash -ne $pawnIoSha256) { throw "PawnIO installer hash mismatch ($hash)." }
+        $sig = Get-AuthenticodeSignature $exe
+        if ($sig.Status -ne 'Valid' -or $sig.SignerCertificate.Thumbprint -ne $pawnIoSigner) {
+            throw "PawnIO installer signature not valid ($($sig.Status), $($sig.SignerCertificate.Subject))."
+        }
+        Log 'Installing PawnIO 2.2.0'
+        $p = Start-Process $exe -ArgumentList '-install', '-silent' -Wait -PassThru -WindowStyle Hidden
+        if ($p.ExitCode -eq 3010) { Log 'PawnIO installed; Windows needs a restart before RAM lighting works.' }
+        elseif ($p.ExitCode -ne 0) { throw "PawnIO setup failed with exit code $($p.ExitCode)." }
+        else { Log 'PawnIO installed.' }
+    }
+    finally { Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
+try {
+    $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
+    if (-not $admin) { throw 'Run this script as administrator.' }
+
+    if ($Remove) {
+        Unregister-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+        Remove-Item $launcher -ErrorAction SilentlyContinue
+        Remove-Item (Split-Path $launcher) -ErrorAction SilentlyContinue # only if empty
+        # The elevated OpenRGB the task started holds the copied files open.
+        Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$machineDir\*" } | Stop-Process -Force
+        Start-Sleep -Milliseconds 500
+        Remove-Item $machineDir -Recurse -Force -ErrorAction SilentlyContinue
+        Log 'Removed.'
+        return
+    }
+
+    if (-not (Test-Path $OpenRgbPath)) { throw "OpenRGB not found at $OpenRgbPath" }
+    $sourceExe = (Resolve-Path $OpenRgbPath).Path
+    if ($InstallPawnIO) { Install-PawnIO }
+    if (-not (Get-Service PawnIO -ErrorAction SilentlyContinue)) {
+        Write-Warning 'PawnIO is not installed; OpenRGB will run elevated but still cannot reach SMBus devices.'
+    }
+
+    if ($CopyTo) {
+        Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$CopyTo\*" } | Stop-Process -Force
+        if (Test-Path $CopyTo) { Remove-Item $CopyTo -Recurse -Force }
+        New-Item -ItemType Directory -Force $CopyTo | Out-Null
+        Copy-Item (Join-Path (Split-Path $OpenRgbPath) '*') $CopyTo -Recurse -Force
+        $OpenRgbPath = Join-Path $CopyTo (Split-Path $OpenRgbPath -Leaf)
+        Log "Copied OpenRGB to $CopyTo"
+    }
+
+    # wscript runs the launcher without a console window; window style 0 keeps OpenRGB hidden too.
+    New-Item -ItemType Directory -Force (Split-Path $launcher) | Out-Null
+    $vbs = @"
+Set sh = CreateObject("WScript.Shell")
+sh.CurrentDirectory = "$(Split-Path $OpenRgbPath)"
+sh.Run """$OpenRgbPath"" --server --server-port $Port", 0, False
+"@
+    Set-Content -Path $launcher -Value $vbs -Encoding ASCII
+
+    $action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$launcher`""
+    $principal = New-ScheduledTaskPrincipal -UserId $User -LogonType Interactive -RunLevel Highest
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+        -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
+    Register-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Action $action -Principal $principal `
+        -Settings $settings -Description 'Starts OpenRGB elevated and hidden for MyRGB (SMBus devices such as RGB RAM).' -Force | Out-Null
+
+    # An unelevated OpenRGB that MyRGB started earlier can't see SMBus; stop it so MyRGB relaunches through the task.
+    Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $sourceExe } | Stop-Process -Force
+    Log "Registered $taskPath$taskName for $User."
+}
+catch {
+    Log "ERROR: $($_.Exception.Message)"
+    exit 1
+}

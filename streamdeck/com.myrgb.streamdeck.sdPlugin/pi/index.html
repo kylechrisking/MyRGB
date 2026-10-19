@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>MyRGB</title>
+  <style>
+    body { margin: 0; padding: 8px 12px; background: #2d2d2d; color: #d8d8d8; font: 12px/1.4 "Segoe UI", sans-serif; }
+    .row { display: flex; align-items: center; margin: 8px 0; }
+    .row label { width: 90px; flex: none; color: #969696; }
+    .row select, .row input { flex: 1; background: #3d3d3d; color: #d8d8d8; border: none; border-radius: 3px; padding: 5px 6px; font: inherit; }
+    .row input[type=range] { padding: 0; }
+    .value { width: 40px; text-align: right; flex: none; }
+    .note { color: #969696; margin: 10px 0 4px; }
+    .offline { color: #e8a15b; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- Activate Preset -->
+  <div id="preset" hidden>
+    <div class="row">
+      <label for="presetId">Preset</label>
+      <select id="presetId"><option value="">Loading…</option></select>
+    </div>
+  </div>
+
+  <!-- Brightness -->
+  <div id="brightness" hidden>
+    <div class="row">
+      <label for="mode">On press</label>
+      <select id="mode">
+        <option value="up">Brighter</option>
+        <option value="down">Dimmer</option>
+        <option value="set">Set to</option>
+      </select>
+    </div>
+    <div class="row" id="stepRow">
+      <label for="step">Step</label>
+      <input id="step" type="range" min="1" max="50" value="10" />
+      <span class="value" id="stepValue">10%</span>
+    </div>
+    <div class="row" id="valueRow">
+      <label for="value">Brightness</label>
+      <input id="value" type="range" min="0" max="100" value="50" />
+      <span class="value" id="valueValue">50%</span>
+    </div>
+  </div>
+
+  <!-- Next/Previous -->
+  <div id="cycle" hidden>
+    <div class="row">
+      <label for="direction">Direction</label>
+      <select id="direction">
+        <option value="next">Next preset</option>
+        <option value="previous">Previous preset</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Power has no settings -->
+  <div id="power" hidden><p class="note">Toggles every light controlled by MyRGB.</p></div>
+
+  <p class="note offline" id="offline" hidden>MyRGB isn't running. Start the MyRGB app to control your lights.</p>
+
+  <script>
+    let ws, uuid, action, settings = {};
+
+    // Stream Deck calls this when the inspector opens.
+    function connectElgatoStreamDeckSocket(port, inUUID, registerEvent, info, actionInfo) {
+      uuid = inUUID;
+      const info = JSON.parse(actionInfo);
+      action = info.action;
+      settings = info.payload.settings || {};
+      show(action.split('.').pop());
+
+      ws = new WebSocket('ws://127.0.0.1:' + port);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ event: registerEvent, uuid }));
+        ws.send(JSON.stringify({ event: 'sendToPlugin', action, context: uuid, payload: { type: 'getPresets' } }));
+      };
+      ws.onmessage = e => {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'sendToPropertyInspector' && msg.payload.type === 'presets') fillPresets(msg.payload);
+      };
+    }
+
+    function save() {
+      ws.send(JSON.stringify({ event: 'setSettings', context: uuid, payload: settings }));
+    }
+
+    function show(kind) {
+      document.getElementById(kind).hidden = false;
+      if (kind === 'brightness') {
+        bindRange('step', '%', 10);
+        bindRange('value', '%', 50);
+        bindSelect('mode', 'up', syncBrightnessRows);
+        syncBrightnessRows();
+      }
+      if (kind === 'cycle') bindSelect('direction', 'next');
+    }
+
+    function syncBrightnessRows() {
+      const set = (settings.mode || 'up') === 'set';
+      document.getElementById('stepRow').hidden = set;
+      document.getElementById('valueRow').hidden = !set;
+    }
+
+    function bindSelect(id, fallback, after) {
+      const el = document.getElementById(id);
+      el.value = settings[id] || fallback;
+      el.onchange = () => { settings[id] = el.value; save(); after && after(); };
+    }
+
+    function bindRange(id, unit, fallback) {
+      const el = document.getElementById(id), label = document.getElementById(id + 'Value');
+      el.value = settings[id] ?? fallback;
+      label.textContent = el.value + unit;
+      el.oninput = () => { label.textContent = el.value + unit; };
+      el.onchange = () => { settings[id] = Number(el.value); save(); };
+    }
+
+    function fillPresets(data) {
+      document.getElementById('offline').hidden = data.online;
+      const el = document.getElementById('presetId');
+      el.innerHTML = '';
+      el.append(new Option(data.presets.length ? 'Choose a preset…' : 'No presets (is MyRGB running?)', ''));
+      const groups = [['Your presets', p => !p.builtIn], ['Built-in', p => p.builtIn]];
+      for (const [label, match] of groups) {
+        const items = data.presets.filter(match);
+        if (!items.length) continue;
+        const group = document.createElement('optgroup');
+        group.label = label;
+        for (const p of items) group.append(new Option(p.name, p.id));
+        el.append(group);
+      }
+      el.value = settings.presetId || '';
+      el.onchange = () => { settings.presetId = el.value; save(); };
+    }
+  </script>
+</body>
+</html>

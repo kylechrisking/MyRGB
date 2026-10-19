@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Version>0.1.0</Version>
+    <Authors>Kyle King</Authors>
+    <Company>Root Labs</Company>
+    <Product>MyRGB</Product>
+    <Copyright>Copyright (C) 2026 Root Labs</Copyright>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageProjectUrl>https://www.rootlabs.us</PackageProjectUrl>
+  </PropertyGroup>
+</Project>

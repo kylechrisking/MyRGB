@@ -1,0 +1,8 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- WinExe so Stream Deck never flashes a console window when it launches the plugin. -->
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>MyRGB.StreamDeck</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,73 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MyRGB.App.App"
+             Name="MyRGB"
+             RequestedThemeVariant="Dark">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- The logo's pink → violet → cyan, used wherever the app wants to say "RGB". -->
+            <LinearGradientBrush x:Key="RgbGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Offset="0" Color="#FF4D8D" />
+                <GradientStop Offset="0.5" Color="#8B6CFF" />
+                <GradientStop Offset="1" Color="#22D3EE" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="RgbGradientVertical" StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Offset="0" Color="#FF4D8D" />
+                <GradientStop Offset="0.5" Color="#8B6CFF" />
+                <GradientStop Offset="1" Color="#22D3EE" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#14141F" />
+            <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#1A1A28" />
+            <SolidColorBrush x:Key="HairlineBrush" Color="#24243A" />
+            <SolidColorBrush x:Key="MutedBrush" Color="#8A8FA8" />
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme>
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Dark" Accent="#8B6CFF" RegionColor="#0B0B12" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
+        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+
+        <!-- Rounder, softer controls everywhere. -->
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14,7" />
+        </Style>
+        <Style Selector="TextBox, ComboBox, NumericUpDown">
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+
+        <!-- Quiet secondary button: dark fill, hairline border. -->
+        <Style Selector="Button.ghost">
+            <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource HairlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#232338" />
+            <Setter Property="BorderBrush" Value="#3A3A5C" />
+        </Style>
+
+        <!-- Primary action: the RGB gradient. -->
+        <Style Selector="Button.accent">
+            <Setter Property="Background" Value="{StaticResource RgbGradient}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource RgbGradient}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource RgbGradient}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+        <Style Selector="Button.accent:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
+    </Application.Styles>
+</Application>

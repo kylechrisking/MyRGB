@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+# Published plugin binaries are build output; the rest of the .sdPlugin folder is source.
+streamdeck/com.myrgb.streamdeck.sdPlugin/bin/
+.tools/
+artifacts/

@@ -1,0 +1,86 @@
+MyRGB third-party notices
+=========================
+
+MyRGB bundles or uses the software below. Each keeps its own license.
+
+
+OpenRGB 1.1 (folder: OpenRGB\)
+------------------------------
+Copyright (C) Adam Honse and the OpenRGB contributors.
+License: GNU General Public License, version 2 (see OpenRGB\LICENSE.txt).
+
+The OpenRGB folder is the official "OpenRGB_1.1_Windows_64_8e16de2.zip" release, redistributed
+unmodified. MyRGB does not include, link to or modify OpenRGB code: it starts OpenRGB.exe as a
+separate program and talks to it over OpenRGB's network SDK protocol (TCP port 6742).
+
+Source code: the complete corresponding source for this build (tag release_1.1, commit 8e16de2)
+is published next to every MyRGB installer download as "OpenRGB-release_1.1.tar.gz", and
+upstream at https://codeberg.org/OpenRGB/OpenRGB/src/tag/release_1.1
+
+Written offer: for at least three years after the last MyRGB release that includes this build,
+the MyRGB author will provide that same source on request, for no more than the cost of
+physically performing the distribution. Ask via the MyRGB project page.
+
+The OpenRGB release itself contains components under their own licenses, distributed as part of
+that release: Qt 6 (LGPL v3), hidapi (BSD, GPL v3 or the original HIDAPI license, licensee's choice), libusb (LGPL v2.1),
+and Microsoft DirectX Shader Compiler (dxcompiler.dll, dxil.dll; University of Illinois/NCSA
+Open Source License, Microsoft redistributable). Their sources are available from the upstream
+projects and through the OpenRGB source above.
+
+
+PawnIO (not bundled)
+--------------------
+Copyright (C) namazso. Driver source: GNU General Public License v2 or later, with an
+exception for programs that use it only through its device IO control interface.
+https://pawnio.eu
+
+MyRGB does not ship PawnIO. If you choose "Enable RAM / SMBus lighting", the installer downloads
+the official PawnIO 2.2.0 installer from https://github.com/namazso/PawnIO.Setup/releases,
+checks its SHA-256 and code signature, and runs it. OpenRGB loads PawnIO; MyRGB does not.
+
+
+.NET runtime
+------------
+Copyright (c) .NET Foundation and Contributors. MIT License. https://github.com/dotnet/runtime
+
+
+Avalonia (Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent, Avalonia.Controls.ColorPicker)
+-------------------------------------------------------------------------------------------
+Copyright (c) AvaloniaUI OÜ and contributors. MIT License. https://github.com/AvaloniaUI/Avalonia
+
+Avalonia uses SkiaSharp and HarfBuzzSharp (Copyright (c) Microsoft Corporation, MIT License;
+native Skia: BSD-3-Clause, Google; HarfBuzz: "Old MIT" license).
+
+
+Inter font (Avalonia.Fonts.Inter)
+---------------------------------
+Copyright (c) The Inter Project Authors. SIL Open Font License 1.1. https://rsms.me/inter
+
+
+CommunityToolkit.Mvvm
+---------------------
+Copyright (c) .NET Foundation and Contributors. MIT License.
+https://github.com/CommunityToolkit/dotnet
+
+
+Microsoft.Extensions.Logging
+----------------------------
+Copyright (c) .NET Foundation and Contributors. MIT License. https://github.com/dotnet/runtime
+
+
+MIT License (text, for the components above that use it)
+--------------------------------------------------------
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

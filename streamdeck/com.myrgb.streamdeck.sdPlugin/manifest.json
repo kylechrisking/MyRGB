@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "UUID": "com.myrgb.streamdeck",
+  "Name": "MyRGB",
+  "Version": "0.1.0.0",
+  "Author": "Root Labs",
+  "URL": "https://www.rootlabs.us",
+  "Description": "Control MyRGB lighting: switch presets, toggle lights, and adjust brightness.",
+  "Icon": "imgs/plugin",
+  "Category": "MyRGB",
+  "CategoryIcon": "imgs/category",
+  "CodePath": "bin/MyRGB.StreamDeck.exe",
+  "PropertyInspectorPath": "pi/index.html",
+  "SDKVersion": 2,
+  "Software": { "MinimumVersion": "6.4" },
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Actions": [
+    {
+      "UUID": "com.myrgb.streamdeck.preset",
+      "Name": "Activate Preset",
+      "Tooltip": "Switch all lights to a preset. The key shows the preset's colors.",
+      "Icon": "imgs/actions/preset",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/keys/preset-key", "TitleAlignment": "bottom", "FontSize": 11 }]
+    },
+    {
+      "UUID": "com.myrgb.streamdeck.power",
+      "Name": "Lights On/Off",
+      "Tooltip": "Toggle all lights.",
+      "Icon": "imgs/actions/power",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [
+        { "Image": "imgs/keys/power-on", "TitleAlignment": "bottom" },
+        { "Image": "imgs/keys/power-off", "TitleAlignment": "bottom" }
+      ]
+    },
+    {
+      "UUID": "com.myrgb.streamdeck.brightness",
+      "Name": "Brightness",
+      "Tooltip": "Raise, lower, or set brightness. On Stream Deck +, turn the dial.",
+      "Icon": "imgs/actions/brightness",
+      "Controllers": ["Keypad", "Encoder"],
+      "Encoder": {
+        "layout": "$B1",
+        "TriggerDescription": { "Rotate": "Brightness", "Push": "Lights on/off", "Touch": "Lights on/off" }
+      },
+      "States": [{ "Image": "imgs/keys/brightness-key", "TitleAlignment": "bottom" }]
+    },
+    {
+      "UUID": "com.myrgb.streamdeck.cycle",
+      "Name": "Next/Previous Preset",
+      "Tooltip": "Step through your presets. The key shows what's playing.",
+      "Icon": "imgs/actions/next",
+      "Controllers": ["Keypad", "Encoder"],
+      "Encoder": {
+        "layout": "$A0",
+        "TriggerDescription": { "Rotate": "Change preset", "Push": "Lights on/off" }
+      },
+      "States": [{ "Image": "imgs/keys/next-key", "TitleAlignment": "bottom", "FontSize": 11 }]
+    }
+  ]
+}

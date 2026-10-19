@@ -1,0 +1,86 @@
+Installing MyRGB
+
+Download MyRGB-Setup-<version>.exe and run it. That is the only thing to install: the .NET
+runtime and OpenRGB come inside it. Setup installs for your Windows account only and does not ask
+for administrator rights, unless you tick Enable RAM / SMBus lighting (see below).
+
+What gets installed
+
+| What | Where | Why |
+|---|---|---|
+| MyRGB (with its own .NET 10 runtime) | %LOCALAPPDATA%\Programs\MyRGB | The app. Self-contained, so you don't need .NET installed. |
+| OpenRGB 1.1 (official release, unmodified) | %LOCALAPPDATA%\Programs\MyRGB\OpenRGB | Talks to motherboard, mouse, GPU and other RGB hardware. MyRGB starts it hidden in server mode and controls it over localhost:6742. It never shows a window. |
+| Start menu shortcut | Start menu → MyRGB | |
+| Start with Windows (on by default) | HKCU\…\Run\MyRGB | Starts MyRGB in the tray at sign-in. The same switch is in MyRGB's Settings. |
+| Stream Deck plugin (only offered if Stream Deck is installed) | %APPDATA%\Elgato\StreamDeck\Plugins\com.myrgb.streamdeck.sdPlugin | Preset, power and brightness keys. Stream Deck loads it after a restart; the finish page offers to restart it for you. |
+
+Corsair keyboards that MyRGB drives natively (e.g. the Vanguard Pro 96) need nothing extra.
+
+Your settings, presets and logs live in %APPDATA%\MyRGB.
+
+Enable RAM / SMBus lighting (optional, needs admin)
+
+RGB RAM and some motherboard controllers sit on the SMBus, which Windows only lets a kernel driver
+reach. OpenRGB uses the PawnIO driver for that, and it has to run with administrator rights.
+Ticking this option shows one UAC prompt, then:
+
+1. Downloads the official PawnIO 2.2.0 installer from
+   github.com/namazso/PawnIO.Setup (https://github.com/namazso/PawnIO.Setup/releases), checks its
+   SHA-256 and that it is signed by namazso, and installs it silently. PawnIO is not bundled because
+   its release installer isn't licensed for redistribution. Skipped if PawnIO is already installed.
+2. Copies OpenRGB to C:\Program Files\MyRGB\OpenRGB. A program that runs with admin rights must not
+   start from a folder your account can write to, or any program could swap the file and get admin
+   rights silently.
+3. Registers the scheduled task \MyRGB\OpenRGB ("run with highest privileges", only for your
+   account). MyRGB starts OpenRGB through this task, so there is no UAC prompt each time.
+   The task's launcher script is C:\ProgramData\MyRGB\openrgb-hidden.vbs.
+
+Your account must be an administrator for this to work. If you skip it now, run setup again later
+and tick the option. Upgrading MyRGB doesn't prompt again unless the bundled OpenRGB changed.
+A log of this step is written to %LOCALAPPDATA%\Programs\MyRGB\setup.log.
+
+Uninstalling
+
+Use Settings → Apps → Installed apps → MyRGB → Uninstall. It removes the app, OpenRGB, the
+shortcuts, the startup entry and the Stream Deck plugin. If RAM lighting was enabled, it shows one
+UAC prompt to remove the scheduled task, C:\Program Files\MyRGB and C:\ProgramData\MyRGB.
+It asks whether to delete your settings in %APPDATA%\MyRGB (kept by default).
+
+PawnIO is left installed, because other tools (FanControl, LibreHardwareMonitor, OpenRGB itself)
+use it too. Remove it from Installed apps → PawnIO if nothing else needs it.
+
+Silent install (for scripts)
+
+
+MyRGB-Setup-0.1.0.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+MyRGB-Setup-0.1.0.exe /VERYSILENT /TASKS="startup,smbus"      # also RAM lighting (one UAC prompt)
+"%LOCALAPPDATA%\Programs\MyRGB\unins000.exe" /VERYSILENT
+
+
+/DIR="…" installs elsewhere, and /LOG="…" writes a setup log. Task names: startup,
+desktopicon, streamdeck, smbus.
+
+Building the installer
+
+Requires the .NET 10 SDK and Inno Setup 7. Inno Setup can be installed per-user, without admin
+rights, into the repo's ignored .tools folder:
+
+
+innosetup-7.1.0-x64.exe /VERYSILENT /CURRENTUSER /NOICONS /DIR=<repo>\.tools\InnoSetup
+
+
+Then build:
+
+
+.\tools\build-installer.ps1
+
+
+This publishes MyRGB and the Stream Deck plugin self-contained, downloads OpenRGB 1.1 and its
+source from Codeberg (hash-pinned; cached in artifacts\cache), and writes
+artifacts\MyRGB-Setup-<version>.exe. Upload artifacts\third-party-source\OpenRGB-release_1.1.tar.gz
+next to the installer wherever you publish it: OpenRGB is GPLv2, so its source must be available
+from the same place as the binary (see THIRD-PARTY-NOTICES.txt).
+
+tools\installer\test-silent-install.ps1 installs silently into %TEMP%, checks the result,
+uninstalls and writes artifacts\test\silent-install-test.log. It leaves out the startup,
+Stream Deck and RAM options, so it changes nothing outside that folder and shows no UAC prompt.

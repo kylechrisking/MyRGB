@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Renders every page of the desktop UI to PNG headlessly, with fake devices, for visual checks. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Skia" Version="12.1.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MyRGB.App\MyRGB.App.csproj" />
+  </ItemGroup>
+</Project>

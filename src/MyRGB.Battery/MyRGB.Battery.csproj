@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\MyRGB.Core\MyRGB.Core.csproj" />
+    <ProjectReference Include="..\MyRGB.Hid\MyRGB.Hid.csproj" />
+    <InternalsVisibleTo Include="MyRGB.Tests" />
+  </ItemGroup>
+</Project>
