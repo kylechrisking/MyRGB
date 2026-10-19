@@ -8,7 +8,7 @@
         Title="MyRGB"
         Icon="/Assets/icon.ico"
         Width="1240" Height="800" MinWidth="960" MinHeight="620"
-        Background="#0B0B12">
+        Background="{StaticResource BaseBrush}">
 
   <Window.Styles>
     <Style Selector="TextBlock.h1">
@@ -20,7 +20,7 @@
       <Setter Property="FontSize" Value="12" />
     </Style>
     <Style Selector="TextBlock.body">
-      <Setter Property="Foreground" Value="#C4C7DD" />
+      <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
       <Setter Property="FontSize" Value="13" />
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="LineHeight" Value="19" />
@@ -43,34 +43,34 @@
       <Setter Property="Padding" Value="18,16" />
     </Style>
     <Style Selector="Border.badge">
-      <Setter Property="Background" Value="#22223A" />
+      <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="Padding" Value="8,2" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Border.badge > TextBlock">
       <Setter Property="FontSize" Value="11" />
-      <Setter Property="Foreground" Value="#B9BCD6" />
+      <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
     </Style>
     <Style Selector="Border.iconbox">
       <Setter Property="Width" Value="38" />
       <Setter Property="Height" Value="38" />
       <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="Background" Value="#1E1C34" />
+      <Setter Property="Background" Value="{StaticResource AccentWashBrush}" />
     </Style>
     <Style Selector="Border.iconbox > PathIcon">
       <Setter Property="Width" Value="20" />
       <Setter Property="Height" Value="20" />
-      <Setter Property="Foreground" Value="#C9BDFF" />
+      <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
     </Style>
     <Style Selector="Button.link">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="#A898FF" />
+      <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
       <Setter Property="Padding" Value="6,4" />
     </Style>
     <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#1A1830" />
-      <Setter Property="Foreground" Value="#C9BDFF" />
+      <Setter Property="Background" Value="{StaticResource AccentWashBrush}" />
+      <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
     </Style>
 
     <!-- Preset cards: the active one is outlined in its own colors and glows. -->
@@ -94,10 +94,10 @@
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
     </Style>
     <Style Selector="Button.card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#1D1D2E" />
+      <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
     </Style>
     <Style Selector="Button.card:not(.active):pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="BorderBrush" Value="#3A3A5C" />
+      <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
     </Style>
     <Style Selector="Button.card.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="BorderBrush" Value="{Binding $parent[Button].BorderBrush}" />
@@ -128,7 +128,7 @@
 
     <!-- Alerts on Home -->
     <Style Selector="Border.alert">
-      <Setter Property="Background" Value="#15141F" />
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{StaticResource HairlineBrush}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
@@ -142,16 +142,16 @@
       <Setter Property="Padding" Value="14,0" />
       <Setter Property="MinHeight" Value="42" />
       <Setter Property="Margin" Value="10,2" />
-      <Setter Property="Foreground" Value="#9DA1BD" />
+      <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
     </Style>
     <Style Selector="TabControl.nav > TabItem /template/ Border#PART_LayoutRoot">
       <Setter Property="CornerRadius" Value="10" />
     </Style>
     <Style Selector="TabControl.nav > TabItem:pointerover /template/ Border#PART_LayoutRoot">
-      <Setter Property="Background" Value="#161624" />
+      <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
     </Style>
     <Style Selector="TabControl.nav > TabItem:selected /template/ Border#PART_LayoutRoot">
-      <Setter Property="Background" Value="#1C1A30" />
+      <Setter Property="Background" Value="{StaticResource AccentWashBrush}" />
     </Style>
     <Style Selector="TabControl.nav > TabItem:selected">
       <Setter Property="Foreground" Value="White" />
@@ -171,11 +171,11 @@
       <Setter Property="Padding" Value="12,6" />
     </Style>
     <Style Selector="ListBox.effects ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#161624" />
+      <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
     </Style>
     <Style Selector="ListBox.effects ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#1F1C38" />
-      <Setter Property="BorderBrush" Value="#8B6CFF" />
+      <Setter Property="Background" Value="{StaticResource AccentWashBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
   </Window.Styles>
@@ -183,11 +183,13 @@
   <Grid>
     <DockPanel>
       <!-- Top bar: brand, now-playing chip, global controls -->
-      <Border DockPanel.Dock="Top" Background="#0F0F18" Padding="20,12" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1">
+      <Border DockPanel.Dock="Top" Background="{StaticResource ChromeBrush}" Padding="20,12" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
           <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <Image Source="/Assets/icon.png" Width="28" Height="28" />
-            <TextBlock Text="MyRGB" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
+            <Image Source="/Assets/mark.png" Width="30" Height="30" />
+            <TextBlock FontSize="18" FontWeight="ExtraBold" LetterSpacing="-0.4" VerticalAlignment="Center">
+              <Run Text="My" /><Run Text="R" Foreground="{StaticResource LedRedBrush}" /><Run Text="G" Foreground="{StaticResource LedGreenBrush}" /><Run Text="B" Foreground="{StaticResource LedBlueBrush}" />
+            </TextBlock>
           </StackPanel>
 
           <Border Grid.Column="1" Classes="badge" Background="{StaticResource SurfaceRaisedBrush}" CornerRadius="18" Padding="6,5,14,5"
@@ -229,7 +231,7 @@
       </Border>
 
       <!-- Status bar -->
-      <Border DockPanel.Dock="Bottom" Background="#0F0F18" Padding="20,7" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0">
+      <Border DockPanel.Dock="Bottom" Background="{StaticResource ChromeBrush}" Padding="20,7" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Ellipse Width="7" Height="7" Fill="{StaticResource RgbGradient}" VerticalAlignment="Center" />
           <TextBlock Classes="muted" Text="{Binding ProviderStatus}" />
@@ -506,7 +508,7 @@
                           </TextBlock>
                           <TextBlock Classes="muted" Text="{Binding Description}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                      IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
-                          <TextBlock Classes="muted" Text="{Binding Unsupported}" Foreground="#FFBE46" IsVisible="{Binding !Supported}" />
+                          <TextBlock Classes="muted" Text="{Binding Unsupported}" Foreground="{StaticResource WarningBrush}" IsVisible="{Binding !Supported}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="2,0">
                           <Button Classes="accent" Content="Install" Command="{Binding InstallCommand}" />
@@ -750,7 +752,7 @@
               <StackPanel Spacing="14" Margin="0,0,8,8" MaxWidth="900" HorizontalAlignment="Left">
                 <Border Classes="panel" IsVisible="{Binding Vendors.NothingFound}">
                   <StackPanel Orientation="Horizontal" Spacing="12">
-                    <PathIcon Data="{x:Static ctl:NavIcons.Check}" Foreground="#50DC8C" Width="18" Height="18" />
+                    <PathIcon Data="{x:Static ctl:NavIcons.Check}" Foreground="{StaticResource SuccessBrush}" Width="18" Height="18" />
                     <TextBlock Classes="body" Text="No vendor lighting apps found. Nothing to clean up." VerticalAlignment="Center" />
                   </StackPanel>
                 </Border>
@@ -804,9 +806,9 @@
                             </ItemsControl>
                           </StackPanel>
 
-                          <Border Background="#191830" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasTip}">
+                          <Border Background="{StaticResource InfoWashBrush}" CornerRadius="8" Padding="12,9" IsVisible="{Binding HasTip}">
                             <Grid ColumnDefinitions="Auto,*">
-                              <PathIcon Data="{x:Static ctl:NavIcons.Info}" Foreground="#7AA2FF" Width="14" Height="14" VerticalAlignment="Top" Margin="0,2,10,0" />
+                              <PathIcon Data="{x:Static ctl:NavIcons.Info}" Foreground="{StaticResource InfoBrush}" Width="14" Height="14" VerticalAlignment="Top" Margin="0,2,10,0" />
                               <TextBlock Grid.Column="1" Classes="body" Text="{Binding Tip}" />
                             </Grid>
                           </Border>
@@ -828,7 +830,7 @@
                           <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !Confirming}">
                             <Button Classes="accent" Content="{Binding Name, StringFormat='Uninstall {0}…'}" Command="{Binding AskUninstallCommand}" IsVisible="{Binding CanUninstall}" />
                           </StackPanel>
-                          <Border Background="#1E1A2E" BorderBrush="#4A3A7A" BorderThickness="1" CornerRadius="10" Padding="14,12" IsVisible="{Binding Confirming}">
+                          <Border Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource WarningBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" IsVisible="{Binding Confirming}">
                             <StackPanel Spacing="10">
                               <TextBlock Classes="body" TextWrapping="Wrap"
                                          Text="{Binding Name, StringFormat='This opens {0}’s own uninstaller. Windows will probably ask for permission. Your MyRGB presets and settings are not affected.'}" />
@@ -907,13 +909,13 @@
                     </Grid>
                     <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !Account.ConfirmingDelete}">
                       <Button Classes="ghost" Content="Sign out" Command="{Binding Account.SignOutCommand}" />
-                      <Button Classes="link" Content="Delete my account…" Command="{Binding Account.AskDeleteCommand}" />
+                      <Button Classes="link" Content="Delete my account…" Command="{Binding Account.AskDeleteCommand}" Foreground="{StaticResource DangerBrush}" />
                     </StackPanel>
-                    <Border Background="#2A1620" BorderBrush="#7A3048" BorderThickness="1" CornerRadius="10" Padding="14,12" IsVisible="{Binding Account.ConfirmingDelete}">
+                    <Border Background="{StaticResource DangerWashBrush}" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" IsVisible="{Binding Account.ConfirmingDelete}">
                       <StackPanel Spacing="10">
                         <TextBlock Classes="body" Text="This permanently deletes your account, your synced presets and any presets you shared. Presets on this PC stay. It can't be undone." />
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                          <Button Classes="ghost" Content="Delete my account" Command="{Binding Account.DeleteAccountCommand}" Foreground="#FF8FA8" />
+                          <Button Classes="ghost" Content="Delete my account" Command="{Binding Account.DeleteAccountCommand}" Foreground="{StaticResource DangerBrush}" />
                           <Button Classes="link" Content="Cancel" Command="{Binding Account.CancelDeleteCommand}" />
                         </StackPanel>
                       </StackPanel>
@@ -986,11 +988,11 @@
                   </StackPanel>
                   <StackPanel Spacing="4">
                     <TextBlock Text="Local API (for scripts and the Stream Deck plugin)" FontWeight="SemiBold" />
-                    <SelectableTextBlock Text="{Binding ApiUrl}" FontFamily="Consolas,monospace" />
+                    <SelectableTextBlock Text="{Binding ApiUrl}" FontFamily="{StaticResource BrandMono}" />
                   </StackPanel>
                   <StackPanel Spacing="4">
                     <TextBlock Text="Log file" FontWeight="SemiBold" />
-                    <SelectableTextBlock Text="{Binding LogPath}" FontFamily="Consolas,monospace" />
+                    <SelectableTextBlock Text="{Binding LogPath}" FontFamily="{StaticResource BrandMono}" />
                   </StackPanel>
                 </StackPanel>
               </Expander>
@@ -1001,7 +1003,7 @@
     </DockPanel>
 
     <!-- ===== First-run tour (also opened from "How it works") ===== -->
-    <Border IsVisible="{Binding ShowWelcome}" Background="#D0050508">
+    <Border IsVisible="{Binding ShowWelcome}" Background="{StaticResource OverlayBrush}">
       <Border Width="640" HorizontalAlignment="Center" VerticalAlignment="Center"
               Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
               CornerRadius="18" ClipToBounds="True" BoxShadow="0 24 70 0 #A0000000"

@@ -31,17 +31,17 @@ public sealed class BatteryGauge : Control
     }
 
     public static Color LevelColor(int percent, bool charging) =>
-        charging ? Color.FromRgb(90, 200, 250)
-        : percent < 20 ? Color.FromRgb(255, 90, 90)
-        : percent < 45 ? Color.FromRgb(255, 190, 70)
-        : Color.FromRgb(80, 220, 140);
+        charging ? Color.FromRgb(74, 186, 244)
+        : percent < 20 ? Color.FromRgb(247, 93, 89)
+        : percent < 45 ? Color.FromRgb(252, 180, 66)
+        : Color.FromRgb(86, 219, 143);
 
     public override void Render(DrawingContext ctx)
     {
         var b = Bounds.Size;
         double nub = 2.5, w = b.Width - nub, h = b.Height;
         var color = LevelColor(Percent, Charging);
-        var outline = new Pen(new SolidColorBrush(Color.FromArgb(200, 200, 204, 222)), 1.2);
+        var outline = new Pen(new SolidColorBrush(Color.FromArgb(200, 188, 199, 199)), 1.2);
 
         ctx.DrawRectangle(null, outline, new Rect(0.6, 0.6, w - 1.2, h - 1.2), 3, 3);
         ctx.DrawRectangle(outline.Brush, null, new Rect(w, h * 0.32, nub, h * 0.36), 1, 1);
@@ -53,7 +53,7 @@ public sealed class BatteryGauge : Control
         if (Charging)
         {
             var bolt = StreamGeometry.Parse($"M{w * 0.55},{h * 0.12} L{w * 0.33},{h * 0.55} H{w * 0.5} L{w * 0.42},{h * 0.9} L{w * 0.68},{h * 0.42} H{w * 0.52} Z");
-            ctx.DrawGeometry(Brushes.White, new Pen(new SolidColorBrush(Color.FromRgb(20, 20, 30)), 0.8), bolt);
+            ctx.DrawGeometry(Brushes.White, new Pen(new SolidColorBrush(Color.FromRgb(7, 17, 23)), 0.8), bolt);
         }
     }
 }

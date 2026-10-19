@@ -24,10 +24,10 @@ public sealed class LedCanvas : Control
     private const double Aspect = 16.0 / 9.0;
     private const double HandleSize = 10;
 
-    private static readonly IBrush Background = new SolidColorBrush(Color.FromRgb(14, 14, 20));
+    private static readonly IBrush Background = new SolidColorBrush(Color.FromRgb(4, 14, 19));
     private static readonly IPen GridPen = new Pen(new SolidColorBrush(Color.FromArgb(18, 255, 255, 255)), 1);
     private static readonly IPen DevicePen = new Pen(new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), 1);
-    private static readonly IPen ActivePen = new Pen(new SolidColorBrush(Color.FromRgb(139, 108, 255)), 1.5);
+    private static readonly IPen ActivePen = new Pen(new SolidColorBrush(Color.FromRgb(86, 219, 143)), 1.5);
     private static readonly IBrush LabelBrush = new SolidColorBrush(Color.FromArgb(170, 255, 255, 255));
     private static readonly Typeface LabelFace = new("Inter");
 

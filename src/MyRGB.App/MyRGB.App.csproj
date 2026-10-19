@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <!-- The brand theme stays in branding/ so the kit is its single source. -->
+    <AvaloniaXaml Include="..\..\branding\Theme.axaml" Link="Theme.axaml" />
   </ItemGroup>
 
   <ItemGroup>

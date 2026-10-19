@@ -60,7 +60,7 @@ public sealed partial class PresetCardViewModel(PresetSummary summary, MainViewM
 public sealed record AlertViewModel(bool Warning, string Text, string? ActionLabel = null, IRelayCommand? Action = null)
 {
     public Geometry Icon => Warning ? NavIcons.Warning : NavIcons.Info;
-    public IBrush Accent => new SolidColorBrush(Warning ? Color.FromRgb(255, 190, 70) : Color.FromRgb(122, 162, 255));
+    public IBrush Accent => new SolidColorBrush(Warning ? Color.FromRgb(252, 180, 66) : Color.FromRgb(74, 186, 244));
     public bool HasAction => ActionLabel is not null;
 }
 

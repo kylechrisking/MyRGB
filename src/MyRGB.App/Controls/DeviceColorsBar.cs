@@ -14,7 +14,7 @@ public sealed class DeviceColorsBar : Control
     public static readonly StyledProperty<string?> DeviceIdProperty = AvaloniaProperty.Register<DeviceColorsBar, string?>(nameof(DeviceId));
 
     private const int Samples = 14;
-    private static readonly IBrush Empty = new SolidColorBrush(Color.FromRgb(30, 30, 44));
+    private static readonly IBrush Empty = new SolidColorBrush(Color.FromRgb(22, 33, 39));
 
     private readonly DispatcherTimer _timer;
     private AppHost? _subscribed;

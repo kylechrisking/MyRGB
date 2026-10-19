@@ -47,8 +47,8 @@ public sealed partial class DeviceRowViewModel(
 
     public string StatusText => NeedsSetup ? "Needs setup" : Included ? "Controlled by MyRGB" : "Left to other software";
 
-    public IBrush StatusBrush => new SolidColorBrush(NeedsSetup ? Color.FromRgb(255, 190, 70)
-        : Included ? Color.FromRgb(80, 220, 140) : Color.FromRgb(138, 143, 168));
+    public IBrush StatusBrush => new SolidColorBrush(NeedsSetup ? Color.FromRgb(252, 180, 66)
+        : Included ? Color.FromRgb(86, 219, 143) : Color.FromRgb(130, 146, 152));
 
     // ---- Battery (wireless devices only) ----
 

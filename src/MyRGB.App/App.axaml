@@ -5,31 +5,25 @@
              RequestedThemeVariant="Dark">
     <Application.Resources>
         <ResourceDictionary>
-            <!-- The logo's pink → violet → cyan, used wherever the app wants to say "RGB". -->
-            <LinearGradientBrush x:Key="RgbGradient" StartPoint="0%,0%" EndPoint="100%,0%">
-                <GradientStop Offset="0" Color="#FF4D8D" />
-                <GradientStop Offset="0.5" Color="#8B6CFF" />
-                <GradientStop Offset="1" Color="#22D3EE" />
-            </LinearGradientBrush>
-            <LinearGradientBrush x:Key="RgbGradientVertical" StartPoint="0%,0%" EndPoint="0%,100%">
-                <GradientStop Offset="0" Color="#FF4D8D" />
-                <GradientStop Offset="0.5" Color="#8B6CFF" />
-                <GradientStop Offset="1" Color="#22D3EE" />
-            </LinearGradientBrush>
-            <SolidColorBrush x:Key="SurfaceBrush" Color="#14141F" />
-            <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#1A1A28" />
-            <SolidColorBrush x:Key="HairlineBrush" Color="#24243A" />
-            <SolidColorBrush x:Key="MutedBrush" Color="#8A8FA8" />
+            <!-- Brand tokens and brushes: branding/Theme.axaml (see branding/BRAND.txt). -->
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://MyRGB/Theme.axaml" />
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 
     <Application.Styles>
         <FluentTheme>
             <FluentTheme.Palettes>
-                <ColorPaletteResources x:Key="Dark" Accent="#8B6CFF" RegionColor="#0B0B12" />
+                <ColorPaletteResources x:Key="Dark" Accent="#56DB8F" RegionColor="#071117" />
             </FluentTheme.Palettes>
         </FluentTheme>
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+
+        <!-- Manrope everywhere, popups included. -->
+        <Style Selector=":is(TopLevel)">
+            <Setter Property="FontFamily" Value="{StaticResource BrandSans}" />
+        </Style>
 
         <!-- Rounder, softer controls everywhere. -->
         <Style Selector="Button">
@@ -47,23 +41,23 @@
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#232338" />
-            <Setter Property="BorderBrush" Value="#3A3A5C" />
+            <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
         </Style>
 
-        <!-- Primary action: the RGB gradient. -->
+        <!-- Primary action: the RGB gradient, dark text. -->
         <Style Selector="Button.accent">
             <Setter Property="Background" Value="{StaticResource RgbGradient}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{StaticResource RgbGradient}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
         </Style>
         <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{StaticResource RgbGradient}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
             <Setter Property="Opacity" Value="0.9" />
         </Style>
         <Style Selector="Button.accent:disabled /template/ ContentPresenter#PART_ContentPresenter">

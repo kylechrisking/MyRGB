@@ -147,12 +147,14 @@ APPLYING THE THEME
 Theme.axaml is a plain ResourceDictionary. The brushes the app already uses (RgbGradient,
 RgbGradientVertical, SurfaceBrush, SurfaceRaisedBrush, HairlineBrush, MutedBrush) keep their keys,
 and Fluent's SystemAccentColor values are overridden so stock controls pick up Root green. The fonts
-are exposed as the BrandSans and BrandMono resources. To wire it in:
+are exposed as the BrandSans and BrandMono resources. How the app uses it:
 
-  1. Add <AvaloniaXaml Include="../../branding/Theme.axaml" Link="Theme.axaml" /> to
-     MyRGB.App.csproj, then merge avares://MyRGB/Theme.axaml into Application.Resources.
-  2. Run tools/make-icons.ps1 -Install. It copies the icon, mark.png and the fonts into Assets/.
-  3. Set FontFamily to {StaticResource BrandSans} on :is(TopLevel), and Foreground on Button.accent
-     to OnAccentBrush.
-  4. Replace the hard-coded hex colors in MainWindow.axaml, and the status colors in Controls/ and
-     ViewModels/, with the tokens above. The images in preview/ show the result.
+  * MyRGB.App.csproj compiles branding/Theme.axaml in place (linked as Theme.axaml), and App.axaml
+    merges avares://MyRGB/Theme.axaml into Application.Resources. Edit the theme here, not in src/.
+  * tools/make-icons.ps1 -Install copies the icon, mark.png and the fonts into src/MyRGB.App/Assets.
+  * App.axaml sets BrandSans on every window and popup, and OnAccentBrush on the gradient button.
+  * Views use the brushes by key. Code that draws by hand (Controls/, and the status colors in
+    ViewModels/) uses the same hex values as constants; keep them in step with the table above.
+  * New UI: reach for a brush key from Theme.axaml. Don't add a hex color to a view.
+
+The images in preview/ compare the app before and after the theme.
