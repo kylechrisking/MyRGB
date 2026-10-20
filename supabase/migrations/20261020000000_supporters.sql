@@ -85,14 +85,14 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- Cloud limits. Generous for everyone; ten times that for supporters.
+-- Cloud limits: 50 synced and 5 shared presets for everyone, 200 and 15 for supporters.
 -- ---------------------------------------------------------------------------
 create function public.cloud_limit(uid uuid, what text) returns integer
     language sql stable security definer set search_path = ''
 as $$
     select case what
-        when 'synced' then case when public.is_supporter(uid) then 1000 else 100 end
-        when 'shared' then case when public.is_supporter(uid) then 200 else 20 end
+        when 'synced' then case when public.is_supporter(uid) then 200 else 50 end
+        when 'shared' then case when public.is_supporter(uid) then 15 else 5 end
     end;
 $$;
 revoke execute on function public.cloud_limit(uuid, text) from public;
@@ -106,7 +106,8 @@ declare
 begin
     if not new.deleted and (select count(*) from public.synced_presets
                             where user_id = new.user_id and not deleted and preset_id <> new.preset_id) >= cap then
-        raise exception 'You can sync up to % presets. Supporters can sync 1000.', cap
+        raise exception 'You can sync up to % presets.%', cap,
+            case when public.is_supporter(new.user_id) then '' else ' Supporters can sync 200.' end
             using errcode = 'P0001', hint = 'limit';
     end if;
     return new;
@@ -124,7 +125,8 @@ declare
     cap integer := public.cloud_limit(new.author_id, 'shared');
 begin
     if (select count(*) from public.shared_presets where author_id = new.author_id) >= cap then
-        raise exception 'You can share up to % presets. Supporters can share 200.', cap
+        raise exception 'You can share up to % presets.%', cap,
+            case when public.is_supporter(new.author_id) then '' else ' Supporters can share 15.' end
             using errcode = 'P0001', hint = 'limit';
     end if;
     return new;

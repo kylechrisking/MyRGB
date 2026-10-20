@@ -74,7 +74,7 @@ shared_presets.
 7. Supporters
 -------------
 Every feature of MyRGB is free. Supporters get a badge on presets they share and higher cloud
-limits (sync 1,000 presets and share 200, instead of 100 and 20). Run the second migration,
+limits (sync 200 presets and share 15, instead of 50 and 5). Run the second migration,
 supabase/migrations/20261020000000_supporters.sql, in the SQL Editor the same way as the first.
 
 Ko-fi makes supporters automatically:

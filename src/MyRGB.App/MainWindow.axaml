@@ -1297,7 +1297,7 @@
                     <Border Classes="supporter" IsVisible="{Binding Account.IsSupporter}"><TextBlock Text="♥ Supporter" /></Border>
                   </StackPanel>
                   <TextBlock Classes="body" Text="MyRGB is free and open source, and every feature in it, fan control included, stays free. If it replaced a few vendor apps for you, chipping in keeps it going: it pays for the servers behind sync and the community, and for time to support more hardware." />
-                  <TextBlock Classes="body" Text="Supporters get a badge on the presets they share, and room to sync up to 1,000 presets and share up to 200 (everyone gets 100 and 20)." />
+                  <TextBlock Classes="body" Text="Supporters get a badge on the presets they share, and room to sync up to 200 presets and share up to 15 (everyone gets 50 and 5)." />
                   <TextBlock Classes="body" Foreground="{StaticResource AccentBrush}" Text="{Binding Account.SupporterText}" IsVisible="{Binding Account.IsSupporter}" />
                   <ToggleSwitch IsChecked="{Binding Account.ShowBadge}" IsVisible="{Binding Account.IsSupporter}"
                                 OnContent="Show my supporter badge on shared presets" OffContent="Show my supporter badge on shared presets" />
