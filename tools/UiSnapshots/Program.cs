@@ -43,6 +43,7 @@ var host = new AppHost(new AppHostOptions
     BatteryProviders = () => [new FakeBatteries()],
     DetectVendorApps = () => VendorAppCatalog.Detect(installed, ["iCUE"]),
     Cloud = () => new FakeCloud(),
+    DynamicLightingOn = () => true,
 });
 // Stay on this thread: it's Avalonia's UI thread, and awaiting would resume elsewhere.
 host.StartAsync().GetAwaiter().GetResult();

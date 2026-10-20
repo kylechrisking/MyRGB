@@ -63,6 +63,30 @@
       <Setter Property="Height" Value="20" />
       <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
     </Style>
+    <!-- Tour check step: round color swatches, the picked one ringed. -->
+    <Style Selector="Button.swatch">
+      <Setter Property="Width" Value="34" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="CornerRadius" Value="17" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.swatch /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{Binding $parent[Button].Background}" />
+    </Style>
+    <Style Selector="Button.swatch.picked">
+      <Setter Property="BorderBrush" Value="White" />
+    </Style>
+    <Style Selector="Button.swatch.picked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="White" />
+    </Style>
+    <Style Selector="Border.note">
+      <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="14,12" />
+    </Style>
+
     <Style Selector="Button.link">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
@@ -172,7 +196,7 @@
     <Style Selector="ListBox.chips ListBoxItem">
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Margin" Value="0,0,8,8" />
-      <Setter Property="Padding" Value="11,8" />
+      <Setter Property="Padding" Value="7,7,7,8" />
     </Style>
     <Style Selector="ListBox.chips ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
@@ -204,25 +228,13 @@
             </TextBlock>
           </StackPanel>
 
-          <Border Grid.Column="1" Classes="badge" Background="{StaticResource SurfaceRaisedBrush}" CornerRadius="18" Padding="6,5,14,5"
-                  Margin="28,0" HorizontalAlignment="Left" VerticalAlignment="Center">
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <Border Width="26" Height="26" CornerRadius="13" Background="{Binding ActiveSwatch}" />
-              <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="NOW PLAYING" FontSize="9" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" LetterSpacing="1" />
-                <TextBlock Text="{Binding ActivePresetName}" FontSize="13" FontWeight="SemiBold" Foreground="White" />
-              </StackPanel>
-            </StackPanel>
-          </Border>
-
-          <Button Grid.Column="2" Classes="ghost" Command="{Binding OpenTourCommand}" Margin="0,0,10,0" VerticalAlignment="Center"
+          <Button Grid.Column="2" Classes="ghost" Command="{Binding OpenTourCommand}" Margin="0,0,22,0" VerticalAlignment="Center"
                   ToolTip.Tip="A quick tour of how MyRGB works">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <PathIcon Data="{x:Static ctl:NavIcons.Help}" Width="14" Height="14" />
               <TextBlock Text="How it works" />
             </StackPanel>
           </Button>
-          <Button Grid.Column="3" Classes="ghost" Content="Next preset ▸" Command="{Binding NextPresetCommand}" Margin="0,0,22,0" VerticalAlignment="Center" />
           <TextBlock Grid.Column="4" Classes="muted" Text="{Binding Brightness, StringFormat='Brightness {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
           <Slider Grid.Column="5" Width="150" Minimum="0" Maximum="100" Value="{Binding Brightness}" VerticalAlignment="Center" Margin="0,0,22,0" />
           <ToggleSwitch Grid.Column="6" IsChecked="{Binding Enabled}" OnContent="Lights on" OffContent="Lights off" VerticalAlignment="Center" />
@@ -242,12 +254,40 @@
         </Grid>
       </Border>
 
-      <!-- Status bar -->
-      <Border DockPanel.Dock="Bottom" Background="{StaticResource ChromeBrush}" Padding="20,7" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <Ellipse Width="7" Height="7" Fill="{StaticResource RgbGradient}" VerticalAlignment="Center" />
-          <TextBlock Classes="muted" Text="{Binding ProviderStatus}" />
-        </StackPanel>
+      <!-- Player bar: what's playing, preset transport, and how MyRGB reaches the hardware -->
+      <Border DockPanel.Dock="Bottom" Background="{StaticResource ChromeBrush}" Padding="20,10" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="*,Auto,*">
+          <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <Border Width="40" Height="40" CornerRadius="10" Background="{Binding ActiveSwatch}" />
+            <StackPanel VerticalAlignment="Center" Spacing="1">
+              <TextBlock Classes="kicker" Text="{Binding PlayingLabel}" />
+              <TextBlock Text="{Binding ActivePresetName}" FontSize="14" FontWeight="SemiBold" Foreground="White" MaxWidth="240" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <Button Classes="icon" Command="{Binding EditActiveCommand}" VerticalAlignment="Center" ToolTip.Tip="Edit this in the Studio">
+              <PathIcon Data="{x:Static ctl:NavIcons.Studio}" />
+            </Button>
+          </StackPanel>
+
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <Button Classes="icon" Command="{Binding PreviousPresetCommand}" ToolTip.Tip="Previous preset">
+              <PathIcon Data="{x:Static ctl:NavIcons.Previous}" />
+            </Button>
+            <Button Classes="play" Command="{Binding TogglePauseCommand}" ToolTip.Tip="{Binding PauseTip}">
+              <PathIcon Data="{Binding PauseIcon}" />
+            </Button>
+            <Button Classes="icon" Command="{Binding NextPresetCommand}" ToolTip.Tip="Next preset">
+              <PathIcon Data="{x:Static ctl:NavIcons.Next}" />
+            </Button>
+            <Button Classes="icon" Command="{Binding ShuffleCommand}" ToolTip.Tip="Random preset">
+              <PathIcon Data="{x:Static ctl:NavIcons.Shuffle}" />
+            </Button>
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <Ellipse Width="7" Height="7" Fill="{StaticResource RgbGradient}" VerticalAlignment="Center" />
+            <TextBlock Classes="muted" Text="{Binding ProviderStatus}" TextTrimming="CharacterEllipsis" MaxWidth="360" />
+          </StackPanel>
+        </Grid>
       </Border>
 
       <TabControl Classes="nav" TabStripPlacement="Left" SelectedIndex="{Binding SelectedTab}" Padding="20,22,24,20">
@@ -300,7 +340,7 @@
                     <DataTemplate x:DataType="vm:DeviceRowViewModel">
                       <Border Classes="tile">
                         <Grid RowDefinitions="*,Auto,Auto" RowSpacing="12">
-                          <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Top">
+                          <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Top">
                             <Border Classes="iconbox" VerticalAlignment="Top">
                               <PathIcon Data="{Binding Icon}" />
                             </Border>
@@ -308,6 +348,10 @@
                               <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                               <TextBlock Classes="muted" Text="{Binding Type}" />
                             </StackPanel>
+                            <Button Grid.Column="2" Classes="icon" Command="{Binding FlashCommand}" IsVisible="{Binding CanFlash}" VerticalAlignment="Top"
+                                    Margin="6,-4,-6,0" ToolTip.Tip="Flash: pulse this device white so you can spot it">
+                              <PathIcon Data="{x:Static ctl:NavIcons.Flash}" />
+                            </Button>
                           </Grid>
                           <ctl:DeviceColorsBar Grid.Row="1" Host="{Binding $parent[Window].((vm:MainViewModel)DataContext).Host}" DeviceId="{Binding Id}" Height="10" />
                           <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
@@ -579,8 +623,9 @@
                     <ListBox.ItemTemplate>
                       <DataTemplate x:DataType="vm:EffectItem">
                         <StackPanel ToolTip.Tip="{Binding Description}" Spacing="1">
-                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Classes="muted" FontSize="11" Text="{Binding Category}" />
+                          <ctl:EffectPreview Definition="{Binding Definition}" Height="40" Margin="0,0,0,7" />
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="4,0" />
+                          <TextBlock Classes="muted" FontSize="11" Text="{Binding Category}" Margin="4,0" />
                         </StackPanel>
                       </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -732,6 +777,13 @@
                           </StackPanel>
                           <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Right">
                             <ToggleSwitch IsChecked="{Binding Included}" OnContent="MyRGB controls it" OffContent="Left alone" />
+                            <Button Classes="ghost" Command="{Binding FlashCommand}" IsVisible="{Binding CanFlash}" HorizontalAlignment="Right"
+                                    ToolTip.Tip="Pulse this device white for a few seconds, so you can see which one it is">
+                              <StackPanel Orientation="Horizontal" Spacing="7">
+                                <PathIcon Data="{x:Static ctl:NavIcons.Flash}" Width="14" Height="14" />
+                                <TextBlock Text="Flash" />
+                              </StackPanel>
+                            </Button>
                             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" IsVisible="{Binding NeedsSetup}">
                               <Ellipse Width="7" Height="7" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
                               <TextBlock Classes="muted" Text="{Binding StatusText}" />
@@ -1044,7 +1096,40 @@
               <TextBlock Classes="kicker" Text="{Binding Current.Kicker}" />
               <TextBlock Text="{Binding Current.Title}" FontSize="26" FontWeight="Bold" TextWrapping="Wrap" />
             </StackPanel>
-            <TextBlock Classes="body" FontSize="14" LineHeight="22" Text="{Binding Current.Body}" MinHeight="110" />
+            <TextBlock Classes="body" FontSize="14" LineHeight="22" Text="{Binding Current.Body}" MinHeight="110" IsVisible="{Binding !Current.IsCheck}" />
+            <TextBlock Classes="body" FontSize="14" LineHeight="22" Text="{Binding Current.Body}" IsVisible="{Binding Current.IsCheck}" />
+
+            <!-- The hardware check: pick a pulse color, then say whether everything lit up. -->
+            <StackPanel Spacing="14" IsVisible="{Binding Current.IsCheck}">
+              <ItemsControl ItemsSource="{Binding Swatches}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:FlashSwatch">
+                    <Button Classes="swatch" Classes.picked="{Binding IsSelected}" Command="{Binding PickCommand}" Background="{Binding Brush}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="muted" Text="{Binding FoundText}" />
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Is everything pulsing?" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <Button Classes="ghost" Content="Yes, all of it" Command="{Binding AnswerCommand}" CommandParameter="yes" />
+                <Button Classes="ghost" Content="Something isn't" Command="{Binding AnswerCommand}" CommandParameter="no" />
+              </StackPanel>
+              <Border Classes="note" IsVisible="{Binding AnsweredYes}">
+                <TextBlock Classes="body" Text="Great, MyRGB can reach all of it. Next, put each device where it sits on your desk." />
+              </Border>
+              <Border Classes="note" IsVisible="{Binding AnsweredNo}">
+                <StackPanel Spacing="8">
+                  <TextBlock Classes="body" Text="A few things usually explain it:" />
+                  <TextBlock Classes="body" Text="• A vendor app (iCUE, Synapse, G HUB, Armoury Crate) is running and holding on to the device. Close it, then scan again on the Devices page." />
+                  <TextBlock Classes="body" Text="• Fans and strips on a controller need their LED count set before they light. The Devices page asks for it." />
+                  <TextBlock Classes="body" Text="• The device is off, asleep, or not supported yet. Wake it up; if it still isn't on the Devices page, MyRGB can't light it yet." />
+                  <Button Classes="link" Content="Open the Devices page ›" Command="{Binding GoCommand}" CommandParameter="devices" HorizontalAlignment="Left" Margin="-6,0,0,0" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
             <Button Classes="link" Content="{Binding Current.ActionLabel, StringFormat='{}{0} ›'}" Command="{Binding GoCommand}"
                     IsVisible="{Binding Current.HasAction}" HorizontalAlignment="Left" Margin="-6,0,0,0" />
             <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,8,0,0">

@@ -77,6 +77,31 @@ public sealed class LightingEngine : IDisposable
         Rebuild(keepEffects: false);
     }
 
+    /// <summary>Freeze the animation where it is. Devices keep showing the frozen frame.</summary>
+    public bool Paused
+    {
+        get => _paused;
+        set => _paused = value;
+    }
+
+    private volatile bool _paused;
+    private volatile FlashRequest? _flash;
+
+    /// <summary>
+    /// Pulse some devices in one color for a while, over whatever is playing, so you can see which
+    /// physical device is which. Null <paramref name="deviceIds"/> flashes everything. Works with
+    /// the lights off, and replaces any flash already running.
+    /// </summary>
+    public void Flash(IEnumerable<string>? deviceIds, Rgb color, TimeSpan duration) =>
+        _flash = new FlashRequest(
+            deviceIds?.ToHashSet(StringComparer.OrdinalIgnoreCase), color,
+            Environment.TickCount64, Environment.TickCount64 + (long)duration.TotalMilliseconds);
+
+    public void StopFlash() => _flash = null;
+
+    /// <summary>True while a flash is showing.</summary>
+    public bool Flashing => _flash is { } f && Environment.TickCount64 < f.Until;
+
     /// <summary>Devices MyRGB leaves alone entirely (no frames sent), e.g. so vendor software can keep them.</summary>
     public IReadOnlySet<string> ExcludedDevices
     {
@@ -140,7 +165,7 @@ public sealed class LightingEngine : IDisposable
     {
         using var timer = HighResolutionTimer.Begin();
         var clock = Stopwatch.StartNew();
-        double last = 0, nextPreview = 0;
+        double last = 0, nextPreview = 0, effectTime = 0;
         int failures = 0;
 
         while (_running)
@@ -148,11 +173,14 @@ public sealed class LightingEngine : IDisposable
             double now = clock.Elapsed.TotalSeconds;
             double dt = Math.Clamp(now - last, 0, 0.25);
             last = now;
+            // Effects see their own clock, which stands still while paused.
+            if (_paused) dt = 0;
+            effectTime += dt;
             var plan = _plan;
 
             try
             {
-                RenderFrame(plan, now, dt);
+                plan.Render(new FrameContext(effectTime, dt), now, _enabled, Brightness, CurrentFlash(), _log);
                 failures = 0;
             }
             catch (Exception ex)
@@ -173,7 +201,27 @@ public sealed class LightingEngine : IDisposable
     }
 
     internal void RenderFrame(RenderPlan plan, double time, double dt) =>
-        plan.Render(new FrameContext(time, dt), _enabled, Brightness, _log);
+        plan.Render(new FrameContext(time, dt), time, _enabled, Brightness, CurrentFlash(), _log);
+
+    /// <summary>The flash to show this frame, with its pulse level (0.25..1), or null.</summary>
+    private (FlashRequest Request, double Level)? CurrentFlash()
+    {
+        if (_flash is not { } f) return null;
+        long now = Environment.TickCount64;
+        if (now >= f.Until)
+        {
+            _flash = null;
+            return null;
+        }
+        // Two pulses a second, starting bright so the first frame is obvious.
+        double phase = (now - f.Start) / 1000.0 * 2;
+        return (f, 0.25 + 0.75 * (0.5 + 0.5 * Math.Cos(phase * Math.Tau)));
+    }
+
+    internal sealed record FlashRequest(IReadOnlySet<string>? DeviceIds, Rgb Color, long Start, long Until)
+    {
+        public bool Includes(string deviceId) => DeviceIds is null || DeviceIds.Contains(deviceId);
+    }
 
     /// <summary>
     /// Everything the loop needs for one preset on one set of devices, precomputed so a frame does
@@ -258,7 +306,12 @@ public sealed class LightingEngine : IDisposable
             return new RenderPlan([.. devices], colors, off, outputs, [.. groups]);
         }
 
-        public void Render(in FrameContext frame, bool enabled, double brightness, ILogger log)
+        public void Render(in FrameContext frame, bool enabled, double brightness, ILogger log) =>
+            Render(frame, frame.Time, enabled, brightness, null, log);
+
+        /// <param name="now">Wall-clock seconds, for keep-alive resends; frame.Time stops while paused.</param>
+        public void Render(in FrameContext frame, double now, bool enabled, double brightness,
+            (FlashRequest Request, double Level)? flash, ILogger log)
         {
             if (enabled)
             {
@@ -273,11 +326,13 @@ public sealed class LightingEngine : IDisposable
             for (int i = 0; i < Devices.Length; i++)
             {
                 var c = Colors[i];
-                if (!enabled || Off[i] || brightness <= 0) Array.Fill(c, Rgb.Black);
+                if (flash is { } f && f.Request.Includes(Devices[i].Id))
+                    Array.Fill(c, f.Request.Color.Scale(f.Level));
+                else if (!enabled || Off[i] || brightness <= 0) Array.Fill(c, Rgb.Black);
                 else if (brightness < 0.999)
                     for (int k = 0; k < c.Length; k++) c[k] = c[k].Scale(brightness);
 
-                Outputs[i].Push(Devices[i], c, frame.Time, log);
+                Outputs[i].Push(Devices[i], c, now, log);
             }
         }
     }

@@ -14,6 +14,7 @@ public partial class App : Application
     private AppHost? _host;
     private MainWindow? _window;
     private NativeMenuItem? _powerItem;
+    private NativeMenuItem? _pauseItem;
 
     public override void Initialize()
     {
@@ -57,6 +58,12 @@ public partial class App : Application
         var next = new NativeMenuItem("Next preset");
         next.Click += (_, _) => _host!.Lights.StepPreset(1);
 
+        var shuffle = new NativeMenuItem("Random preset");
+        shuffle.Click += (_, _) => _host!.Lights.Shuffle();
+
+        _pauseItem = new NativeMenuItem("Pause animation");
+        _pauseItem.Click += (_, _) => _host!.Lights.SetPaused(!_host.Lights.State.Paused);
+
         var exit = new NativeMenuItem("Exit");
         exit.Click += (_, _) =>
         {
@@ -65,7 +72,7 @@ public partial class App : Application
         };
 
         var menu = new NativeMenu();
-        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, next, new NativeMenuItemSeparator(), exit })
+        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), exit })
             menu.Items.Add(item);
 
         var tray = new TrayIcon
@@ -82,6 +89,8 @@ public partial class App : Application
     {
         if (_powerItem is not null && _host is not null)
             _powerItem.Header = _host.Lights.State.Enabled ? "Turn lights off" : "Turn lights on";
+        if (_pauseItem is not null && _host is not null)
+            _pauseItem.Header = _host.Lights.State.Paused ? "Resume animation" : "Pause animation";
     }
 
     private void ShowWindow()

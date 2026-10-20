@@ -145,6 +145,14 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _enabled;
     [ObservableProperty] private double _brightness;
     [ObservableProperty] private string _activePresetName = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PauseIcon), nameof(PauseTip), nameof(PlayingLabel))]
+    private bool _paused;
+
+    public Geometry PauseIcon => Paused ? NavIcons.Play : NavIcons.Pause;
+    public string PauseTip => Paused ? "Resume the animation" : "Freeze the animation where it is";
+    public string PlayingLabel => Paused ? "PAUSED" : "NOW PLAYING";
     [ObservableProperty] private IBrush? _activeSwatch;
     [ObservableProperty] private string _providerStatus = "Looking for your devices…";
     [ObservableProperty] private string _homeSummary = "Looking for your devices…";
@@ -199,7 +207,13 @@ public sealed partial class MainViewModel : ObservableObject
         _host.Settings.HasSeenWelcome = true;
         _host.ScheduleSave();
         if (page is not null) Navigate(page);
-    });
+    },
+    flash: color =>
+    {
+        if (color is { } c) _host.Lights.Flash(null, c, TimeSpan.FromMinutes(2));
+        else _host.Lights.StopFlash();
+    },
+    deviceCount: () => Devices.Count(d => !d.NeedsSetup));
 
     [RelayCommand]
     private void NewPreset()
@@ -209,6 +223,24 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand] private void NextPreset() => _host.Lights.StepPreset(1);
+    [RelayCommand] private void PreviousPreset() => _host.Lights.StepPreset(-1);
+
+    [RelayCommand]
+    private void OpenDynamicLighting()
+    {
+        try { DynamicLighting.OpenSettings(); }
+        catch (Exception) { /* no Settings app (e.g. Windows 10); nothing more to do */ }
+    }
+    [RelayCommand] private void Shuffle() => _host.Lights.Shuffle();
+    [RelayCommand] private void TogglePause() => _host.Lights.SetPaused(!_host.Lights.State.Paused);
+
+    /// <summary>Open what's playing in the Studio; the Studio's own draft just switches to it.</summary>
+    [RelayCommand]
+    private void EditActive()
+    {
+        if (_host.Engine.ActivePreset is { } p && p.Id != AppHost.DraftPresetId) EditPreset(p.Id);
+        else SelectedTab = StudioTab;
+    }
     [RelayCommand] private void TogglePower() => _host.Lights.SetEnabled(!_host.Lights.State.Enabled);
     [RelayCommand] private void ResetLayout() => _host.Layout.Reset();
 
@@ -267,6 +299,7 @@ public sealed partial class MainViewModel : ObservableObject
             Enabled = s.Enabled;
             Brightness = Math.Round(s.Brightness * 100);
             ActivePresetName = s.ActivePresetName ?? "None";
+            Paused = s.Paused;
         }
         finally
         {
@@ -298,7 +331,8 @@ public sealed partial class MainViewModel : ObservableObject
         Devices.Clear();
         foreach (var d in devices.OrderBy(d => d.Leds.Count == 0).ThenBy(d => DisplayOrder(d.Type)).ThenBy(d => names[d.Id]))
             Devices.Add(new DeviceRowViewModel(d, names[d.Id], !excluded.Contains(d.Id),
-                (id, inc) => { _host.SetExcluded(id, !inc); RefreshAlerts(); }, _host.SetZoneSizeAsync));
+                (id, inc) => { _host.SetExcluded(id, !inc); RefreshAlerts(); }, _host.SetZoneSizeAsync,
+                id => _host.Lights.Flash(id)));
         Studio.SetDevices(devices.Select(d => (d.Id, names[d.Id])));
 
         int controlled = Devices.Count(d => d.Included && !d.NeedsSetup);
@@ -352,6 +386,11 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (!_host.Lights.State.Enabled)
             Alerts.Add(new AlertViewModel(false, "Your lights are switched off.", "Turn on", TogglePowerCommand));
+
+        if (_host.DynamicLightingOn() == true)
+            Alerts.Add(new AlertViewModel(true,
+                "Windows Dynamic Lighting is on. Windows may take over some keyboards and mice and fight MyRGB for them. Turn off \"Use Dynamic Lighting on my devices\".",
+                "Open Windows settings", OpenDynamicLightingCommand));
 
         foreach (var app in Vendors.Apps.Where(a => a.Running))
             Alerts.Add(new AlertViewModel(true, $"{app.Name} is running. It can override MyRGB's lighting on its devices.", "Vendor apps", NavigateCommand.WithParameter("vendors")));

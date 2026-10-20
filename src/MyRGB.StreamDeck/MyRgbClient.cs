@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace MyRGB.StreamDeck;
 
-internal sealed record LightingState(bool Enabled, double Brightness, string? ActivePresetId, string? ActivePresetName);
+internal sealed record LightingState(bool Enabled, double Brightness, string? ActivePresetId, string? ActivePresetName, bool Paused = false);
 
 internal sealed record PresetSummary(string Id, string Name, string EffectId, bool BuiltIn, List<string> Swatch);
 
@@ -38,6 +38,8 @@ internal sealed class MyRgbClient : IDisposable
     public Task<bool> ActivateAsync(string presetId) => PostAsync($"presets/{Uri.EscapeDataString(presetId)}/activate", null);
     public Task<bool> StepAsync(int delta) => PostAsync(delta >= 0 ? "presets/next" : "presets/previous", null);
     public Task<bool> TogglePowerAsync() => PostAsync("power", null);
+    public Task<bool> TogglePauseAsync() => PostAsync("pause", null);
+    public Task<bool> ShuffleAsync() => PostAsync("presets/shuffle", null);
     public Task<bool> SetPowerAsync(bool on) => PostAsync("power", new { on });
     public Task<bool> SetBrightnessAsync(double value) => PostAsync("brightness", new { value });
     public Task<bool> AdjustBrightnessAsync(double delta) => PostAsync("brightness", new { delta });

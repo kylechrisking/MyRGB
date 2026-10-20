@@ -74,6 +74,25 @@ public sealed class ApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Pause_shuffle_and_flash()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _lights.ActivatePreset("fire");
+
+        await _http.PostAsync("pause", null, ct); // empty body toggles
+        Assert.True(_lights.State.Paused);
+        var state = await (await _http.PostAsJsonAsync("pause", new { paused = false }, ct)).Content.ReadFromJsonAsync<LightingState>(Json, ct);
+        Assert.False(state!.Paused);
+
+        (await _http.PostAsync("presets/shuffle", null, ct)).EnsureSuccessStatusCode();
+        Assert.NotEqual("fire", _lights.State.ActivePresetId);
+
+        (await _http.PostAsync("flash", null, ct)).EnsureSuccessStatusCode();
+        Assert.True(_engine.Flashing);
+        Assert.Equal(HttpStatusCode.NotFound, (await _http.PostAsync("devices/nope/flash", null, ct)).StatusCode);
+    }
+
+    [Fact]
     public async Task Post_without_client_header_is_refused()
     {
         var ct = TestContext.Current.CancellationToken;

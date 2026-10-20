@@ -12,12 +12,19 @@ public sealed partial class DeviceRowViewModel(
     string displayName,
     bool included,
     Action<string, bool> setIncluded,
-    Func<string, string, int, Task> setZoneSize) : ObservableObject
+    Func<string, string, int, Task> setZoneSize,
+    Action<string>? flash = null) : ObservableObject
 {
+    /// <summary>Only devices MyRGB is driving can be flashed.</summary>
+    public bool CanFlash => flash is not null && Included && !NeedsSetup;
+
+    [RelayCommand]
+    private void Flash() => flash?.Invoke(device.Id);
+
     public string Id => device.Id;
     public string Name => displayName;
     public string Vendor => device.Vendor;
-    public string Type => DeviceIcons.Label(device.Type);
+    public string Type => device.Slot is { } slot ? $"{DeviceIcons.Label(device.Type)} · DIMM {slot}" : DeviceIcons.Label(device.Type);
     public Geometry Icon => DeviceIcons.For(device.Type);
     public string? HardwareKey => device.HardwareKey;
     public bool NeedsSetup => device.Leds.Count == 0;
@@ -40,7 +47,7 @@ public sealed partial class DeviceRowViewModel(
     public bool HasResizableZones => ResizableZones.Count > 0;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StatusText), nameof(StatusBrush))]
+    [NotifyPropertyChangedFor(nameof(StatusText), nameof(StatusBrush), nameof(CanFlash))]
     private bool _included = included;
 
     partial void OnIncludedChanged(bool value) => setIncluded(device.Id, value);

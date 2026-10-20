@@ -5,7 +5,7 @@
   "Version": "0.1.0.0",
   "Author": "Root Labs",
   "URL": "https://www.rootlabs.us",
-  "Description": "Control MyRGB lighting: switch presets, toggle lights, and adjust brightness.",
+  "Description": "Control MyRGB lighting: switch, shuffle and pause presets, toggle lights, and adjust brightness.",
   "Icon": "imgs/plugin",
   "Category": "MyRGB",
   "CategoryIcon": "imgs/category",
@@ -58,6 +58,26 @@
         "TriggerDescription": { "Rotate": "Change preset", "Push": "Lights on/off" }
       },
       "States": [{ "Image": "imgs/keys/next-key", "TitleAlignment": "bottom", "FontSize": 11 }]
+    },
+    {
+      "UUID": "com.myrgb.streamdeck.pause",
+      "Name": "Pause Animation",
+      "Tooltip": "Freeze the lighting where it is, or set it moving again.",
+      "Icon": "imgs/actions/pause",
+      "Controllers": ["Keypad"],
+      "DisableAutomaticStates": true,
+      "States": [
+        { "Image": "imgs/keys/pause-key", "TitleAlignment": "bottom" },
+        { "Image": "imgs/keys/play-key", "TitleAlignment": "bottom" }
+      ]
+    },
+    {
+      "UUID": "com.myrgb.streamdeck.shuffle",
+      "Name": "Random Preset",
+      "Tooltip": "Switch to a random preset. The key shows what's playing.",
+      "Icon": "imgs/actions/shuffle",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/keys/shuffle-key", "TitleAlignment": "bottom", "FontSize": 11 }]
     }
   ]
 }

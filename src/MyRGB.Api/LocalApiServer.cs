@@ -111,6 +111,11 @@ public sealed class LocalApiServer : IAsyncDisposable
                 ("POST", "/api/power") => Power(await ReadBody<PowerRequest>(req)),
                 ("POST", "/api/brightness") => Brightness(await ReadBody<BrightnessRequest>(req)),
                 ("POST", "/api/app/show") => Do(() => _showWindow?.Invoke()),
+                ("POST", "/api/pause") => Pause(await ReadBody<PauseRequest>(req)),
+                ("POST", "/api/presets/shuffle") => Do(_lights.Shuffle),
+                ("POST", "/api/flash") => Do(() => _lights.Flash(null)),
+                ("POST", _) when path.StartsWith("/api/devices/") && path.EndsWith("/flash") =>
+                    FlashDevice(Uri.UnescapeDataString(path["/api/devices/".Length..^"/flash".Length])),
                 ("POST", _) when path.StartsWith("/api/presets/") && path.EndsWith("/activate") =>
                     Activate(Uri.UnescapeDataString(path["/api/presets/".Length..^"/activate".Length])),
                 _ => NotFound.Instance,
@@ -140,6 +145,15 @@ public sealed class LocalApiServer : IAsyncDisposable
 
     private object Activate(string id) =>
         _lights.ActivatePreset(id) ? _lights.State : new NotFound($"No preset '{id}'.");
+
+    private object FlashDevice(string id) =>
+        _lights.Flash(id) ? _lights.State : new NotFound($"No device '{id}'.");
+
+    private LightingState Pause(PauseRequest? body)
+    {
+        _lights.SetPaused(body?.Paused ?? !_lights.State.Paused);
+        return _lights.State;
+    }
 
     private LightingState Power(PowerRequest? body)
     {
@@ -202,6 +216,7 @@ public sealed class LocalApiServer : IAsyncDisposable
 
     public sealed record PowerRequest(bool? On);
     public sealed record BrightnessRequest(double? Value, double? Delta);
+    public sealed record PauseRequest(bool? Paused);
 
     private sealed record NotFound(string? Message)
     {

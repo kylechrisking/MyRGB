@@ -28,6 +28,9 @@ public sealed class AppHostOptions
     /// <summary>Replaces reading Installed apps and running processes.</summary>
     public Func<IReadOnlyList<DetectedVendorApp>>? DetectVendorApps { get; init; }
 
+    /// <summary>Replaces reading whether Windows Dynamic Lighting is on.</summary>
+    public Func<bool?>? DynamicLightingOn { get; init; }
+
     /// <summary>Replaces the account service.</summary>
     public Func<ICloud>? Cloud { get; init; }
 
@@ -116,6 +119,9 @@ public sealed class AppHost : IAsyncDisposable
     public LightingService Lights { get; }
     public BatteryMonitor Batteries { get; }
     public LocalApiServer? Api { get; private set; }
+
+    /// <summary>Whether Windows Dynamic Lighting is switched on (null if this Windows has none).</summary>
+    public bool? DynamicLightingOn() => _options.DynamicLightingOn is { } fake ? fake() : DynamicLighting.IsOn();
 
     /// <summary>Vendor lighting apps installed on this PC (iCUE, G HUB, ...). Reads the registry; call off the UI thread.</summary>
     public IReadOnlyList<DetectedVendorApp> DetectVendorApps()

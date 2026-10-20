@@ -5,7 +5,7 @@ using MyRGB.Core.Presets;
 
 namespace MyRGB.Core;
 
-public sealed record LightingState(bool Enabled, double Brightness, string? ActivePresetId, string? ActivePresetName);
+public sealed record LightingState(bool Enabled, double Brightness, string? ActivePresetId, string? ActivePresetName, bool Paused = false);
 
 public sealed record PresetSummary(string Id, string Name, string EffectId, bool BuiltIn, IReadOnlyList<string> Swatch);
 
@@ -24,6 +24,15 @@ public interface ILightingController
     void StepPreset(int delta);
     void SetEnabled(bool enabled);
     void SetBrightness(double brightness);
+
+    /// <summary>Freeze or resume the animation.</summary>
+    void SetPaused(bool paused);
+
+    /// <summary>Switch to a random preset other than the current one.</summary>
+    void Shuffle();
+
+    /// <summary>Pulse one device (or all, when null) so it can be spotted. Returns false for an unknown device.</summary>
+    bool Flash(string? deviceId, Rgb? color = null);
 
     /// <summary>Raised when power, brightness, the active preset, or the preset list changes. Any thread.</summary>
     event EventHandler? StateChanged;
@@ -56,7 +65,38 @@ public sealed class LightingService : ILightingController
     public event EventHandler? StateChanged;
 
     public LightingState State =>
-        new(_engine.Enabled, _engine.Brightness, _engine.ActivePreset?.Id, _engine.ActivePreset?.Name);
+        new(_engine.Enabled, _engine.Brightness, _engine.ActivePreset?.Id, _engine.ActivePreset?.Name, _engine.Paused);
+
+    /// <summary>How long a flash lasts unless stopped.</summary>
+    public static readonly TimeSpan FlashLength = TimeSpan.FromSeconds(4);
+
+    /// <summary>The default flash color: white reads on every LED and stands out from most effects.</summary>
+    public static readonly Rgb FlashColor = new(255, 255, 255);
+
+    public void SetPaused(bool paused)
+    {
+        _engine.Paused = paused;
+        Raise();
+    }
+
+    public void Shuffle()
+    {
+        var others = _presets.All.Where(p => p.Id != _engine.ActivePreset?.Id).ToList();
+        if (others.Count > 0) ActivatePreset(others[Random.Shared.Next(others.Count)].Id);
+    }
+
+    public bool Flash(string? deviceId, Rgb? color = null) => Flash(deviceId is null ? null : [deviceId], color, FlashLength);
+
+    /// <summary>Pulse several devices at once (all when null), for as long as asked.</summary>
+    public bool Flash(IReadOnlyCollection<string>? deviceIds, Rgb? color, TimeSpan length)
+    {
+        if (deviceIds is not null && !deviceIds.All(id => _devices.Devices.Any(d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase))))
+            return false;
+        _engine.Flash(deviceIds, color ?? FlashColor, length);
+        return true;
+    }
+
+    public void StopFlash() => _engine.StopFlash();
 
     public IReadOnlyList<PresetSummary> GetPresets() =>
         _presets.All.Select(p => new PresetSummary(p.Id, p.Name, p.EffectId, p.BuiltIn, SwatchFor(p))).ToList();

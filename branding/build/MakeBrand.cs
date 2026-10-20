@@ -91,6 +91,9 @@ var keys = new (string Name, string Kind, Func<string, string> Color)[]
     ("power-off", "power", s => s.Replace("#FFFFFF", "#58666C")),
     ("brightness-key", "brightness", s => s.Replace("#FFFFFF", "#FCB442")),
     ("next-key", "next", s => s.Replace("#FFFFFF", ink.Blue)),
+    ("pause-key", "pause", s => s.Replace("#FFFFFF", ink.Ink)),
+    ("play-key", "play", s => s.Replace("#FFFFFF", ink.Brand)),
+    ("shuffle-key", "shuffle", s => s.Replace("#FFFFFF", ink.Red)),
 };
 foreach (var (k, suffix) in new[] { (1, ""), (2, "@2x") })
 {
@@ -98,7 +101,7 @@ foreach (var (k, suffix) in new[] { (1, ""), (2, "@2x") })
         SavePng(Render(plugin, 256 * k, 256 * k), $"streamdeck/png/plugin{suffix}.png");
     using (var cat = Load(Glyph("category")))
         SavePng(Render(cat, 28 * k, 28 * k), $"streamdeck/png/category{suffix}.png");
-    foreach (var kind in new[] { "preset", "power", "brightness", "next" })
+    foreach (var kind in new[] { "preset", "power", "brightness", "next", "pause", "shuffle" })
     {
         using var pic = Load(Glyph(kind));
         SavePng(Render(pic, 20 * k, 20 * k), $"streamdeck/png/actions/{kind}{suffix}.png");

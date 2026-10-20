@@ -83,6 +83,38 @@ public class CoreTests
     }
 
     [Fact]
+    public void Flash_lights_only_the_chosen_device_even_when_power_is_off()
+    {
+        var kb = new FakeDevice("kb", null, 3);
+        var mouse = new FakeDevice("mouse", null, 2);
+        var preset = new Preset { Id = "t", Name = "t", EffectId = "static", Settings = new() { ["color"] = "#C86400" } };
+        var plan = LightingEngine.RenderPlan.Build([kb, mouse], preset, EffectRegistry.CreateDefault(), new CanvasLayout(), null);
+        var log = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+        var flash = new LightingEngine.FlashRequest(new HashSet<string> { "mouse" }, new Rgb(255, 255, 255), 0, long.MaxValue);
+
+        plan.Render(new FrameContext(0, 0.03), 0, enabled: false, brightness: 1, (flash, 1.0), log);
+        Assert.All(mouse.Last!, c => Assert.Equal(new Rgb(255, 255, 255), c));
+        Assert.All(kb.Last!, c => Assert.Equal(Rgb.Black, c));
+    }
+
+    [Fact]
+    public void Shuffle_never_picks_the_current_preset()
+    {
+        var effects = EffectRegistry.CreateDefault();
+        var devices = new DeviceManager();
+        using var engine = new LightingEngine(devices, effects, new CanvasLayout());
+        var svc = new LightingService(engine, new PresetLibrary(), effects, devices);
+        svc.ActivatePreset(BuiltInPresets.All[0].Id);
+        for (int i = 0; i < 20; i++)
+        {
+            var before = svc.State.ActivePresetId;
+            svc.Shuffle();
+            Assert.NotEqual(before, svc.State.ActivePresetId);
+        }
+        Assert.False(svc.Flash("no-such-device"));
+    }
+
+    [Fact]
     public void Engine_skips_unchanged_frames_until_keepalive()
     {
         var kb = new FakeDevice("kb", null, 3);

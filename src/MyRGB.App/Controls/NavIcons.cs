@@ -17,4 +17,13 @@ public static class NavIcons
     public static Geometry Warning { get; } = StreamGeometry.Parse("F0 M12,2 L23,21 H1 Z M12,6 L4.5,19 H19.5 Z M11,10 H13 V15 H11 Z M11,16.5 H13 V18.5 H11 Z");
     public static Geometry Info { get; } = StreamGeometry.Parse("F0 M12,2 A10,10 0 1 1 11.99,2 Z M12,4 A8,8 0 1 0 12.01,4 Z M11,10 H13 V17 H11 Z M11,6.5 H13 V8.5 H11 Z");
     public static Geometry Check { get; } = StreamGeometry.Parse("M9,16.2 L4.8,12 L3.4,13.4 L9,19 L21,7 L19.6,5.6 Z");
+
+    // Flash a device, and the player bar's transport buttons.
+    public static Geometry Flash { get; } = StreamGeometry.Parse("M12,8 A4,4 0 1 1 11.99,8 Z M11,1 H13 V5 H11 Z M11,19 H13 V23 H11 Z M1,11 H5 V13 H1 Z M19,11 H23 V13 H19 Z M4.9,3.5 L7.7,6.3 L6.3,7.7 L3.5,4.9 Z M16.3,6.3 L19.1,3.5 L20.5,4.9 L17.7,7.7 Z M3.5,19.1 L6.3,16.3 L7.7,17.7 L4.9,20.5 Z M16.3,17.7 L17.7,16.3 L20.5,19.1 L19.1,20.5 Z");
+    public static Geometry Play { get; } = StreamGeometry.Parse("M7,4 L20,12 L7,20 Z");
+    public static Geometry Pause { get; } = StreamGeometry.Parse("M6,4 H10 V20 H6 Z M14,4 H18 V20 H14 Z");
+    public static Geometry Previous { get; } = StreamGeometry.Parse("M5,4 H7.5 V20 H5 Z M20,4 V20 L8.5,12 Z");
+    public static Geometry Next { get; } = StreamGeometry.Parse("M16.5,4 H19 V20 H16.5 Z M4,4 L15.5,12 L4,20 Z");
+    public static Geometry Shuffle { get; } = StreamGeometry.Parse("M3,6 H7.5 L16,17 H18 V14.5 L22,18 L18,21.5 V19 H15 L6.5,8 H3 Z M3,16 H6.5 L8.6,13.3 L9.9,15 L7.5,18 H3 Z M15,5 H18 V2.5 L22,6 L18,9.5 V7 H16 L13.9,9.7 L12.6,8 Z");
+    public static Geometry Power { get; } = StreamGeometry.Parse("M11,2 H13 V12 H11 Z M6.3,5.2 L7.7,6.6 C6.1,7.9 5,9.8 5,12 C5,15.9 8.1,19 12,19 C15.9,19 19,15.9 19,12 C19,9.8 17.9,7.9 16.3,6.6 L17.7,5.2 C19.7,6.8 21,9.3 21,12 C21,17 17,21 12,21 C7,21 3,17 3,12 C3,9.3 4.3,6.8 6.3,5.2 Z");
 }

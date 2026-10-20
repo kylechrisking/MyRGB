@@ -15,6 +15,8 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
     public const string PowerAction = "com.myrgb.streamdeck.power";
     public const string BrightnessAction = "com.myrgb.streamdeck.brightness";
     public const string CycleAction = "com.myrgb.streamdeck.cycle";
+    public const string PauseAction = "com.myrgb.streamdeck.pause";
+    public const string ShuffleAction = "com.myrgb.streamdeck.shuffle";
 
     private sealed record Instance(string Action, bool IsEncoder, JsonObject Settings);
 
@@ -76,6 +78,10 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
                 return await rgb.TogglePowerAsync();
             case CycleAction:
                 return await rgb.StepAsync(key.Settings["direction"]?.GetValue<string>() == "previous" ? -1 : 1);
+            case PauseAction:
+                return await rgb.TogglePauseAsync();
+            case ShuffleAction:
+                return await rgb.ShuffleAsync();
             case BrightnessAction:
                 string mode = key.Settings["mode"]?.GetValue<string>() ?? "up";
                 return mode switch
@@ -131,6 +137,13 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
                         ["value"] = pct,
                         ["indicator"] = new JsonObject { ["value"] = (int)Math.Round(s.Brightness * 100) },
                     });
+                break;
+            case PauseAction:
+                await deck.SetStateAsync(context, s.Paused ? 1 : 0);
+                await deck.SetTitleAsync(context, s.Paused ? "Paused" : "Playing");
+                break;
+            case ShuffleAction:
+                await deck.SetTitleAsync(context, Wrap(s.ActivePresetName ?? ""));
                 break;
             case CycleAction:
                 await deck.SetTitleAsync(context, Wrap(s.ActivePresetName ?? ""));
