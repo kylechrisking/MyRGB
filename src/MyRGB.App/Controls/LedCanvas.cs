@@ -24,7 +24,7 @@ public sealed class LedCanvas : Control
     public static readonly StyledProperty<bool> AllowEditingProperty = AvaloniaProperty.Register<LedCanvas, bool>(nameof(AllowEditing));
     public static readonly StyledProperty<string?> HighlightIdProperty = AvaloniaProperty.Register<LedCanvas, string?>(nameof(HighlightId));
 
-    private const double Aspect = 16.0 / 9.0;
+    private const double Aspect = CanvasLayout.Aspect;
     private const double HandleSize = 10;
 
     // Brand colors (branding/Theme.axaml): chrome for the stage, surface for device bodies.
@@ -110,19 +110,17 @@ public sealed class LedCanvas : Control
 
     private void OnFrame(FrameSnapshot snapshot) => _latest = snapshot;
 
-    /// <summary>Asks for a 16:9 box as wide as it's allowed, so the stage has no empty bands.</summary>
-    protected override Size MeasureOverride(Size available)
-    {
-        if (double.IsInfinity(available.Width)) return new Size(0, double.IsInfinity(available.Height) ? 0 : available.Height);
-        return new Size(available.Width, Math.Min(available.Width / Aspect, available.Height));
-    }
-
-    /// <summary>The 16:9 area the canvas occupies inside the control, top-left so it lines up with headings.</summary>
+    /// <summary>
+    /// The 16:9 desk inside the control. The stage behind it fills the whole control, so any spare
+    /// room shows as stage rather than gaps; the margin leaves space for labels under the bottom row.
+    /// </summary>
     private Rect Area()
     {
+        const double Side = 18, Top = 16, Bottom = 30;
         var b = Bounds.Size;
-        double w = Math.Min(b.Width, b.Height * Aspect), h = w / Aspect;
-        return new Rect(0, 0, w, h);
+        double availW = Math.Max(0, b.Width - 2 * Side), availH = Math.Max(0, b.Height - Top - Bottom);
+        double w = Math.Min(availW, availH * Aspect), h = w / Aspect;
+        return new Rect(Side + (availW - w) / 2, Top + (availH - h) / 2, w, h);
     }
 
     private static Rect ToScreen(Rect area, DevicePlacement p) =>
@@ -131,9 +129,9 @@ public sealed class LedCanvas : Control
     public override void Render(DrawingContext ctx)
     {
         var area = Area();
-        ctx.DrawRectangle(Background, StagePen, area, 12, 12);
-        for (int i = 1; i < 16; i++)
-            for (int j = 1; j < 9; j++)
+        ctx.DrawRectangle(Background, StagePen, new Rect(Bounds.Size).Deflate(0.5), 12, 12);
+        for (int i = 0; i <= 16; i++)
+            for (int j = 0; j <= 9; j++)
                 ctx.DrawEllipse(GridDot, null, new Point(area.X + area.Width * i / 16, area.Y + area.Height * j / 9), 1, 1);
 
         var host = Host;
@@ -158,7 +156,9 @@ public sealed class LedCanvas : Control
         {
             var device = frame.Devices[d];
             var colors = frame.Colors[d];
-            var rect = ToScreen(area, host.Layout.GetOrCreate(device));
+            var placement = host.Layout.GetOrCreate(device);
+            var rect = ToScreen(area, placement);
+            bool turned = placement.Turns(device.Leds);
             bool active = device.Id == _dragId || device.Id == _hoverId || device.Id == highlight;
             int count = Math.Min(device.Leds.Count, colors.Length);
             double radius = Math.Min(8, Math.Min(rect.Width, rect.Height) / 4);
@@ -169,15 +169,17 @@ public sealed class LedCanvas : Control
                     new BoxShadows(new BoxShadow { Blur = 22, Spread = 1, Color = glow }));
             ctx.DrawRectangle(BodyBrush, active ? ActivePen : DevicePen, rect, radius, radius);
 
-            // LEDs: size from the device's density so a keyboard and a single-LED logo both read well,
-            // inset so the edge LEDs sit inside the body. Each one is a soft halo under a bright core.
-            double dot = Math.Clamp(Math.Sqrt(rect.Width * rect.Height / Math.Max(1, device.Leds.Count)) * 0.5, 3, 13);
+            // LEDs: sized from their spacing so a keyboard, a fan strip and a single-LED logo all read
+            // well, and inset so the edge LEDs sit inside the body. Each is a soft halo under a bright core.
+            double dot = DotSize(rect, device.Leds);
             double padX = Math.Min(dot * 0.6 + 3, rect.Width / 2), padY = Math.Min(dot * 0.6 + 3, rect.Height / 2);
+            var inner = rect.Deflate(new Thickness(padX, padY));
+            var body = new DevicePlacement(device.Id, inner.X, inner.Y, inner.Width, inner.Height);
             for (int i = 0; i < count; i++)
             {
-                var led = device.Leds[i];
                 var c = colors[i];
-                var center = new Point(rect.X + padX + led.X * (rect.Width - 2 * padX), rect.Y + padY + led.Y * (rect.Height - 2 * padY));
+                var (x, y) = body.Map(device.Leds[i], turned);
+                var center = new Point(x, y);
                 int peak = Math.Max(c.R, Math.Max(c.G, c.B));
                 if (peak < 16)
                 {
@@ -195,6 +197,16 @@ public sealed class LedCanvas : Control
             if (AllowEditing && active)
                 ctx.DrawRectangle(HandleBrush, null, new Rect(rect.Right - HandleSize / 2, rect.Bottom - HandleSize / 2, HandleSize, HandleSize), 3, 3);
         }
+    }
+
+    /// <summary>LED diameter: a line of LEDs is sized by its spacing and thickness, anything else by density.</summary>
+    private static double DotSize(Rect rect, IReadOnlyList<LedInfo> leds)
+    {
+        int n = Math.Max(1, leds.Count);
+        double size = LedShapes.Of(leds) is LedShape.Row or LedShape.Column
+            ? Math.Min(Math.Max(rect.Width, rect.Height) / n * 0.75, Math.Min(rect.Width, rect.Height) * 0.5)
+            : Math.Sqrt(rect.Width * rect.Height / n) * 0.5;
+        return Math.Clamp(size, 2.5, 13);
     }
 
     /// <summary>The device's mean color, dimmed for use as a glow; null when it's dark.</summary>

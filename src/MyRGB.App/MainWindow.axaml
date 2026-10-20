@@ -172,7 +172,7 @@
     <Style Selector="ListBox.chips ListBoxItem">
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Margin" Value="0,0,8,8" />
-      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="Padding" Value="11,8" />
     </Style>
     <Style Selector="ListBox.chips ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
@@ -565,31 +565,29 @@
 
             <Grid ColumnDefinitions="*,18,320">
               <!-- Left: the live preview, and the effects to pick from under it. -->
-              <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                <StackPanel>
-                  <TextBlock Classes="kicker" Text="LIVE PREVIEW" Margin="0,0,0,8" />
-                  <ctl:LedCanvas Host="{Binding Host}" HighlightId="{Binding Studio.SelectedTarget.DeviceId}" />
-                  <StackPanel Spacing="8" Margin="0,18,0,0">
-                    <TextBlock Classes="kicker" Text="EFFECT" />
-                    <ListBox Classes="chips" ItemsSource="{Binding Studio.Effects}" SelectedItem="{Binding Studio.SelectedEffect}"
-                             IsEnabled="{Binding Studio.ShowEffectEditor}">
-                      <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <WrapPanel ItemWidth="140" />
-                        </ItemsPanelTemplate>
-                      </ListBox.ItemsPanel>
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:EffectItem">
-                          <StackPanel ToolTip.Tip="{Binding Description}" Spacing="1">
-                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Classes="muted" FontSize="11" Text="{Binding Category}" />
-                          </StackPanel>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
-                  </StackPanel>
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="kicker" Text="LIVE PREVIEW" Margin="0,0,0,8" />
+                <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,16,0,0">
+                  <TextBlock Classes="kicker" Text="EFFECT" />
+                  <ListBox Classes="chips" ItemsSource="{Binding Studio.Effects}" SelectedItem="{Binding Studio.SelectedEffect}"
+                           IsEnabled="{Binding Studio.ShowEffectEditor}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel ItemWidth="134" />
+                      </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:EffectItem">
+                        <StackPanel ToolTip.Tip="{Binding Description}" Spacing="1">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="muted" FontSize="11" Text="{Binding Category}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
                 </StackPanel>
-              </ScrollViewer>
+                <ctl:LedCanvas Host="{Binding Host}" HighlightId="{Binding Studio.SelectedTarget.DeviceId}" MinHeight="180" />
+              </DockPanel>
 
               <!-- Right: what's being edited, and its settings. -->
               <DockPanel Grid.Column="2">

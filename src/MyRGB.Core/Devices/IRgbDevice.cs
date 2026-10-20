@@ -69,6 +69,9 @@ public interface IRgbDevice
     IReadOnlyList<LedInfo> Leds { get; }
     IReadOnlyList<ZoneInfo> Zones { get; }
 
+    /// <summary>The slot it's plugged into, as printed on the board (a RAM stick's "A1"). Null if unknown.</summary>
+    string? Slot => null;
+
     /// <summary>Push one frame. <paramref name="colors"/> has exactly <see cref="Leds"/>.Count entries.</summary>
     ValueTask ApplyAsync(ReadOnlyMemory<Rgb> colors, CancellationToken ct = default);
 }

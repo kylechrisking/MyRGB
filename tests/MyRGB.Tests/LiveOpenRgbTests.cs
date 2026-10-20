@@ -30,7 +30,7 @@ public class LiveOpenRgbTests(ITestOutputHelper output)
         for (uint i = 0; i < count; i++)
         {
             var c = await client.GetControllerAsync(i, ct);
-            output.WriteLine($"{c.Name,-36} mode={c.Modes.ElementAtOrDefault(c.ActiveMode)?.Name,-8} {string.Join(" ", c.Colors.Take(8).Select(x => x.ToHex()))}");
+            output.WriteLine($"{c.Name,-36} mode={c.Modes.ElementAtOrDefault(c.ActiveMode)?.Name,-8} at={c.Location,-30} {string.Join(" ", c.Colors.Take(8).Select(x => x.ToHex()))}");
         }
     }
 }

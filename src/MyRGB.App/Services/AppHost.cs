@@ -138,8 +138,9 @@ public sealed class AppHost : IAsyncDisposable
 
     public async Task StartAsync()
     {
+        // Through Lights, not the engine, so the window (built before this runs) hears which preset is on.
         var preset = (Settings.ActivePresetId is { } id ? Presets.Find(id) : null) ?? Presets.BuiltIns[0];
-        Engine.Activate(preset);
+        Lights.ActivatePreset(preset.Id);
         Engine.Start();
         Batteries.Start();
 

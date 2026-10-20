@@ -114,7 +114,11 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSelectedTabChanged(int value)
     {
         if (value == CommunityTab && !Community.LoadedOnce) _ = Community.Load();
+        // Opening the Studio from the menu starts from whatever is playing, not an empty editor.
+        if (value == StudioTab && !Studio.HasLoaded)
+            Studio.Load(_host.Engine.ActivePreset is { } p && p.Id != AppHost.DraftPresetId ? p : _host.Presets.BuiltIns[0]);
     }
+
     public ObservableCollection<PresetCardViewModel> Presets { get; } = [];
     public ObservableCollection<PresetCardViewModel> QuickPresets { get; } = [];
     public ObservableCollection<DeviceRowViewModel> Devices { get; } = [];

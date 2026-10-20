@@ -231,8 +231,13 @@ public sealed class LightingEngine : IDisposable
                 }
 
                 var p = layout.GetOrCreate(d);
+                bool turned = p.Turns(d.Leds);
                 var points = d.Leds
-                    .Select(l => new LedPoint((float)(p.X + l.X * p.Width), (float)(p.Y + l.Y * p.Height)))
+                    .Select(l =>
+                    {
+                        var (x, y) = p.Map(l, turned);
+                        return new LedPoint((float)x, (float)y);
+                    })
                     .ToArray();
 
                 if (!members.TryGetValue(key, out var m))

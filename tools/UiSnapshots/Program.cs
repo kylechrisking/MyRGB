@@ -109,14 +109,18 @@ sealed class FakeProvider : IDeviceProvider
             Enumerable.Range(0, 8).Select(i => new LedInfo($"LED {i}", 0.5f + 0.45f * MathF.Cos(i * MathF.Tau / 8), 0.5f + 0.45f * MathF.Sin(i * MathF.Tau / 8))).ToArray(),
             [new("LED Strip", 0, 8)]),
         .. Enumerable.Range(0, 4).Select(i => new FakeDevice("Corsair Vengeance RGB Pro DDR4", "Corsair", DeviceType.Memory,
-            Enumerable.Range(0, 10).Select(k => new LedInfo($"LED {k}", 0.5f, k / 9f)).ToArray(), [new("Stick", 0, 10)], id: $"ram{i}")),
+            // As OpenRGB reports them: one linear zone (a row), one stick per DIMM slot.
+            Enumerable.Range(0, 10).Select(k => new LedInfo($"LED {k}", k / 9f, 0.5f)).ToArray(), [new("Stick", 0, 10)], id: $"ram{i}",
+            slot: MemorySlots.FromLocation($"I2C: PawnIO SMBus i801 0, address 0x{0x58 + i:X2}"))),
         new FakeDevice("Corsair Lighting Node Core", "Corsair", DeviceType.LedStrip,
-            Enumerable.Range(0, 96).Select(i => new LedInfo($"LED {i}", (i % 16) / 15f, (i / 16) / 5f)).ToArray(), [new("Fan Channel 1", 0, 96)])
+            Enumerable.Range(0, 48).Select(i => new LedInfo($"LED {i}", i / 47f, 0.5f)).ToArray(), [new("Fan Channel 1", 0, 48)])
         {
-            ResizableZones = [new("Fan Channel 1", 96, 0, 204)],
+            ResizableZones = [new("Fan Channel 1", 48, 0, 204)],
         },
+        // Six single-LED zones, which OpenRGB's layout stacks into a column.
         new FakeDevice("B560 DS3H AC-Y1", "Gigabyte", DeviceType.Motherboard,
-            Enumerable.Range(0, 6).Select(i => new LedInfo($"LED {i}", i / 5f, 0.5f)).ToArray(), [new("Headers", 0, 6)]),
+            Enumerable.Range(0, 6).Select(i => new LedInfo($"LED {i}", 0.5f, i / 5f)).ToArray(),
+            Enumerable.Range(0, 6).Select(i => new ZoneInfo($"Zone {i + 1}", i, 1)).ToArray()),
     ]);
 
     private static LedInfo[] Grid(int w, int h) =>
@@ -127,8 +131,9 @@ sealed class FakeProvider : IDeviceProvider
 
 sealed class FakeDevice(
     string name, string vendor, DeviceType type, IReadOnlyList<LedInfo> leds, IReadOnlyList<ZoneInfo> zones,
-    string provider = "openrgb", string? hardwareKey = null, string? id = null) : IResizableDevice
+    string provider = "openrgb", string? hardwareKey = null, string? id = null, string? slot = null) : IResizableDevice
 {
+    public string? Slot => slot;
     public IReadOnlyList<ResizableZone> ResizableZones { get; init; } = [];
     public string Id => $"fake:{id ?? name}";
     public string Name => name;

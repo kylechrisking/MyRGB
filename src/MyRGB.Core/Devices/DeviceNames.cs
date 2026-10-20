@@ -3,8 +3,8 @@ namespace MyRGB.Core.Devices;
 public static class DeviceNames
 {
     /// <summary>
-    /// Names to show people. Identical devices get numbered so they can be told apart:
-    /// four RAM sticks become "… (stick 1)" to "… (stick 4)".
+    /// Names to show people. RAM sticks say which slot they're in, "… (DIMM A1)". Other identical
+    /// devices get numbered so they can be told apart: "… (stick 1)" for RAM, "… (2)" for the rest.
     /// </summary>
     public static IReadOnlyDictionary<string, string> Unique(IEnumerable<IRgbDevice> devices)
     {
@@ -16,7 +16,8 @@ public static class DeviceNames
             for (int i = 0; i < items.Count; i++)
             {
                 var d = items[i];
-                result[d.Id] = items.Count == 1 ? d.Name
+                result[d.Id] = d.Type == DeviceType.Memory && d.Slot is { } slot ? $"{d.Name} (DIMM {slot})"
+                    : items.Count == 1 ? d.Name
                     : d.Type == DeviceType.Memory ? $"{d.Name} (stick {i + 1})"
                     : $"{d.Name} ({i + 1})";
             }

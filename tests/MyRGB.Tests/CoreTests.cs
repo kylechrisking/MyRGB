@@ -113,6 +113,62 @@ public class CoreTests
         Assert.Equal(BuiltInPresets.All[^1].Id, svc.State.ActivePresetId);
     }
 
+    [Theory]
+    [InlineData("I2C: PawnIO SMBus i801 0, address 0x58", "A1")]
+    [InlineData("I2C: PawnIO SMBus i801 0, address 0x59", "A2")]
+    [InlineData("I2C: PawnIO SMBus i801 0, address 0x5A", "B1")]
+    [InlineData("I2C: PawnIO SMBus i801 0, address 0x5b", "B2")]
+    [InlineData("I2C: SMBus PIIX4, address 0x5F", "D2")]
+    [InlineData("I2C: SMBus PIIX4, address 0x70", null)]
+    [InlineData("HID: \\\\?\\HID#VID_1B1C&PID_0C1A", null)]
+    [InlineData(null, null)]
+    public void Ram_slot_from_smbus_address(string? location, string? slot) =>
+        Assert.Equal(slot, MemorySlots.FromLocation(location));
+
+    [Fact]
+    public void Ram_is_named_by_slot_and_falls_back_to_stick_numbers()
+    {
+        var names = DeviceNames.Unique([new RamStick("a", "B1"), new RamStick("b", "A1"), new RamStick("c", null), new RamStick("d", null)]);
+        Assert.Equal("Vengeance (DIMM B1)", names["a"]);
+        Assert.Equal("Vengeance (DIMM A1)", names["b"]);
+        Assert.Equal("Vengeance (stick 3)", names["c"]);
+        Assert.Equal("Vengeance (stick 4)", names["d"]);
+    }
+
+    [Fact]
+    public void A_row_of_leds_stands_up_in_a_tall_box()
+    {
+        LedInfo[] row = [new("0", 0, 0.5f), new("1", 0.5f, 0.5f), new("2", 1, 0.5f)];
+        var tall = new DevicePlacement("ram", 0.5, 0.1, 0.03, 0.2);
+        var wide = new DevicePlacement("strip", 0.1, 0.1, 0.3, 0.05);
+
+        Assert.True(tall.Turns(row));
+        Assert.False(wide.Turns(row));
+        // Turned, the row runs top to bottom down the middle of the stick.
+        Assert.Equal((0.5 + 0.015, 0.1), tall.Map(row[0], turned: true));
+        Assert.Equal((0.5 + 0.015, 0.1 + 0.2), tall.Map(row[2], turned: true));
+
+        LedInfo[] column = [new("0", 0.5f, 0), new("1", 0.5f, 1)];
+        Assert.True(wide.Turns(column));
+        // A board's default box is taller than wide in canvas units but wider on screen (16:9).
+        Assert.True(new DevicePlacement("board", 0.38, 0.05, 0.17, 0.27).Turns(column));
+        Assert.False(wide.Turns([new("only", 0.5f, 0.5f)]));
+    }
+
+    private sealed class RamStick(string id, string? slot) : IRgbDevice
+    {
+        public string Id => id;
+        public string Name => "Vengeance";
+        public string Vendor => "Corsair";
+        public DeviceType Type => DeviceType.Memory;
+        public string ProviderId => "fake";
+        public string? HardwareKey => null;
+        public string? Slot => slot;
+        public IReadOnlyList<LedInfo> Leds => [];
+        public IReadOnlyList<ZoneInfo> Zones => [];
+        public ValueTask ApplyAsync(ReadOnlyMemory<Rgb> colors, CancellationToken ct = default) => ValueTask.CompletedTask;
+    }
+
     private sealed class FakeProvider(string id, int priority) : IDeviceProvider
     {
         public string Id => id;

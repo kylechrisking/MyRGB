@@ -21,6 +21,7 @@ internal sealed partial class OpenRgbDevice : IResizableDevice
         Type = MapType(data.Type);
         Id = MakeId(data);
         HardwareKey = UsbKey(data.Location);
+        Slot = Type == DeviceType.Memory ? MemorySlots.FromLocation(data.Location) : null;
         (Leds, Zones) = LedLayout.Build(data);
         ResizableZones = data.Zones.Where(z => z.Resizable)
             .Select(z => new ResizableZone(z.Name, (int)z.LedCount, (int)z.LedsMin, (int)z.LedsMax))
@@ -41,6 +42,7 @@ internal sealed partial class OpenRgbDevice : IResizableDevice
     public DeviceType Type { get; }
     public string ProviderId => OpenRgbProvider.ProviderId;
     public string? HardwareKey { get; }
+    public string? Slot { get; }
     public IReadOnlyList<LedInfo> Leds { get; }
     public IReadOnlyList<ZoneInfo> Zones { get; }
     public IReadOnlyList<ResizableZone> ResizableZones { get; }

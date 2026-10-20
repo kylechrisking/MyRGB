@@ -3,7 +3,51 @@ using MyRGB.Core.Devices;
 namespace MyRGB.Core.Layout;
 
 /// <summary>Where a device sits on the shared effect canvas. Canvas coordinates run 0..1 on both axes.</summary>
-public sealed record DevicePlacement(string DeviceId, double X, double Y, double Width, double Height);
+public sealed record DevicePlacement(string DeviceId, double X, double Y, double Width, double Height)
+{
+    /// <summary>
+    /// True when the device's LEDs form one line that runs the other way to its box: a RAM stick
+    /// reports a row but stands upright, a board's single-LED zones stack into a column but the
+    /// board is wide. Such lines are turned to run along the box's long side.
+    /// </summary>
+    public bool Turns(IReadOnlyList<LedInfo> leds)
+    {
+        var shape = LedShapes.Of(leds);
+        // On screen the box is Width wide and Height / Aspect tall (in canvas widths).
+        bool tall = Height / CanvasLayout.Aspect > Width;
+        return shape == LedShape.Row && tall || shape == LedShape.Column && !tall;
+    }
+
+    /// <summary>An LED's position on the canvas.</summary>
+    public (double X, double Y) Map(LedInfo led, bool turned) => turned
+        ? (X + led.Y * Width, Y + led.X * Height)
+        : (X + led.X * Width, Y + led.Y * Height);
+}
+
+public enum LedShape { Point, Row, Column, Area }
+
+public static class LedShapes
+{
+    /// <summary>Whether a device's LEDs sit on one horizontal line, one vertical line, or neither.</summary>
+    public static LedShape Of(IReadOnlyList<LedInfo> leds)
+    {
+        if (leds.Count < 2) return LedShape.Point;
+        float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+        foreach (var l in leds)
+        {
+            minX = Math.Min(minX, l.X); maxX = Math.Max(maxX, l.X);
+            minY = Math.Min(minY, l.Y); maxY = Math.Max(maxY, l.Y);
+        }
+        bool flatX = maxX - minX < 0.001f, flatY = maxY - minY < 0.001f;
+        return (flatX, flatY) switch
+        {
+            (true, true) => LedShape.Point,
+            (false, true) => LedShape.Row,
+            (true, false) => LedShape.Column,
+            _ => LedShape.Area,
+        };
+    }
+}
 
 /// <summary>
 /// Maps each device's LEDs onto the canvas. Devices without a saved placement get a sensible
@@ -12,6 +56,9 @@ public sealed record DevicePlacement(string DeviceId, double X, double Y, double
 /// </summary>
 public sealed class CanvasLayout
 {
+    /// <summary>The canvas is drawn 16:9, like a desk seen from the front.</summary>
+    public const double Aspect = 16.0 / 9.0;
+
     private readonly object _gate = new();
     private readonly Dictionary<string, DevicePlacement> _placements = new(StringComparer.OrdinalIgnoreCase);
 

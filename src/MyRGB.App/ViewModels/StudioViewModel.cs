@@ -85,6 +85,9 @@ public sealed partial class StudioViewModel : ObservableObject
     /// <summary>Saving overwrites the preset being edited; false for built-ins and new drafts.</summary>
     public bool IsEditingUserPreset => _editingId is not null;
 
+    /// <summary>False until a preset has been opened for editing.</summary>
+    public bool HasLoaded { get; private set; }
+
     public void SetDevices(IEnumerable<(string Id, string Name)> devices)
     {
         var current = SelectedTarget.DeviceId;
@@ -96,6 +99,7 @@ public sealed partial class StudioViewModel : ObservableObject
     /// <summary>Open a preset for editing. Built-ins are copied; saving makes a new user preset.</summary>
     public void Load(Preset preset)
     {
+        HasLoaded = true;
         _baseEffectId = preset.EffectId;
         _baseSettings = new(preset.Settings, StringComparer.OrdinalIgnoreCase);
         _overrides.Clear();
