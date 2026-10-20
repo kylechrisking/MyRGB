@@ -8,9 +8,11 @@ using MyRGB.Core.Effects;
 using MyRGB.Core.Engine;
 using MyRGB.Core.Layout;
 using MyRGB.Core.Presets;
+using MyRGB.Core.Sensors;
 using MyRGB.Core.Vendors;
 using MyRGB.Providers.Corsair;
 using MyRGB.Providers.OpenRgb;
+using MyRGB.Sensors;
 
 namespace MyRGB.App.Services;
 
@@ -27,6 +29,9 @@ public sealed class AppHostOptions
 
     /// <summary>Replaces reading Installed apps and running processes.</summary>
     public Func<IReadOnlyList<DetectedVendorApp>>? DetectVendorApps { get; init; }
+
+    /// <summary>Replaces the hardware sensors (CPU, GPU, fans).</summary>
+    public Func<ISensorSource>? Sensors { get; init; }
 
     /// <summary>Replaces reading whether Windows Dynamic Lighting is on.</summary>
     public Func<bool?>? DynamicLightingOn { get; init; }
@@ -86,6 +91,10 @@ public sealed class AppHost : IAsyncDisposable
                 ?? (CloudConfig.Load() is { } cloud ? new SupabaseCloud(cloud, _options.DataDirectory) : new OfflineCloud());
         Sync = new PresetSync(Cloud, Presets, _options.DataDirectory);
 
+        Sensors = new SensorHub(_options.Sensors?.Invoke() ?? OpenSensors(), Logs.CreateLogger<SensorHub>());
+        Sensors.SetFanSettings(Settings.Fans);
+        SensorFeed.Use(Sensors.Get);
+
         Lights.StateChanged += (_, _) => ScheduleSave();
         Presets.Changed += (_, _) => { ScheduleSave(); ScheduleSync(); };
         Layout.Changed += (_, _) => ScheduleSave();
@@ -118,6 +127,25 @@ public sealed class AppHost : IAsyncDisposable
     public LightingEngine Engine { get; }
     public LightingService Lights { get; }
     public BatteryMonitor Batteries { get; }
+    public SensorHub Sensors { get; }
+
+    /// <summary>Change how one fan is driven; takes effect within a second and is saved.</summary>
+    public void SetFan(FanSetting setting)
+    {
+        Settings.Fans = [.. Settings.Fans.Where(f => !f.FanId.Equals(setting.FanId, StringComparison.OrdinalIgnoreCase)), setting];
+        Sensors.SetFanSettings(Settings.Fans);
+        ScheduleSave();
+    }
+
+    private ISensorSource OpenSensors()
+    {
+        try { return new HardwareSensors(); }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Hardware sensors unavailable");
+            return new NoSensors();
+        }
+    }
     public LocalApiServer? Api { get; private set; }
 
     /// <summary>Whether Windows Dynamic Lighting is switched on (null if this Windows has none).</summary>
@@ -149,6 +177,7 @@ public sealed class AppHost : IAsyncDisposable
         Lights.ActivatePreset(preset.Id);
         Engine.Start();
         Batteries.Start();
+        Sensors.Start();
 
         ScheduleSync(TimeSpan.FromSeconds(3)); // pick up edits made on other PCs since last time
 
@@ -247,6 +276,7 @@ public sealed class AppHost : IAsyncDisposable
         _saveDebounce?.Cancel();
         SaveNow();
         Engine.Dispose();
+        Sensors.Dispose(); // hands any fans MyRGB was driving back to the hardware
         await Batteries.DisposeAsync();
         _syncDebounce?.Cancel();
         (Cloud as IDisposable)?.Dispose();

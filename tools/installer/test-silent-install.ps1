@@ -1,8 +1,14 @@
 # Silent install/uninstall test of the MyRGB installer into a temp folder. No UAC: the smbus task is not selected.
 param(
-    [string]$Setup = (Join-Path $PSScriptRoot '..\..\artifacts\MyRGB-Setup-0.1.0.exe'),
+    [string]$Setup = (Get-ChildItem (Join-Path $PSScriptRoot '..\..\artifacts') -Filter 'MyRGB-Setup-*.exe' |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName),
     [string]$Out = (Join-Path $PSScriptRoot '..\..\artifacts\test'))
 $ErrorActionPreference = 'Stop'
+# The test installs and uninstalls under the real AppId, so on a PC with MyRGB installed it would
+# take over that install's uninstall entry and shortcut, then remove them. Don't run there.
+$existing = Get-ChildItem HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall -ErrorAction SilentlyContinue |
+    Where-Object { (Get-ItemProperty $_.PSPath).DisplayName -eq 'MyRGB' }
+if ($existing) { throw 'MyRGB is installed on this PC; uninstall it first, or run this test on another machine.' }
 $stage = Join-Path $PSScriptRoot '..\..\artifacts\stage'
 $dir = Join-Path ([IO.Path]::GetTempPath()) 'MyRGB-install-test\MyRGB'
 New-Item -ItemType Directory -Force $Out | Out-Null

@@ -81,6 +81,18 @@
     <Style Selector="Button.swatch.picked /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="BorderBrush" Value="White" />
     </Style>
+    <!-- Thin rounded meters for loads and drive space. -->
+    <Style Selector="ProgressBar.meter">
+      <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
+      <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="MinHeight" Value="4" />
+    </Style>
+    <Style Selector="ProgressBar.meter[Orientation=Vertical]">
+      <Setter Property="MinWidth" Value="4" />
+      <Setter Property="Foreground" Value="{StaticResource LedBlueBrush}" />
+    </Style>
+
     <Style Selector="Border.note">
       <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
       <Setter Property="CornerRadius" Value="10" />
@@ -481,7 +493,17 @@
                           </ContextMenu>
                         </Button.ContextMenu>
                         <Grid RowDefinitions="*,Auto" Margin="8">
-                          <Border Background="{Binding Swatch}" CornerRadius="9" />
+                          <!-- A still of the preset; it plays while hovered or while it's the one on. -->
+                          <ctl:EffectPreview Definition="{Binding Effect}" Settings="{Binding Settings}" Columns="24" Rows="11" CornerRadius="9"
+                                             IsVisible="{Binding HasEffect}">
+                            <ctl:EffectPreview.Animate>
+                              <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                <Binding Path="IsActive" />
+                                <Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button}" />
+                              </MultiBinding>
+                            </ctl:EffectPreview.Animate>
+                          </ctl:EffectPreview>
+                          <Border Background="{Binding Swatch}" CornerRadius="9" IsVisible="{Binding !HasEffect}" />
                           <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="4,9,4,1">
                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                             <Border Grid.Column="1" Classes="badge">
@@ -802,6 +824,244 @@
                     <TextBlock Classes="body" Text="• Fan and LED-strip controllers can't tell how many LEDs are plugged in. Set each channel's count on the device above (LEDs per fan × number of fans, e.g. 16 for one LL120)." />
                     <TextBlock Classes="body" Text="• RGB RAM needs the optional SMBus driver. Run MyRGB setup again and tick “Enable RAM / SMBus lighting”." />
                     <Button Classes="link" Content="Open Vendor apps ›" Command="{Binding NavigateCommand}" CommandParameter="vendors" HorizontalAlignment="Left" />
+                  </StackPanel>
+                </Border>
+
+                <!-- Will it work with my device? -->
+                <Border Classes="panel" DataContext="{Binding Supported}" x:DataType="vm:SupportedDevicesViewModel">
+                  <StackPanel Spacing="10">
+                    <TextBlock Classes="section" Text="Will MyRGB work with my device?" />
+                    <TextBox Text="{Binding Query}" PlaceholderText="Search, e.g. corsair k70 or rtx 4070" />
+                    <TextBlock Classes="muted" Text="{Binding Summary}" TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding Results}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SupportedDevice">
+                          <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Connection}" Margin="12,0,0,0" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </TabItem>
+
+        <!-- ===== Monitoring ===== -->
+        <TabItem>
+          <TabItem.Header>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{x:Static ctl:NavIcons.Monitoring}" />
+              <TextBlock Text="Monitoring" VerticalAlignment="Center" />
+            </StackPanel>
+          </TabItem.Header>
+          <DockPanel DataContext="{Binding Monitoring}" x:DataType="vm:MonitoringViewModel">
+            <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,20">
+              <TextBlock Classes="h1" Text="Monitoring" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Live readings from your PC, once a second, with the last five minutes charted. Nothing leaves this computer." />
+            </StackPanel>
+            <ScrollViewer>
+              <StackPanel Spacing="14" Margin="0,0,8,8">
+                <Border Classes="panel" IsVisible="{Binding !HasReadings}">
+                  <TextBlock Classes="body" Text="Reading your sensors…" />
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Cards}" IsVisible="{Binding HasReadings}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MetricCard">
+                      <Border Classes="panel" Margin="0,0,14,14" Padding="18,16,18,14">
+                        <StackPanel Spacing="10">
+                          <Grid ColumnDefinitions="Auto,*">
+                            <Ellipse Width="8" Height="8" Fill="{Binding Accent}" VerticalAlignment="Center" Margin="0,0,9,0" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                              <TextBlock Classes="section" Text="{Binding Title}" />
+                              <TextBlock Classes="muted" Text="{Binding Subtitle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                          </Grid>
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding Value}" FontSize="34" FontWeight="Bold" LetterSpacing="-1" />
+                            <TextBlock Classes="muted" Text="{Binding Unit}" FontSize="13" VerticalAlignment="Bottom" Margin="0,0,0,7" />
+                          </StackPanel>
+                          <ctl:Sparkline Values="{Binding History}" Color="{Binding Color}" Maximum="{Binding Max}" Height="64" />
+                          <ItemsControl ItemsSource="{Binding Lines}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:MetricLine">
+                                <StackPanel Margin="0,0,22,0" Spacing="1">
+                                  <TextBlock Classes="kicker" Text="{Binding Label}" />
+                                  <TextBlock Text="{Binding Value}" FontFamily="{StaticResource BrandMono}" FontSize="13" />
+                                </StackPanel>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Grid ColumnDefinitions="*,14,*" IsVisible="{Binding HasReadings}" Margin="0,-14,14,0">
+                  <Border Classes="panel">
+                    <StackPanel Spacing="12">
+                      <TextBlock Classes="section" Text="CPU threads" />
+                      <ItemsControl ItemsSource="{Binding Threads}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:ThreadLoad">
+                            <ProgressBar Classes="meter" Orientation="Vertical" Minimum="0" Maximum="100" Value="{Binding Percent}"
+                                         Height="70" MinWidth="0" Margin="2,0" ToolTip.Tip="{Binding Percent, StringFormat='{}{0:0} %'}" />
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                  <Border Grid.Column="2" Classes="panel">
+                    <StackPanel Spacing="12">
+                      <TextBlock Classes="section" Text="Drives" />
+                      <ItemsControl ItemsSource="{Binding Drives}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:DriveViewModel">
+                            <StackPanel Spacing="5" Margin="0,0,0,10">
+                              <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Detail}" />
+                              </Grid>
+                              <ProgressBar Classes="meter" Minimum="0" Maximum="100" Value="{Binding Percent}" Height="6" />
+                            </StackPanel>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <Border Classes="panel" Margin="0,0,14,0" IsVisible="{Binding HasReadings}">
+                  <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Spacing="2">
+                        <TextBlock Classes="section" Text="Every sensor" />
+                        <TextBlock Classes="muted" Text="The full list, straight from the hardware." />
+                      </StackPanel>
+                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowAll}" OnContent="Shown" OffContent="Hidden" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding AllSensors}" IsVisible="{Binding ShowAll}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SensorRow">
+                          <Grid ColumnDefinitions="260,*,Auto" Margin="0,2">
+                            <TextBlock Classes="muted" Text="{Binding Hardware}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="2" Text="{Binding Value}" FontFamily="{StaticResource BrandMono}" FontSize="12" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </TabItem>
+
+        <!-- ===== Cooling ===== -->
+        <TabItem>
+          <TabItem.Header>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{x:Static ctl:NavIcons.Cooling}" />
+              <TextBlock Text="Cooling" VerticalAlignment="Center" />
+            </StackPanel>
+          </TabItem.Header>
+          <DockPanel DataContext="{Binding Cooling}" x:DataType="vm:CoolingViewModel">
+            <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,20">
+              <TextBlock Classes="h1" Text="Cooling" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Temperatures, and fans you can give a fixed speed or a curve. Fans you leave on Automatic are never touched." />
+            </StackPanel>
+            <ScrollViewer>
+              <StackPanel Spacing="14" Margin="0,0,8,8">
+                <ItemsControl ItemsSource="{Binding Temps}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><UniformGrid Columns="4" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TempGauge">
+                      <Border Classes="panel" Margin="0,0,14,0" Padding="16,14">
+                        <StackPanel Spacing="6">
+                          <TextBlock Classes="kicker" Text="{Binding Label}" />
+                          <TextBlock Text="{Binding Value}" FontSize="30" FontWeight="Bold" Foreground="{Binding Brush}" IsVisible="{Binding Available}" />
+                          <TextBlock Text="needs admin" FontSize="15" Foreground="{StaticResource SubtleBrush}" IsVisible="{Binding !Available}" Margin="0,8,0,9" />
+                          <ProgressBar Classes="meter" Minimum="0" Maximum="100" Value="{Binding Percent}" Height="5" Foreground="{Binding Brush}" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Classes="note" Margin="0,0,14,0">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <PathIcon Data="{x:Static ctl:NavIcons.Check}" Width="16" Height="16" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Top" Margin="0,1,10,0" />
+                    <TextBlock Grid.Column="1" Classes="body" Text="{Binding SafetyText}" />
+                  </Grid>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Fans}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FanRowViewModel">
+                      <Border Classes="panel" Margin="0,0,14,14">
+                        <StackPanel Spacing="12">
+                          <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Border Classes="iconbox"><PathIcon Data="{x:Static ctl:NavIcons.Cooling}" /></Border>
+                            <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Spacing="1">
+                              <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" />
+                                <Border Classes="badge"><TextBlock Text="{Binding Speed}" /></Border>
+                              </StackPanel>
+                              <TextBlock Classes="muted" Text="{Binding Status}" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="2" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" MinWidth="170" VerticalAlignment="Center" />
+                          </Grid>
+                          <TextBlock Classes="muted" Text="{Binding ModeHint}" />
+
+                          <Grid ColumnDefinitions="*,60" IsVisible="{Binding IsFixed}">
+                            <Slider Minimum="30" Maximum="100" Value="{Binding FixedPercent}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                            <TextBlock Grid.Column="1" Text="{Binding FixedPercent, StringFormat='{}{0:0} %'}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       FontFamily="{StaticResource BrandMono}" />
+                          </Grid>
+
+                          <StackPanel Spacing="10" IsVisible="{Binding IsCurve}">
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                              <TextBlock Text="Follows" VerticalAlignment="Center" Margin="0,0,10,0" />
+                              <ComboBox Grid.Column="1" ItemsSource="{Binding Follow}" SelectedItem="{Binding Sensor}" MinWidth="200" />
+                              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+                                <Button Classes="ghost" Content="Quiet" Command="{Binding QuietCommand}" />
+                                <Button Classes="ghost" Content="Balanced" Command="{Binding BalancedCommand}" />
+                                <Button Classes="ghost" Content="Performance" Command="{Binding PerformanceCommand}" />
+                              </StackPanel>
+                            </Grid>
+                            <ctl:FanCurveChart Points="{Binding Points}" CurrentTemp="{Binding CurrentTemp}" Height="210" />
+                          </StackPanel>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Classes="panel" Margin="0,0,14,0" IsVisible="{Binding !HasFans}">
+                  <TextBlock Classes="body" Text="MyRGB hasn't found a fan it can control yet." />
+                </Border>
+
+                <Border Classes="panel" Margin="0,0,14,0" IsVisible="{Binding BoardFansMissing}">
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="section" Text="CPU temperature and case fans" />
+                    <TextBlock Classes="body" Text="Your CPU's temperature and the fans on your motherboard are behind a driver that only opens to programs running as administrator. MyRGB runs without admin rights, so it can't see them yet. Graphics card fans and temperatures work without it." />
                   </StackPanel>
                 </Border>
               </StackPanel>

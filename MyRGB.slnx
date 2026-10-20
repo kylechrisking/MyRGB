@@ -8,6 +8,7 @@
     <Project Path="src/MyRGB.Hid/MyRGB.Hid.csproj" />
     <Project Path="src/MyRGB.Providers.Corsair/MyRGB.Providers.Corsair.csproj" />
     <Project Path="src/MyRGB.Providers.OpenRgb/MyRGB.Providers.OpenRgb.csproj" />
+    <Project Path="src/MyRGB.Sensors/MyRGB.Sensors.csproj" />
     <Project Path="src/MyRGB.StreamDeck/MyRGB.StreamDeck.csproj" />
   </Folder>
   <Folder Name="/tests/">

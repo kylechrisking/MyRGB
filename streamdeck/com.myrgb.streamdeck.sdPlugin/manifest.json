@@ -2,7 +2,7 @@
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
   "UUID": "com.myrgb.streamdeck",
   "Name": "MyRGB",
-  "Version": "0.1.0.0",
+  "Version": "0.2.0.0",
   "Author": "Root Labs",
   "URL": "https://www.rootlabs.us",
   "Description": "Control MyRGB lighting: switch, shuffle and pause presets, toggle lights, and adjust brightness.",

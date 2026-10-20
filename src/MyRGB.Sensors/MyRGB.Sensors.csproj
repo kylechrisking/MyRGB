@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\MyRGB.Core\MyRGB.Core.csproj" />
+    <!-- MPL-2.0. Reads CPU, GPU, memory and (with admin rights) motherboard sensors. -->
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <InternalsVisibleTo Include="MyRGB.Tests" />
+  </ItemGroup>
+</Project>

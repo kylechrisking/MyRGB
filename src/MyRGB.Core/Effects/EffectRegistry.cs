@@ -21,6 +21,7 @@ public sealed class EffectRegistry
             RippleEffect.Definition,
             PlasmaEffect.Definition,
             FireEffect.Definition,
+            SensorMeterEffect.Definition,
         })
             r.Register(d);
         return r;

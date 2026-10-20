@@ -24,6 +24,7 @@ public static class BuiltInPresets
         P("fire", "Fire", "fire"),
         P("starfield", "Starfield", "twinkle"),
         P("rain", "Raindrops", "ripple", ("random", "false"), ("color", "#3AA0FF"), ("rate", "1.5")),
+        P("pc-heat", "PC Heat", "sensor-meter", ("sensor", "GPU temperature"), ("low", "40"), ("high", "80")),
         P("breathing-red", "Breathing Red", "breathing", ("color", "#FF0020")),
         P("arctic-white", "Arctic White", "static", ("color", "#DDEEFF")),
         P("lights-off", "Lights Off", "static", ("color", "#000000")),

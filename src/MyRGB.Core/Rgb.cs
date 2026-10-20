@@ -36,6 +36,39 @@ public readonly record struct Rgb(byte R, byte G, byte B)
         return new Rgb(ToByte(r + m), ToByte(g + m), ToByte(b + m));
     }
 
+    /// <summary>Hue in degrees (0..360), saturation and value (0..1).</summary>
+    public (double H, double S, double V) ToHsv()
+    {
+        double r = R / 255.0, g = G / 255.0, b = B / 255.0;
+        double max = Math.Max(r, Math.Max(g, b)), min = Math.Min(r, Math.Min(g, b)), d = max - min;
+        double h = d == 0 ? 0
+            : max == r ? 60 * (((g - b) / d % 6 + 6) % 6)
+            : max == g ? 60 * ((b - r) / d + 2)
+            : 60 * ((r - g) / d + 4);
+        return (h, max == 0 ? 0 : d / max, max);
+    }
+
+    /// <summary>
+    /// Blend around the color wheel instead of through grey. Goes the way that passes yellow when
+    /// one does, so cool-to-hot reads like a heat map (cyan, green, yellow, red); otherwise the
+    /// shorter way.
+    /// </summary>
+    public static Rgb LerpHue(Rgb a, Rgb b, double t)
+    {
+        var (ha, sa, va) = a.ToHsv();
+        var (hb, sb, vb) = b.ToHsv();
+        double up = ((hb - ha) % 360 + 360) % 360, down = up - 360; // up >= 0, down <= 0
+        static bool PassesYellow(double from, double delta)
+        {
+            double toYellow = delta >= 0 ? ((60 - from) % 360 + 360) % 360 : -(((from - 60) % 360 + 360) % 360);
+            return Math.Abs(toYellow) <= Math.Abs(delta);
+        }
+        bool viaUp = PassesYellow(ha, up), viaDown = PassesYellow(ha, down);
+        double delta = viaUp != viaDown ? (viaUp ? up : down) : (up <= -down ? up : down);
+        t = Math.Clamp(t, 0, 1);
+        return FromHsv(ha + delta * t, sa + (sb - sa) * t, va + (vb - va) * t);
+    }
+
     public static Rgb Lerp(Rgb a, Rgb b, double t)
     {
         t = Math.Clamp(t, 0, 1);

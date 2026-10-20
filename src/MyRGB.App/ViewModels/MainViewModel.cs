@@ -8,6 +8,7 @@ using MyRGB.App.Controls;
 using MyRGB.App.Services;
 using MyRGB.Core;
 using MyRGB.Core.Devices;
+using MyRGB.Core.Effects;
 using MyRGB.Core.Presets;
 
 namespace MyRGB.App.ViewModels;
@@ -18,6 +19,13 @@ public sealed partial class PresetCardViewModel(PresetSummary summary, MainViewM
     public string Name => summary.Name;
     public bool IsBuiltIn => summary.BuiltIn;
     public string Badge => summary.BuiltIn ? "Built-in" : "Custom";
+
+    private readonly Preset? _preset = owner.Host.Presets.Find(summary.Id);
+
+    /// <summary>The preset's main effect and settings, for its live preview tile.</summary>
+    public EffectDefinition? Effect => _preset is null ? null : owner.Host.Effects.Find(_preset.EffectId);
+    public IReadOnlyDictionary<string, string>? Settings => _preset?.Settings;
+    public bool HasEffect => Effect is not null;
 
     private readonly Color[] _colors = summary.Swatch.Select(h => Rgb.TryParse(h, out var c) ? Color.FromRgb(c.R, c.G, c.B) : Colors.Black).ToArray();
 
@@ -67,7 +75,8 @@ public sealed record AlertViewModel(bool Warning, string Text, string? ActionLab
 public sealed partial class MainViewModel : ObservableObject
 {
     // Sidebar order. Keep in sync with the TabItems in MainWindow.axaml.
-    public const int HomeTab = 0, PresetsTab = 1, CommunityTab = 2, StudioTab = 3, LayoutTab = 4, DevicesTab = 5, VendorsTab = 6, SettingsTab = 7;
+    public const int HomeTab = 0, PresetsTab = 1, CommunityTab = 2, StudioTab = 3, LayoutTab = 4, DevicesTab = 5,
+        MonitoringTab = 6, CoolingTab = 7, VendorsTab = 8, SettingsTab = 9;
 
     private const int LowBattery = 20;
 
@@ -82,6 +91,9 @@ public sealed partial class MainViewModel : ObservableObject
         Account = new AccountViewModel(host);
         Community = new CommunityViewModel(host, Account);
         Contact = new ContactViewModel(host, Account);
+        Monitoring = new MonitoringViewModel(host);
+        Cooling = new CoolingViewModel(host);
+        Supported.Search();
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
         _startWithWindows = StartupRegistration.IsEnabled;
@@ -92,6 +104,7 @@ public sealed partial class MainViewModel : ObservableObject
         host.Devices.DevicesChanged += (_, _) => Dispatcher.UIThread.Post(RefreshDevices);
         host.Batteries.Changed += (_, _) => Dispatcher.UIThread.Post(ApplyBatteries);
         Vendors.Updated += RefreshAlerts;
+        host.Sensors.Updated += () => Dispatcher.UIThread.Post(RefreshSensors);
 
         RefreshPresets();
         RefreshDevices();
@@ -107,6 +120,16 @@ public sealed partial class MainViewModel : ObservableObject
     public AccountViewModel Account { get; }
     public CommunityViewModel Community { get; }
     public ContactViewModel Contact { get; }
+    public MonitoringViewModel Monitoring { get; }
+    public CoolingViewModel Cooling { get; }
+    public SupportedDevicesViewModel Supported { get; } = new();
+
+    /// <summary>Sensor pages only redraw while they're showing; the hub keeps reading either way.</summary>
+    private void RefreshSensors()
+    {
+        if (SelectedTab == MonitoringTab) Monitoring.Refresh();
+        if (SelectedTab == CoolingTab) Cooling.Refresh();
+    }
 
     /// <summary>Builds without an account service hide Community and the account panels.</summary>
     public bool CloudAvailable => _host.Cloud.IsConfigured;
@@ -114,6 +137,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSelectedTabChanged(int value)
     {
         if (value == CommunityTab && !Community.LoadedOnce) _ = Community.Load();
+        if (value is MonitoringTab or CoolingTab) RefreshSensors();
         // Opening the Studio from the menu starts from whatever is playing, not an empty editor.
         if (value == StudioTab && !Studio.HasLoaded)
             Studio.Load(_host.Engine.ActivePreset is { } p && p.Id != AppHost.DraftPresetId ? p : _host.Presets.BuiltIns[0]);
@@ -193,6 +217,8 @@ public sealed partial class MainViewModel : ObservableObject
             "studio" => StudioTab,
             "layout" => LayoutTab,
             "devices" => DevicesTab,
+            "monitoring" => MonitoringTab,
+            "cooling" => CoolingTab,
             "vendors" => VendorsTab,
             "community" => CommunityTab,
             "settings" or "account" => SettingsTab,

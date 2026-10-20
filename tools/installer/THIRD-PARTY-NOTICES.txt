@@ -68,6 +68,22 @@ Microsoft.Extensions.Logging
 Copyright (c) .NET Foundation and Contributors. MIT License. https://github.com/dotnet/runtime
 
 
+LibreHardwareMonitorLib 0.9.6, DiskInfoToolkit 1.1.2, RAMSPDToolkit-NDD 1.4.2
+-----------------------------------------------------------------------------
+Copyright (c) LibreHardwareMonitor contributors; DiskInfoToolkit and RAMSPDToolkit by Blacktempel.
+Mozilla Public License 2.0 (https://mozilla.org/MPL/2.0/). Used unmodified, for the Monitoring
+and Cooling pages. Source: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor,
+https://github.com/Blacktempel/DiskInfoToolkit, https://github.com/Blacktempel/RAMSPDToolkit
+
+HidSharp 2.6.4
+--------------
+Copyright (c) James F. Bellinger. Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0).
+https://software.seekye.com/hidsharp
+
+Mono.Posix.NETStandard
+----------------------
+Copyright (c) .NET Foundation and Contributors. MIT License.
+
 MIT License (text, for the components above that use it)
 --------------------------------------------------------
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and

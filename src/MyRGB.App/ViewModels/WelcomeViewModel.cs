@@ -67,7 +67,10 @@ public sealed partial class WelcomeViewModel : ObservableObject
         new("STEP 4", "Retire the vendor apps",
             "iCUE, G HUB, Synapse and Armoury Crate all try to control lighting too, and they fight with MyRGB and with each other. The Vendor apps page shows which ones are installed, whether MyRGB has taken over their devices, and what else you'd lose by uninstalling them.",
             NavIcons.Vendors, "Review vendor apps", "vendors"),
-        new("STEP 5", "Control it from anywhere",
+        new("STEP 5", "Keep an eye on your PC",
+            "Monitoring shows your CPU, graphics card, memory, drives and network live. Cooling lets you give your fans a fixed speed or a curve that follows a temperature, with safety limits MyRGB always keeps. The System Heat effect even turns your lights warmer as your PC works harder.",
+            NavIcons.Monitoring, "Open Monitoring", "monitoring"),
+        new("STEP 6", "Control it from anywhere",
             "Closing the window keeps MyRGB running in the system tray, so your lights stay on. Use the player bar for presets, the top bar for power and brightness, the tray icon for quick switches, or Stream Deck keys if you have one.",
             NavIcons.Settings),
     ];

@@ -3,6 +3,7 @@ using MyRGB.Api;
 using MyRGB.Core.Devices;
 using MyRGB.Core.Layout;
 using MyRGB.Core.Presets;
+using MyRGB.Core.Sensors;
 using MyRGB.Providers.OpenRgb;
 
 namespace MyRGB.App.Services;
@@ -26,6 +27,9 @@ public sealed class AppSettings
     public List<DevicePlacement> Layout { get; set; } = [];
     public List<string> ExcludedDevices { get; set; } = [];
     public List<ZoneSize> ZoneSizes { get; set; } = [];
+
+    /// <summary>Fans the user set to a fixed speed or a curve. Fans not listed are left to the hardware.</summary>
+    public List<FanSetting> Fans { get; set; } = [];
     public OpenRgbOptions OpenRgb { get; set; } = new();
 }
 

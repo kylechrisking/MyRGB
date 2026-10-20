@@ -12,7 +12,7 @@ What gets installed
 | OpenRGB 1.1 (official release, unmodified) | %LOCALAPPDATA%\Programs\MyRGB\OpenRGB | Talks to motherboard, mouse, GPU and other RGB hardware. MyRGB starts it hidden in server mode and controls it over localhost:6742. It never shows a window. |
 | Start menu shortcut | Start menu → MyRGB | |
 | Start with Windows (on by default) | HKCU\…\Run\MyRGB | Starts MyRGB in the tray at sign-in. The same switch is in MyRGB's Settings. |
-| Stream Deck plugin (only offered if Stream Deck is installed) | %APPDATA%\Elgato\StreamDeck\Plugins\com.myrgb.streamdeck.sdPlugin | Preset, power and brightness keys. Stream Deck loads it after a restart; the finish page offers to restart it for you. |
+| Stream Deck plugin (only offered if Stream Deck is installed) | %APPDATA%\Elgato\StreamDeck\Plugins\com.myrgb.streamdeck.sdPlugin | Preset, power, brightness, pause and random-preset keys. Stream Deck loads it after a restart; the finish page offers to restart it for you. |
 
 Corsair keyboards that MyRGB drives natively (e.g. the Vanguard Pro 96) need nothing extra.
 
@@ -38,6 +38,14 @@ Ticking this option shows one UAC prompt, then:
 Your account must be an administrator for this to work. If you skip it now, run setup again later
 and tick the option. Upgrading MyRGB doesn't prompt again unless the bundled OpenRGB changed.
 A log of this step is written to %LOCALAPPDATA%\Programs\MyRGB\setup.log.
+
+Sensors and fans
+
+The Monitoring and Cooling pages need no setup. Without admin rights MyRGB reads CPU load, memory,
+drives, network and everything on the graphics card, and can drive the graphics card's fans. CPU
+temperatures and motherboard fans sit behind a driver that only opens to administrators, so they
+show "needs admin" for now. MyRGB only ever drives a fan you set to a fixed speed or a curve, never
+below 30 %, always flat out from 85 °C, and hands every fan back to automatic when it closes.
 
 Uninstalling
 

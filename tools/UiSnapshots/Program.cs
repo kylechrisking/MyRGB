@@ -8,6 +8,7 @@ using MyRGB.Core;
 using MyRGB.Core.Devices;
 using MyRGB.Cloud;
 using MyRGB.Core.Presets;
+using MyRGB.Core.Sensors;
 using MyRGB.Core.Vendors;
 
 // Usage: UiSnapshots <output folder>
@@ -44,6 +45,7 @@ var host = new AppHost(new AppHostOptions
     DetectVendorApps = () => VendorAppCatalog.Detect(installed, ["iCUE"]),
     Cloud = () => new FakeCloud(),
     DynamicLightingOn = () => true,
+    Sensors = () => new FakeSensors(),
 });
 // Stay on this thread: it's Avalonia's UI thread, and awaiting would resume elsewhere.
 host.StartAsync().GetAwaiter().GetResult();
@@ -81,6 +83,11 @@ vm.Studio.SelectedTarget = vm.Studio.Targets[1]; Shoot("04b-studio-device");
 vm.Studio.SelectedTarget = vm.Studio.Targets[0];
 vm.SelectedTab = MainViewModel.LayoutTab; Shoot("05-layout");
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
+vm.Supported.Query = "razer basilisk"; Console.WriteLine($"supported search: {vm.Supported.Summary} first={vm.Supported.Results.FirstOrDefault()?.Name}");
+for (int i = 0; i < 180; i++) host.Sensors.Poll(); // a few minutes of history for the charts
+host.SetFan(new FanSetting { FanId = "fake/gpu/fan1", Mode = FanMode.Curve, SensorKey = SensorKeys.GpuTemp });
+vm.SelectedTab = MainViewModel.MonitoringTab; Shoot("06b-monitoring");
+vm.SelectedTab = MainViewModel.CoolingTab; Shoot("06c-cooling");
 vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");
 vm.Vendors.Apps[0].AskUninstallCommand.Execute(null); Shoot("08-vendors-confirm");
 vm.SelectedTab = MainViewModel.SettingsTab; Shoot("09-settings");
@@ -192,4 +199,67 @@ sealed class FakeCloud : ICloud
     public Task CountInstallAsync(Guid id, CancellationToken ct) => Task.CompletedTask;
     public Task ReportAsync(Guid id, string reason, CancellationToken ct) => Task.CompletedTask;
     public Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct) => Task.CompletedTask;
+}
+
+/// <summary>A PC like the one MyRGB is developed on: an 8-core CPU, an RTX card with two fans.</summary>
+sealed class FakeSensors : ISensorSource
+{
+    private int _t;
+    private readonly FakeFan[] _fans = [new("fake/gpu/fan1", "GPU fan 1"), new("fake/gpu/fan2", "GPU fan 2")];
+
+    public IReadOnlyList<IFanChannel> Fans => _fans;
+
+    public IReadOnlyList<SensorReading> Read()
+    {
+        double t = _t++;
+        double wave = Math.Sin(t / 17) * 0.5 + 0.5, spike = Math.Max(0, Math.Sin(t / 7)) * 0.4;
+        double gpuTemp = 44 + 20 * wave, cpuLoad = 12 + 40 * wave * wave + 20 * spike;
+        foreach (var f in _fans) f.Tick(gpuTemp);
+        var r = new List<SensorReading>
+        {
+            new("fake/cpu/load", SensorCategory.Cpu, "11th Gen Intel Core i7-11700K", "CPU Total", SensorKind.Load, cpuLoad, SensorKeys.CpuLoad),
+            new("fake/cpu/clock", SensorCategory.Cpu, "11th Gen Intel Core i7-11700K", "Clock", SensorKind.Clock, 4600 + 300 * wave, SensorKeys.CpuClock),
+            new("fake/gpu/temp", SensorCategory.Gpu, "NVIDIA GeForce RTX 4070", "GPU Core", SensorKind.Temperature, gpuTemp, SensorKeys.GpuTemp),
+            new("fake/gpu/hot", SensorCategory.Gpu, "NVIDIA GeForce RTX 4070", "GPU Hot Spot", SensorKind.Temperature, gpuTemp + 7, SensorKeys.GpuHotspot),
+            new("fake/gpu/mem", SensorCategory.Gpu, "NVIDIA GeForce RTX 4070", "GPU Memory Junction", SensorKind.Temperature, gpuTemp + 4, SensorKeys.GpuMemoryTemp),
+            new("fake/gpu/load", SensorCategory.Gpu, "NVIDIA GeForce RTX 4070", "GPU Core", SensorKind.Load, 70 * wave, SensorKeys.GpuLoad),
+            new("fake/gpu/power", SensorCategory.Gpu, "NVIDIA GeForce RTX 4070", "GPU Package", SensorKind.Power, 30 + 150 * wave, SensorKeys.GpuPower),
+            new("fake/gpu/vram", SensorCategory.Gpu, "NVIDIA GeForce RTX 4070", "GPU Memory Used", SensorKind.Data, 3.2, SensorKeys.GpuMemoryUsed),
+            new("fake/gpu/vramt", SensorCategory.Gpu, "NVIDIA GeForce RTX 4070", "GPU Memory Total", SensorKind.Data, 12, SensorKeys.GpuMemoryTotal),
+            new("fake/mem/load", SensorCategory.Memory, "Total Memory", "Memory", SensorKind.Load, 38 + 4 * wave, SensorKeys.MemoryLoad),
+            new("fake/mem/used", SensorCategory.Memory, "Total Memory", "Memory Used", SensorKind.Data, 12.1 + wave, SensorKeys.MemoryUsed),
+            new("fake/mem/total", SensorCategory.Memory, "Total Memory", "Memory Total", SensorKind.Data, 31.9, SensorKeys.MemoryTotal),
+            new("fake/net/down", SensorCategory.Network, "Network", "Download", SensorKind.Throughput, 2.4e6 * spike + 4e4, SensorKeys.NetDown),
+            new("fake/net/up", SensorCategory.Network, "Network", "Upload", SensorKind.Throughput, 1.8e5 * wave, SensorKeys.NetUp),
+            new("fake/drive/c", SensorCategory.Storage, "C: Windows", "Used", SensorKind.Load, 62),
+            new("fake/drive/c/u", SensorCategory.Storage, "C: Windows", "Used space", SensorKind.Data, 620),
+            new("fake/drive/c/t", SensorCategory.Storage, "C: Windows", "Size", SensorKind.Data, 1000),
+            new("fake/drive/e", SensorCategory.Storage, "E: Projects", "Used", SensorKind.Load, 41),
+            new("fake/drive/e/u", SensorCategory.Storage, "E: Projects", "Used space", SensorKind.Data, 820),
+            new("fake/drive/e/t", SensorCategory.Storage, "E: Projects", "Size", SensorKind.Data, 2000),
+        };
+        for (int i = 0; i < 16; i++)
+            r.Add(new($"fake/cpu/thread{i}", SensorCategory.Cpu, "11th Gen Intel Core i7-11700K", $"CPU Core #{i / 2 + 1} Thread #{i % 2 + 1}",
+                SensorKind.Load, Math.Clamp(cpuLoad + 30 * Math.Sin(i * 1.7 + t / 5), 0, 100)));
+        return r;
+    }
+
+    public void Dispose() { }
+
+    private sealed class FakeFan(string id, string name) : IFanChannel
+    {
+        private double? _set;
+        public string Id => id;
+        public string Name => name;
+        public string GuardKey => SensorKeys.GpuTemp;
+        public double? Rpm { get; private set; }
+        public double? Percent { get; private set; }
+        public void Tick(double temp)
+        {
+            Percent = _set ?? (temp < 50 ? 0 : 30 + (temp - 50) * 2);
+            Rpm = Percent * 30;
+        }
+        public void Set(double percent) => _set = percent;
+        public void Reset() => _set = null;
+    }
 }
