@@ -29,6 +29,7 @@ internal sealed class CorsairKeyboard : IRgbDevice, IAsyncDisposable
     private readonly Task _reader;
     private byte _session;
     private bool _lightingOpen;
+    private VolumeWheel? _wheel;
 
     private CorsairKeyboard(FileStream stream, string serialHint, ILogger log)
     {
@@ -68,6 +69,8 @@ internal sealed class CorsairKeyboard : IRgbDevice, IAsyncDisposable
             await kb.CommandAsync(Bragi.Set(kb._session, Bragi.PropertyMode, Bragi.ModeSoftware), kb._session, Bragi.SetProperty, ct);
             await kb.CommandAsync(Bragi.Open(kb._session, Bragi.LightingHandle, Bragi.LightingResource), kb._session, Bragi.OpenHandle, ct);
             kb._lightingOpen = true;
+            // Software mode silences the volume wheel; pass its turns and presses on to Windows.
+            kb._wheel = VolumeWheel.TryOpen(log);
             return kb;
         }
         catch
@@ -177,6 +180,7 @@ internal sealed class CorsairKeyboard : IRgbDevice, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (_wheel is not null) await _wheel.DisposeAsync();
         if (!Faulted && _session != 0)
         {
             // Hand the lighting back to the keyboard's own effects, then free the session slot.

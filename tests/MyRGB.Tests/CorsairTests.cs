@@ -85,6 +85,25 @@ public class CorsairTests
         Assert.All(leds, l => Assert.InRange(l.Y, 0f, 1f));
     }
 
+    [Fact]
+    public void Volume_wheel_reports_become_volume_steps_and_mute()
+    {
+        // Captured from the Vanguard Pro 96 in software mode (report id included), padded to 65 bytes.
+        static byte[] Report(string hex) => [.. Convert.FromHexString(hex), .. new byte[65 - hex.Length / 2]];
+        bool pressed = false;
+
+        Assert.Equal((1, false), VolumeWheel.Parse(Report("00000000056000010000000000000000000000000000000000"), ref pressed));
+        Assert.Equal((-1, false), VolumeWheel.Parse(Report("00000000056000FFFFFFFF0000000000000000000000000000"), ref pressed));
+
+        // Wheel pressed (byte 21 bit 1), held, then released: one mute.
+        Assert.Equal((0, true), VolumeWheel.Parse(Report("000000000200000000000000000000000000000000020000"), ref pressed));
+        Assert.Equal((0, false), VolumeWheel.Parse(Report("000000000200000000000000000000000000000000020000"), ref pressed));
+        Assert.Equal((0, false), VolumeWheel.Parse(Report("000000000200000000000000000000000000000000000000"), ref pressed));
+
+        // Ordinary keys and other buttons don't touch the volume.
+        Assert.Equal((0, false), VolumeWheel.Parse(Report("000000000200001000000000000000000000000004000000"), ref pressed));
+    }
+
     /// <summary>Captured wire bytes with the report id Windows adds in front.</summary>
     private static byte[] Wire(string hex) => [0, .. Convert.FromHexString(hex)];
 }
