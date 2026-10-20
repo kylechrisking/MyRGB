@@ -177,11 +177,37 @@ public sealed partial class StudioViewModel : ObservableObject
     private void RebuildParameters()
     {
         Parameters.Clear();
-        if (!ShowEffectEditor || _host.Effects.Find(CurrentEffectId()) is not { } def) return;
-        var values = CurrentSettings();
-        foreach (var spec in def.Parameters)
-            Parameters.Add(ParameterViewModel.Create(spec, values.GetValueOrDefault(spec.Key) ?? spec.DefaultValue, OnParameterChanged));
+        if (ShowEffectEditor && _host.Effects.Find(CurrentEffectId()) is { } def)
+        {
+            var values = CurrentSettings();
+            foreach (var spec in def.Parameters)
+                Parameters.Add(ParameterViewModel.Create(spec, values.GetValueOrDefault(spec.Key) ?? spec.DefaultValue, OnParameterChanged));
+        }
+        NotifySettingsHeader();
     }
+
+    private void NotifySettingsHeader()
+    {
+        OnPropertyChanged(nameof(SettingsTitle));
+        OnPropertyChanged(nameof(SettingsDescription));
+        OnPropertyChanged(nameof(HasParameters));
+        OnPropertyChanged(nameof(SettingsHint));
+    }
+
+    /// <summary>The settings panel's heading: the effect being tuned.</summary>
+    public string SettingsTitle => ShowEffectEditor && SelectedEffect is { } e ? e.Name : "Settings";
+
+    public string SettingsDescription => ShowEffectEditor ? SelectedEffect?.Description ?? "" : "";
+
+    public bool HasParameters => Parameters.Count > 0;
+
+    /// <summary>What the settings panel says when there's nothing to tune.</summary>
+    public string SettingsHint => TargetMode switch
+    {
+        _ when ShowEffectEditor => "This effect has nothing to tune. It looks the same every time.",
+        OffMode => "This device is dark while this preset plays.",
+        _ => "This device follows the main effect. Choose \"Own effect\" to tune it on its own.",
+    };
 
     private void OnParameterChanged(string key, string value)
     {

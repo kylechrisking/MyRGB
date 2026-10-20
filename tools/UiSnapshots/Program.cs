@@ -76,6 +76,8 @@ vm.SelectedTab = MainViewModel.HomeTab; Shoot("02-home");
 vm.SelectedTab = MainViewModel.PresetsTab; Shoot("03-presets");
 vm.SelectedTab = MainViewModel.CommunityTab; Thread.Sleep(300); Shoot("03b-community");
 vm.EditPreset("ocean"); Shoot("04-studio");
+vm.Studio.SelectedTarget = vm.Studio.Targets[1]; Shoot("04b-studio-device");
+vm.Studio.SelectedTarget = vm.Studio.Targets[0];
 vm.SelectedTab = MainViewModel.LayoutTab; Shoot("05-layout");
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
 vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");

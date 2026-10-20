@@ -164,19 +164,31 @@
       <Setter Property="Height" Value="16" />
     </Style>
 
-    <!-- Studio effect list: a soft highlight instead of a solid accent block. -->
-    <Style Selector="ListBox.effects ListBoxItem">
-      <Setter Property="CornerRadius" Value="8" />
-      <Setter Property="Margin" Value="0,1" />
-      <Setter Property="Padding" Value="12,6" />
+    <!-- Studio effect chips: raised tiles, the picked one tinted with an accent edge. -->
+    <Style Selector="ListBox.chips">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
     </Style>
-    <Style Selector="ListBox.effects ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="ListBox.chips ListBoxItem">
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Margin" Value="0,0,8,8" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="ListBox.chips ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource HairlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox.chips ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
     </Style>
-    <Style Selector="ListBox.effects ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="ListBox.chips ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{StaticResource AccentWashBrush}" />
       <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="ListBox.chips:disabled">
+      <Setter Property="Opacity" Value="0.45" />
     </Style>
   </Window.Styles>
 
@@ -540,88 +552,104 @@
               <TextBlock Text="Studio" VerticalAlignment="Center" />
             </StackPanel>
           </TabItem.Header>
-          <Grid ColumnDefinitions="230,20,*">
-            <Border Classes="panel" Padding="10,14">
-              <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Margin="8,0,0,10" Spacing="2">
-                  <TextBlock Classes="section" Text="Effects" />
-                  <TextBlock Classes="muted" Text="Pick one to try it live." />
-                </StackPanel>
-                <ListBox Classes="effects" ItemsSource="{Binding Studio.Effects}" SelectedItem="{Binding Studio.SelectedEffect}"
-                         IsEnabled="{Binding Studio.ShowEffectEditor}" Background="Transparent">
-                  <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:EffectItem">
-                      <StackPanel Margin="0,2" ToolTip.Tip="{Binding Description}">
-                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                        <TextBlock Classes="muted" Text="{Binding Category}" />
-                      </StackPanel>
-                    </DataTemplate>
-                  </ListBox.ItemTemplate>
-                </ListBox>
-              </DockPanel>
-            </Border>
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,6">
+              <TextBox Text="{Binding Studio.PresetName}" PlaceholderText="Preset name" FontSize="16" />
+              <Button Grid.Column="1" Content="Save" Command="{Binding Studio.SaveCommand}" Classes="accent" Margin="10,0,0,0" />
+              <Button Grid.Column="2" Classes="ghost" Content="Save as new" Command="{Binding Studio.SaveAsNewCommand}" Margin="8,0,0,0" />
+              <Button Grid.Column="3" Classes="ghost" Content="Discard" Command="{Binding Studio.RevertCommand}" Margin="8,0,0,0"
+                      ToolTip.Tip="Stop previewing and go back to the preset you had on" />
+            </Grid>
+            <TextBlock DockPanel.Dock="Top" Classes="muted" Margin="2,0,0,16"
+                       Text="Everything you change plays on your devices right away. Save keeps it as a preset." />
 
-            <DockPanel Grid.Column="2">
-              <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,6">
-                <TextBox Text="{Binding Studio.PresetName}" PlaceholderText="Preset name" FontSize="16" />
-                <Button Grid.Column="1" Content="Save" Command="{Binding Studio.SaveCommand}" Classes="accent" Margin="10,0,0,0" />
-                <Button Grid.Column="2" Classes="ghost" Content="Save as new" Command="{Binding Studio.SaveAsNewCommand}" Margin="8,0,0,0" />
-                <Button Grid.Column="3" Classes="ghost" Content="Discard" Command="{Binding Studio.RevertCommand}" Margin="8,0,0,0"
-                        ToolTip.Tip="Stop previewing and go back to the preset you had on" />
-              </Grid>
-              <TextBlock DockPanel.Dock="Top" Classes="muted" Margin="2,0,0,14"
-                         Text="Everything you change plays on your devices right away. Save keeps it as a preset." />
-
-              <Border DockPanel.Dock="Top" Classes="panel" Padding="16,12" Margin="0,0,0,14">
-                <StackPanel Spacing="8">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="Edit for" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    <ComboBox ItemsSource="{Binding Studio.Targets}" SelectedItem="{Binding Studio.SelectedTarget}" MinWidth="280" />
-                    <ComboBox ItemsSource="{Binding Studio.Modes}" SelectedItem="{Binding Studio.TargetMode}" MinWidth="190"
-                              IsVisible="{Binding Studio.IsDeviceTarget}" />
+            <Grid ColumnDefinitions="*,18,320">
+              <!-- Left: the live preview, and the effects to pick from under it. -->
+              <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                  <TextBlock Classes="kicker" Text="LIVE PREVIEW" Margin="0,0,0,8" />
+                  <ctl:LedCanvas Host="{Binding Host}" HighlightId="{Binding Studio.SelectedTarget.DeviceId}" />
+                  <StackPanel Spacing="8" Margin="0,18,0,0">
+                    <TextBlock Classes="kicker" Text="EFFECT" />
+                    <ListBox Classes="chips" ItemsSource="{Binding Studio.Effects}" SelectedItem="{Binding Studio.SelectedEffect}"
+                             IsEnabled="{Binding Studio.ShowEffectEditor}">
+                      <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel ItemWidth="140" />
+                        </ItemsPanelTemplate>
+                      </ListBox.ItemsPanel>
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:EffectItem">
+                          <StackPanel ToolTip.Tip="{Binding Description}" Spacing="1">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Classes="muted" FontSize="11" Text="{Binding Category}" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
                   </StackPanel>
-                  <TextBlock Classes="muted" Text="{Binding Studio.TargetHint}" />
                 </StackPanel>
-              </Border>
+              </ScrollViewer>
 
-              <ctl:LedCanvas DockPanel.Dock="Top" Host="{Binding Host}" Height="300" Margin="0,0,0,14" />
+              <!-- Right: what's being edited, and its settings. -->
+              <DockPanel Grid.Column="2">
+                <Border DockPanel.Dock="Top" Classes="panel" Padding="16,14" Margin="0,0,0,14">
+                  <StackPanel Spacing="8">
+                    <TextBlock Classes="kicker" Text="EDIT FOR" />
+                    <ComboBox ItemsSource="{Binding Studio.Targets}" SelectedItem="{Binding Studio.SelectedTarget}" HorizontalAlignment="Stretch" />
+                    <ComboBox ItemsSource="{Binding Studio.Modes}" SelectedItem="{Binding Studio.TargetMode}" HorizontalAlignment="Stretch"
+                              IsVisible="{Binding Studio.IsDeviceTarget}" />
+                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding Studio.TargetHint}" />
+                  </StackPanel>
+                </Border>
 
-              <Border Classes="panel" IsVisible="{Binding Studio.ShowEffectEditor}">
-                <ScrollViewer>
-                  <ItemsControl ItemsSource="{Binding Studio.Parameters}">
-                    <ItemsControl.DataTemplates>
-                      <DataTemplate DataType="vm:ColorParameterViewModel">
-                        <Grid ColumnDefinitions="200,*" Margin="0,6">
-                          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                          <ColorPicker Grid.Column="1" Color="{Binding Color}" HorizontalAlignment="Left" IsAlphaVisible="False" />
-                        </Grid>
-                      </DataTemplate>
-                      <DataTemplate DataType="vm:NumberParameterViewModel">
-                        <Grid ColumnDefinitions="200,*,60" Margin="0,2">
-                          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                          <Slider Grid.Column="1" Minimum="{Binding Min}" Maximum="{Binding Max}" SmallChange="{Binding Step}"
-                                  TickFrequency="{Binding Step}" IsSnapToTickEnabled="True" Value="{Binding Value}" />
-                          <TextBlock Grid.Column="2" Text="{Binding Display}" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                        </Grid>
-                      </DataTemplate>
-                      <DataTemplate DataType="vm:ChoiceParameterViewModel">
-                        <Grid ColumnDefinitions="200,*" Margin="0,6">
-                          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                          <ComboBox Grid.Column="1" ItemsSource="{Binding Options}" SelectedItem="{Binding Selected}" MinWidth="180" />
-                        </Grid>
-                      </DataTemplate>
-                      <DataTemplate DataType="vm:BoolParameterViewModel">
-                        <Grid ColumnDefinitions="200,*" Margin="0,6">
-                          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                          <ToggleSwitch Grid.Column="1" IsChecked="{Binding Value}" />
-                        </Grid>
-                      </DataTemplate>
-                    </ItemsControl.DataTemplates>
-                  </ItemsControl>
-                </ScrollViewer>
-              </Border>
-            </DockPanel>
-          </Grid>
+                <Border Classes="panel" Padding="16,14">
+                  <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Spacing="3" Margin="0,0,0,12">
+                      <TextBlock Classes="section" Text="{Binding Studio.SettingsTitle}" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding Studio.SettingsDescription}"
+                                 IsVisible="{Binding Studio.SettingsDescription, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="body" Foreground="{StaticResource MutedBrush}" Text="{Binding Studio.SettingsHint}"
+                               IsVisible="{Binding !Studio.HasParameters}" />
+                    <ScrollViewer>
+                      <ItemsControl ItemsSource="{Binding Studio.Parameters}">
+                        <ItemsControl.DataTemplates>
+                          <DataTemplate DataType="vm:ColorParameterViewModel">
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,10">
+                              <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                              <ColorPicker Grid.Column="1" Color="{Binding Color}" IsAlphaVisible="False" />
+                            </Grid>
+                          </DataTemplate>
+                          <DataTemplate DataType="vm:NumberParameterViewModel">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Margin="0,4,0,6">
+                              <TextBlock Text="{Binding Label}" />
+                              <TextBlock Grid.Column="1" Text="{Binding Display}" FontFamily="{StaticResource BrandMono}" FontSize="12"
+                                         Foreground="{StaticResource InkSecondaryBrush}" />
+                              <Slider Grid.Row="1" Grid.ColumnSpan="2" Minimum="{Binding Min}" Maximum="{Binding Max}" SmallChange="{Binding Step}"
+                                      TickFrequency="{Binding Step}" IsSnapToTickEnabled="True" Value="{Binding Value}" />
+                            </Grid>
+                          </DataTemplate>
+                          <DataTemplate DataType="vm:ChoiceParameterViewModel">
+                            <StackPanel Spacing="6" Margin="0,4,0,12">
+                              <TextBlock Text="{Binding Label}" />
+                              <ComboBox ItemsSource="{Binding Options}" SelectedItem="{Binding Selected}" HorizontalAlignment="Stretch" />
+                            </StackPanel>
+                          </DataTemplate>
+                          <DataTemplate DataType="vm:BoolParameterViewModel">
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,8">
+                              <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                              <ToggleSwitch Grid.Column="1" IsChecked="{Binding Value}" OnContent="" OffContent="" MinWidth="0" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.DataTemplates>
+                      </ItemsControl>
+                    </ScrollViewer>
+                  </DockPanel>
+                </Border>
+              </DockPanel>
+            </Grid>
+          </DockPanel>
         </TabItem>
 
         <!-- ===== Layout ===== -->

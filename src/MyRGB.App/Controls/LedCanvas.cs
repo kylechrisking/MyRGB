@@ -3,8 +3,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.Threading;
 using MyRGB.App.Services;
+using MyRGB.Core;
 using MyRGB.Core.Devices;
 using MyRGB.Core.Engine;
 using MyRGB.Core.Layout;
@@ -20,16 +22,24 @@ public sealed class LedCanvas : Control
 {
     public static readonly StyledProperty<AppHost?> HostProperty = AvaloniaProperty.Register<LedCanvas, AppHost?>(nameof(Host));
     public static readonly StyledProperty<bool> AllowEditingProperty = AvaloniaProperty.Register<LedCanvas, bool>(nameof(AllowEditing));
+    public static readonly StyledProperty<string?> HighlightIdProperty = AvaloniaProperty.Register<LedCanvas, string?>(nameof(HighlightId));
 
     private const double Aspect = 16.0 / 9.0;
     private const double HandleSize = 10;
 
-    private static readonly IBrush Background = new SolidColorBrush(Color.FromRgb(4, 14, 19));
-    private static readonly IPen GridPen = new Pen(new SolidColorBrush(Color.FromArgb(18, 255, 255, 255)), 1);
-    private static readonly IPen DevicePen = new Pen(new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), 1);
-    private static readonly IPen ActivePen = new Pen(new SolidColorBrush(Color.FromRgb(86, 219, 143)), 1.5);
-    private static readonly IBrush LabelBrush = new SolidColorBrush(Color.FromArgb(170, 255, 255, 255));
-    private static readonly Typeface LabelFace = new("Inter");
+    // Brand colors (branding/Theme.axaml): chrome for the stage, surface for device bodies.
+    private static readonly IBrush Background = new ImmutableSolidColorBrush(Color.FromRgb(4, 14, 19));
+    private static readonly IPen StagePen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromRgb(34, 48, 57)), 1);
+    private static readonly IBrush GridDot = new ImmutableSolidColorBrush(Color.FromArgb(40, 130, 146, 152));
+    private static readonly IBrush BodyBrush = new ImmutableSolidColorBrush(Color.FromArgb(235, 13, 24, 30));
+    private static readonly IPen DevicePen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromRgb(46, 64, 75)), 1);
+    private static readonly IPen ActivePen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromRgb(86, 219, 143)), 1.5);
+    private static readonly IBrush HandleBrush = new ImmutableSolidColorBrush(Color.FromRgb(86, 219, 143));
+    private static readonly IBrush SocketBrush = new ImmutableSolidColorBrush(Color.FromRgb(28, 40, 48));
+    private static readonly IBrush LabelBrush = new ImmutableSolidColorBrush(Color.FromRgb(188, 199, 199));
+    private static readonly IBrush LabelActiveBrush = new ImmutableSolidColorBrush(Color.FromRgb(226, 234, 229));
+    private static readonly IBrush IconBrush = new ImmutableSolidColorBrush(Color.FromRgb(130, 146, 152));
+    private static readonly Typeface LabelFace = new(new FontFamily("avares://MyRGB/Assets/Fonts#Manrope"), FontStyle.Normal, FontWeight.SemiBold);
 
     private readonly DispatcherTimer _timer;
     private volatile FrameSnapshot? _latest;
@@ -60,6 +70,13 @@ public sealed class LedCanvas : Control
     {
         get => GetValue(AllowEditingProperty);
         set => SetValue(AllowEditingProperty, value);
+    }
+
+    /// <summary>A device to outline, e.g. the one the Studio is editing.</summary>
+    public string? HighlightId
+    {
+        get => GetValue(HighlightIdProperty);
+        set => SetValue(HighlightIdProperty, value);
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -93,12 +110,19 @@ public sealed class LedCanvas : Control
 
     private void OnFrame(FrameSnapshot snapshot) => _latest = snapshot;
 
-    /// <summary>The 16:9 area the canvas occupies inside the control.</summary>
+    /// <summary>Asks for a 16:9 box as wide as it's allowed, so the stage has no empty bands.</summary>
+    protected override Size MeasureOverride(Size available)
+    {
+        if (double.IsInfinity(available.Width)) return new Size(0, double.IsInfinity(available.Height) ? 0 : available.Height);
+        return new Size(available.Width, Math.Min(available.Width / Aspect, available.Height));
+    }
+
+    /// <summary>The 16:9 area the canvas occupies inside the control, top-left so it lines up with headings.</summary>
     private Rect Area()
     {
         var b = Bounds.Size;
         double w = Math.Min(b.Width, b.Height * Aspect), h = w / Aspect;
-        return new Rect((b.Width - w) / 2, (b.Height - h) / 2, w, h);
+        return new Rect(0, 0, w, h);
     }
 
     private static Rect ToScreen(Rect area, DevicePlacement p) =>
@@ -107,21 +131,20 @@ public sealed class LedCanvas : Control
     public override void Render(DrawingContext ctx)
     {
         var area = Area();
-        ctx.DrawRectangle(Background, null, area, 10, 10);
-        for (int i = 1; i < 8; i++)
-        {
-            double x = area.X + area.Width * i / 8, y = area.Y + area.Height * i / 8;
-            ctx.DrawLine(GridPen, new Point(x, area.Top), new Point(x, area.Bottom));
-            ctx.DrawLine(GridPen, new Point(area.Left, y), new Point(area.Right, y));
-        }
+        ctx.DrawRectangle(Background, StagePen, area, 12, 12);
+        for (int i = 1; i < 16; i++)
+            for (int j = 1; j < 9; j++)
+                ctx.DrawEllipse(GridDot, null, new Point(area.X + area.Width * i / 16, area.Y + area.Height * j / 9), 1, 1);
 
         var host = Host;
         var frame = _latest;
+        var highlight = HighlightId;
         if (host is null) return;
 
         if (frame is null || frame.Devices.Count == 0)
         {
-            DrawLabel(ctx, "Looking for your devices…", area.Center - new Point(80, 8), 13);
+            var ft = Text("Looking for your devices…", 13, LabelBrush);
+            ctx.DrawText(ft, area.Center - new Point(ft.Width / 2, ft.Height / 2));
             return;
         }
 
@@ -136,40 +159,74 @@ public sealed class LedCanvas : Control
             var device = frame.Devices[d];
             var colors = frame.Colors[d];
             var rect = ToScreen(area, host.Layout.GetOrCreate(device));
-            bool active = device.Id == _dragId || device.Id == _hoverId;
+            bool active = device.Id == _dragId || device.Id == _hoverId || device.Id == highlight;
+            int count = Math.Min(device.Leds.Count, colors.Length);
+            double radius = Math.Min(8, Math.Min(rect.Width, rect.Height) / 4);
 
-            ctx.DrawRectangle(null, active ? ActivePen : DevicePen, rect, 4, 4);
+            // The device's own light spilling onto the desk around it.
+            if (Average(colors, count) is { } glow)
+                ctx.DrawRectangle(BodyBrush, null, new RoundedRect(rect, radius),
+                    new BoxShadows(new BoxShadow { Blur = 22, Spread = 1, Color = glow }));
+            ctx.DrawRectangle(BodyBrush, active ? ActivePen : DevicePen, rect, radius, radius);
 
-            // LEDs: dot size from the device's density so a keyboard and a single-LED logo both read well.
-            double dot = Math.Clamp(Math.Sqrt(rect.Width * rect.Height / Math.Max(1, device.Leds.Count)) * 0.55, 3, 14);
-            for (int i = 0; i < device.Leds.Count && i < colors.Length; i++)
+            // LEDs: size from the device's density so a keyboard and a single-LED logo both read well,
+            // inset so the edge LEDs sit inside the body. Each one is a soft halo under a bright core.
+            double dot = Math.Clamp(Math.Sqrt(rect.Width * rect.Height / Math.Max(1, device.Leds.Count)) * 0.5, 3, 13);
+            double padX = Math.Min(dot * 0.6 + 3, rect.Width / 2), padY = Math.Min(dot * 0.6 + 3, rect.Height / 2);
+            for (int i = 0; i < count; i++)
             {
                 var led = device.Leds[i];
                 var c = colors[i];
-                var center = new Point(rect.X + 4 + led.X * (rect.Width - 8), rect.Y + 4 + led.Y * (rect.Height - 8));
-                var brush = new SolidColorBrush(Color.FromRgb(c.R, c.G, c.B));
-                ctx.DrawEllipse(brush, null, center, dot / 2, dot / 2);
+                var center = new Point(rect.X + padX + led.X * (rect.Width - 2 * padX), rect.Y + padY + led.Y * (rect.Height - 2 * padY));
+                int peak = Math.Max(c.R, Math.Max(c.G, c.B));
+                if (peak < 16)
+                {
+                    ctx.DrawEllipse(SocketBrush, null, center, dot / 2, dot / 2);
+                    continue;
+                }
+                ctx.DrawEllipse(new ImmutableSolidColorBrush(Color.FromArgb((byte)(peak * 0.28), c.R, c.G, c.B)), null, center, dot * 0.85, dot * 0.85);
+                ctx.DrawEllipse(new ImmutableSolidColorBrush(Color.FromRgb(c.R, c.G, c.B)), null, center, dot / 2, dot / 2);
             }
 
             // Narrow devices (a RAM stick) only show their name on hover, so neighbours' labels don't collide.
             if (rect.Width >= 46 || active)
-                DrawLabel(ctx, _names.GetValueOrDefault(device.Id, device.Name), new Point(rect.X, rect.Bottom + 2), 11,
-                          active ? double.PositiveInfinity : Math.Max(rect.Width + 30, 60));
+                DrawLabel(ctx, area, device.Type, _names.GetValueOrDefault(device.Id, device.Name), new Point(rect.X, rect.Bottom + 6),
+                          active ? double.PositiveInfinity : Math.Max(rect.Width + 24, 96), active);
             if (AllowEditing && active)
-                ctx.DrawRectangle(ActivePen.Brush, null, new Rect(rect.Right - HandleSize / 2, rect.Bottom - HandleSize / 2, HandleSize, HandleSize));
+                ctx.DrawRectangle(HandleBrush, null, new Rect(rect.Right - HandleSize / 2, rect.Bottom - HandleSize / 2, HandleSize, HandleSize), 3, 3);
         }
     }
 
-    private static void DrawLabel(DrawingContext ctx, string text, Point at, double size, double maxWidth = double.PositiveInfinity)
+    /// <summary>The device's mean color, dimmed for use as a glow; null when it's dark.</summary>
+    private static Color? Average(Rgb[] colors, int count)
     {
-        var ft = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, LabelFace, size, LabelBrush);
+        if (count == 0) return null;
+        long r = 0, g = 0, b = 0;
+        for (int i = 0; i < count; i++) { r += colors[i].R; g += colors[i].G; b += colors[i].B; }
+        byte R = (byte)(r / count), G = (byte)(g / count), B = (byte)(b / count);
+        int peak = Math.Max(R, Math.Max(G, B));
+        return peak < 16 ? null : Color.FromArgb((byte)(peak * 0.45), R, G, B);
+    }
+
+    private static FormattedText Text(string text, double size, IBrush brush) =>
+        new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, LabelFace, size, brush);
+
+    /// <summary>A device's name under it, after a small glyph for its type, kept inside the stage.</summary>
+    private static void DrawLabel(DrawingContext ctx, Rect area, DeviceType type, string name, Point at, double maxWidth, bool active)
+    {
+        const double Icon = 12, Gap = 5;
+        var ft = Text(name, 11, active ? LabelActiveBrush : LabelBrush);
         if (!double.IsInfinity(maxWidth))
         {
-            ft.MaxTextWidth = maxWidth;
+            ft.MaxTextWidth = Math.Max(10, maxWidth - Icon - Gap);
             ft.MaxLineCount = 1;
             ft.Trimming = TextTrimming.CharacterEllipsis;
         }
-        ctx.DrawText(ft, at);
+        double x = Math.Max(area.X + 6, Math.Min(at.X, area.Right - 8 - Icon - Gap - ft.Width));
+
+        using (ctx.PushTransform(Matrix.CreateScale(Icon / 24, Icon / 24) * Matrix.CreateTranslation(x, at.Y + 1)))
+            ctx.DrawGeometry(active ? LabelActiveBrush : IconBrush, null, DeviceIcons.For(type));
+        ctx.DrawText(ft, new Point(x + Icon + Gap, at.Y));
     }
 
     private (string Id, DevicePlacement Placement, bool OnHandle)? HitTest(Point p)
