@@ -153,7 +153,7 @@ public sealed partial class SupabaseCloud : ICloud, IDisposable
 
     private sealed record CommunityRow(
         Guid Id, string Name, string Description, string Effect_id, JsonElement Data, string[] Swatch,
-        int Downloads, DateTimeOffset Created_at, Guid Author_id, string Author_name);
+        int Downloads, DateTimeOffset Created_at, Guid Author_id, string Author_name, bool Author_supporter = false);
 
     public async Task<IReadOnlyList<SharedPreset>> BrowseAsync(string? search, CommunitySort sort, CancellationToken ct)
     {
@@ -165,7 +165,7 @@ public sealed partial class SupabaseCloud : ICloud, IDisposable
         var rows = await Get<List<CommunityRow>>(url, ct, requireUser: false);
         return rows
             .Select(r => PresetJson.Read(r.Data) is { } data
-                ? new SharedPreset(r.Id, r.Name, r.Description, r.Effect_id, data, r.Swatch, r.Downloads, r.Created_at, r.Author_id, r.Author_name)
+                ? new SharedPreset(r.Id, r.Name, r.Description, r.Effect_id, data, r.Swatch, r.Downloads, r.Created_at, r.Author_id, r.Author_name, r.Author_supporter)
                 : null)
             .OfType<SharedPreset>()
             .ToList();
@@ -192,6 +192,33 @@ public sealed partial class SupabaseCloud : ICloud, IDisposable
 
     public Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct) =>
         Send(HttpMethod.Post, "rest/v1/support_messages", new { subject = subject.Trim(), body = body.Trim(), app_version = appVersion }, ct, prefer: "return=minimal");
+
+    // ---- Supporters -------------------------------------------------------
+
+    private sealed record SupporterRow(DateTimeOffset? Until);
+    private sealed record BadgeRow(bool Show_supporter_badge);
+
+    public async Task<SupporterStatus?> GetSupportAsync(CancellationToken ct)
+    {
+        if (User is not { } user) return null;
+        try
+        {
+            // Row-level security returns only the caller's own row, if there is one.
+            var rows = await Get<List<SupporterRow>>("rest/v1/supporters?select=until", ct);
+            var badge = await Get<List<BadgeRow>>($"rest/v1/profiles?select=show_supporter_badge&id=eq.{user.Id}", ct);
+            bool active = rows.Count > 0 && (rows[0].Until is null || rows[0].Until > DateTimeOffset.UtcNow);
+            return new SupporterStatus(active, rows.FirstOrDefault()?.Until, badge.FirstOrDefault()?.Show_supporter_badge ?? true);
+        }
+        catch (CloudException)
+        {
+            return null; // a service without supporters set up yet
+        }
+    }
+
+    public Task SetBadgeVisibleAsync(bool visible, CancellationToken ct) =>
+        User is { } user
+            ? Send(HttpMethod.Patch, $"rest/v1/profiles?id=eq.{user.Id}", new { show_supporter_badge = visible }, ct, prefer: "return=minimal")
+            : Task.CompletedTask;
 
     // ---- Plumbing ---------------------------------------------------------
 

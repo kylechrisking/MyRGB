@@ -34,7 +34,11 @@ public sealed record RemotePreset(string PresetId, Preset? Data, bool Deleted, D
 /// <summary>A preset someone shared with the community.</summary>
 public sealed record SharedPreset(
     Guid Id, string Name, string Description, string EffectId, Preset Data,
-    IReadOnlyList<string> Swatch, int Downloads, DateTimeOffset CreatedAt, Guid AuthorId, string AuthorName);
+    IReadOnlyList<string> Swatch, int Downloads, DateTimeOffset CreatedAt, Guid AuthorId, string AuthorName,
+    bool AuthorSupporter = false);
+
+/// <summary>Whether the signed-in user supports MyRGB, until when (null: no end date), and if their badge shows.</summary>
+public sealed record SupporterStatus(bool Active, DateTimeOffset? Until, bool ShowBadge);
 
 public enum CommunitySort { Popular, Newest }
 

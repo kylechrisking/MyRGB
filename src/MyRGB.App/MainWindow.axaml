@@ -93,6 +93,19 @@
       <Setter Property="Foreground" Value="{StaticResource LedBlueBrush}" />
     </Style>
 
+    <!-- The supporter badge: a small pink pill. -->
+    <Style Selector="Border.supporter">
+      <Setter Property="Background" Value="#3A1426" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="7,1" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.supporter > TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="#FF7EB6" />
+    </Style>
+
     <Style Selector="Border.note">
       <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
       <Setter Property="CornerRadius" Value="10" />
@@ -576,14 +589,21 @@
                   <DataTemplate x:DataType="vm:SharedPresetViewModel">
                     <Border Classes="tile" Height="NaN" Width="260" Padding="10">
                       <StackPanel Spacing="8">
-                        <Border Background="{Binding Swatch}" CornerRadius="9" Height="84" />
+                        <Panel Height="84">
+                          <ctl:EffectPreview Definition="{Binding Effect}" Settings="{Binding Settings}" Columns="24" Rows="8" CornerRadius="9"
+                                             Animate="{Binding $parent[Border].IsPointerOver}" IsVisible="{Binding Supported}" />
+                          <Border Background="{Binding Swatch}" CornerRadius="9" IsVisible="{Binding !Supported}" />
+                        </Panel>
                         <StackPanel Spacing="1" Margin="4,0">
                           <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                          <TextBlock Classes="muted">
-                            <Run Text="{Binding Author}" />
-                            <Run Text=" · " />
-                            <Run Text="{Binding Downloads}" />
-                          </TextBlock>
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="muted">
+                              <Run Text="{Binding Author}" />
+                              <Run Text=" · " />
+                              <Run Text="{Binding Downloads}" />
+                            </TextBlock>
+                            <Border Classes="supporter" IsVisible="{Binding AuthorSupporter}" ToolTip.Tip="Supports MyRGB"><TextBlock Text="♥" /></Border>
+                          </StackPanel>
                           <TextBlock Classes="muted" Text="{Binding Description}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                      IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
                           <TextBlock Classes="muted" Text="{Binding Unsupported}" Foreground="{StaticResource WarningBrush}" IsVisible="{Binding !Supported}" />
@@ -1260,6 +1280,39 @@
                     </Border>
                   </StackPanel>
                   <TextBlock Classes="muted" Text="{Binding Account.Status}" TextWrapping="Wrap" IsVisible="{Binding !Account.IsBusy}" />
+                </StackPanel>
+              </Border>
+
+              <!-- Supporting MyRGB: every feature is free; support funds the work and the servers. -->
+              <Border Classes="panel">
+                <Border.IsVisible>
+                  <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                    <Binding Path="Account.HasSupportLinks" />
+                    <Binding Path="Account.IsSupporter" />
+                  </MultiBinding>
+                </Border.IsVisible>
+                <StackPanel Spacing="10">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Classes="section" Text="Support MyRGB" />
+                    <Border Classes="supporter" IsVisible="{Binding Account.IsSupporter}"><TextBlock Text="♥ Supporter" /></Border>
+                  </StackPanel>
+                  <TextBlock Classes="body" Text="MyRGB is free and open source, and every feature in it, fan control included, stays free. If it replaced a few vendor apps for you, chipping in keeps it going: it pays for the servers behind sync and the community, and for time to support more hardware." />
+                  <TextBlock Classes="body" Text="Supporters get a badge on the presets they share, and room to sync up to 1,000 presets and share up to 200 (everyone gets 100 and 20)." />
+                  <TextBlock Classes="body" Foreground="{StaticResource AccentBrush}" Text="{Binding Account.SupporterText}" IsVisible="{Binding Account.IsSupporter}" />
+                  <ToggleSwitch IsChecked="{Binding Account.ShowBadge}" IsVisible="{Binding Account.IsSupporter}"
+                                OnContent="Show my supporter badge on shared presets" OffContent="Show my supporter badge on shared presets" />
+                  <ItemsControl ItemsSource="{Binding Account.SupportLinks}" IsVisible="{Binding Account.HasSupportLinks}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:LinkButton">
+                        <Button Classes="accent" Content="{Binding Label}" Command="{Binding Command}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Account.HasSupportLinks}"
+                             Text="Support with the same email as your MyRGB account and your perks turn on by themselves." />
                 </StackPanel>
               </Border>
 

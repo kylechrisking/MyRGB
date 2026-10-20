@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using MyRGB.App.Services;
 using MyRGB.Cloud;
 using MyRGB.Core;
+using MyRGB.Core.Effects;
 using MyRGB.Core.Presets;
 
 namespace MyRGB.App.ViewModels;
@@ -15,6 +16,8 @@ public sealed record ProviderButton(string Name, IAsyncRelayCommand Command)
 {
     public string Label => $"Continue with {Name}";
 }
+
+public sealed record LinkButton(string Label, IRelayCommand Command);
 
 /// <summary>Signing in and out, preset sync, and deleting the account. Lives in Settings › Account.</summary>
 public sealed partial class AccountViewModel : ObservableObject
@@ -32,6 +35,7 @@ public sealed partial class AccountViewModel : ObservableObject
             SyncStatus = error ?? $"Synced {DateTime.Now:t}";
         });
         Providers = SignInProvider.All.Select(p => new ProviderButton(p.Name, new AsyncRelayCommand(() => SignIn(p.Id)))).ToList();
+        _ = LoadSupport();
     }
 
     public bool IsConfigured => _host.Cloud.IsConfigured;
@@ -118,6 +122,53 @@ public sealed partial class AccountViewModel : ObservableObject
         foreach (var name in new[] { nameof(IsSignedIn), nameof(IsSignedOut), nameof(DisplayName), nameof(Email), nameof(Initial), nameof(ProviderText) })
             OnPropertyChanged(name);
         SignedInChanged?.Invoke();
+        _ = LoadSupport();
+    }
+
+    // ---- Supporting MyRGB ----
+
+    public IReadOnlyList<LinkButton> SupportLinks { get; } = Funding.Links
+        .Select(l => new LinkButton($"Support on {l.Name}", new RelayCommand(() => OpenLink(l.Url))))
+        .ToList();
+    public bool HasSupportLinks => SupportLinks.Count > 0;
+
+    [ObservableProperty] private bool _isSupporter;
+    [ObservableProperty] private string _supporterText = "";
+    [ObservableProperty] private bool _showBadge = true;
+    private bool _loadingSupport;
+
+    public async Task LoadSupport()
+    {
+        SupporterStatus? status = null;
+        try
+        {
+            if (_host.Cloud.User is not null) status = await _host.Cloud.GetSupportAsync(CancellationToken.None);
+        }
+        catch (HttpRequestException) { /* offline: show the free tier until the next sign-in */ }
+        _loadingSupport = true;
+        IsSupporter = status?.Active == true;
+        ShowBadge = status?.ShowBadge ?? true;
+        SupporterText = status switch
+        {
+            { Active: true, Until: null } => "Thank you for supporting MyRGB.",
+            { Active: true, Until: { } until } => $"Thank you for supporting MyRGB. Your supporter perks run until {until.LocalDateTime:d}.",
+            _ => "",
+        };
+        _loadingSupport = false;
+    }
+
+    partial void OnShowBadgeChanged(bool value)
+    {
+        if (_loadingSupport) return;
+        _ = _host.Cloud.SetBadgeVisibleAsync(value, CancellationToken.None).ContinueWith(
+            t => Dispatcher.UIThread.Post(() => Status = "Couldn't save your badge setting. Please try again."),
+            TaskContinuationOptions.OnlyOnFaulted);
+    }
+
+    private static void OpenLink(string url)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true })?.Dispose(); }
+        catch (Exception) { /* no browser registered */ }
     }
 
     /// <summary>Lets other pages (Community, Contact) update their signed-in-only parts.</summary>
@@ -187,7 +238,7 @@ public sealed partial class CommunityViewModel : ObservableObject
             var sort = Sort == "Newest" ? CommunitySort.Newest : CommunitySort.Popular;
             var found = await _host.Cloud.BrowseAsync(Search, sort, CancellationToken.None);
             Items.Clear();
-            foreach (var s in found) Items.Add(new SharedPresetViewModel(s, this, _host.Cloud.User?.Id == s.AuthorId, _host.Effects.Find(s.EffectId) is not null));
+            foreach (var s in found) Items.Add(new SharedPresetViewModel(s, this, _host.Cloud.User?.Id == s.AuthorId, _host.Effects.Find(s.EffectId)));
         }
         catch (Exception ex) when (ex is CloudException or HttpRequestException or TaskCanceledException)
         {
@@ -271,18 +322,23 @@ public sealed partial class CommunityViewModel : ObservableObject
     }
 }
 
-public sealed partial class SharedPresetViewModel(SharedPreset shared, CommunityViewModel owner, bool isMine, bool supported) : ObservableObject
+public sealed partial class SharedPresetViewModel(SharedPreset shared, CommunityViewModel owner, bool isMine, EffectDefinition? effect) : ObservableObject
 {
     public SharedPreset Shared => shared;
     public string Name => shared.Name;
     public string Author => $"by {shared.AuthorName}";
+    public bool AuthorSupporter => shared.AuthorSupporter;
     public string Description => shared.Description;
     public bool HasDescription => shared.Description.Length > 0;
     public string Downloads => shared.Downloads == 1 ? "1 install" : $"{shared.Downloads} installs";
     public bool IsMine => isMine;
     public bool CanReport => !isMine;
-    public bool Supported => supported;
-    public string? Unsupported => supported ? null : "Needs a newer version of MyRGB";
+    public bool Supported => effect is not null;
+    public string? Unsupported => Supported ? null : "Needs a newer version of MyRGB";
+
+    /// <summary>For the live preview tile; a preset whose effect this version lacks shows its colors instead.</summary>
+    public EffectDefinition? Effect => effect;
+    public IReadOnlyDictionary<string, string> Settings => shared.Data.Settings;
 
     public IBrush Swatch { get; } = MakeBrush(shared.Swatch);
 

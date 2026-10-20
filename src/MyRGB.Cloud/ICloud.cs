@@ -31,4 +31,10 @@ public interface ICloud
     Task ReportAsync(Guid id, string reason, CancellationToken ct);
 
     Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct);
+
+    /// <summary>The signed-in user's supporter status; null when signed out or the service doesn't track it.</summary>
+    Task<SupporterStatus?> GetSupportAsync(CancellationToken ct);
+
+    /// <summary>Show or hide the supporter badge on presets the user shares.</summary>
+    Task SetBadgeVisibleAsync(bool visible, CancellationToken ct);
 }

@@ -22,4 +22,6 @@ public sealed class OfflineCloud : ICloud
     public Task CountInstallAsync(Guid id, CancellationToken ct) => throw Unavailable();
     public Task ReportAsync(Guid id, string reason, CancellationToken ct) => throw Unavailable();
     public Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct) => throw Unavailable();
+    public Task<SupporterStatus?> GetSupportAsync(CancellationToken ct) => Task.FromResult<SupporterStatus?>(null);
+    public Task SetBadgeVisibleAsync(bool visible, CancellationToken ct) => Task.CompletedTask;
 }

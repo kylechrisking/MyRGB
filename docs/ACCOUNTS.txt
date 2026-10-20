@@ -69,3 +69,33 @@ Table Editor > support_messages and preset_reports. Users can only write these; 
 project's team can read them. Reply to support messages using the email on the user's account
 (Authentication > Users). To hide a community preset, set hidden = true on its row in
 shared_presets.
+
+
+7. Supporters
+-------------
+Every feature of MyRGB is free. Supporters get a badge on presets they share and higher cloud
+limits (sync 1,000 presets and share 200, instead of 100 and 20). Run the second migration,
+supabase/migrations/20261020000000_supporters.sql, in the SQL Editor the same way as the first.
+
+Ko-fi makes supporters automatically:
+
+  1. On ko-fi.com: Settings > API > Webhooks. Copy the verification token.
+  2. With the Supabase CLI, from the repository folder:
+       supabase secrets set KOFI_VERIFICATION_TOKEN=<token>
+       supabase functions deploy kofi-webhook --no-verify-jwt
+  3. Back on Ko-fi, set the webhook URL to
+       https://<project>.supabase.co/functions/v1/kofi-webhook
+     and use "Send Single Donation Test" to check it answers.
+
+A payment is matched to the MyRGB account with the payer's email. Monthly memberships count for
+35 days from each payment; one-off donations for a year. If there's no account with that email
+yet, it waits in supporter_claims and applies when that account signs up.
+
+To add a supporter by hand (a GitHub Sponsor, a different email), in the SQL Editor:
+
+  insert into public.supporters (user_id, until, source, reference)
+  select id, now() + interval '1 year', 'github', 'github:<login>'
+  from auth.users where email = '<their MyRGB email>';
+
+Leave until null for no end date. To show the Ko-fi and GitHub Sponsors buttons in the app, set
+their addresses in src/MyRGB.App/Services/Funding.cs.

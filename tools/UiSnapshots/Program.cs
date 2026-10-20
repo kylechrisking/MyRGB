@@ -180,7 +180,7 @@ sealed class FakeCloud : ICloud
     [
         new(Guid.NewGuid(), "Synthwave Sunset", "Pink to purple, slow drift. Great with a dark desk.", "gradient",
             P("Synthwave Sunset", "gradient", ("from", "#FF2E97"), ("to", "#6A00FF")), ["#FF2E97", "#D11FB8", "#A010D8", "#7A04F0", "#6A00FF"], 1284, DateTimeOffset.Now.AddDays(-20), Guid.NewGuid(), "neonfox"),
-        new(Guid.NewGuid(), "Deep Sea", "", "plasma", P("Deep Sea", "plasma", ("palette", "Ocean")), ["#001A50", "#0060D0", "#00C8E0", "#0090C0", "#003070"], 865, DateTimeOffset.Now.AddDays(-9), Guid.NewGuid(), "marlin"),
+        new(Guid.NewGuid(), "Deep Sea", "", "plasma", P("Deep Sea", "plasma", ("palette", "Ocean")), ["#001A50", "#0060D0", "#00C8E0", "#0090C0", "#003070"], 865, DateTimeOffset.Now.AddDays(-9), Guid.NewGuid(), "marlin", true),
         new(Guid.NewGuid(), "Toxic", "Green waves on black.", "color-wave", P("Toxic", "color-wave", ("color", "#7CFF00")), ["#000500", "#3A8000", "#7CFF00", "#3A8000", "#000500"], 402, DateTimeOffset.Now.AddDays(-3), Guid.NewGuid(), "kilowatt"),
         new(Guid.NewGuid(), "Ember", "Warm fire for late nights.", "fire", P("Ember", "fire"), ["#300000", "#A01000", "#FF5000", "#FF9020", "#FFC040"], 233, DateTimeOffset.Now.AddDays(-1), Guid.NewGuid(), "dusk"),
     ];
@@ -199,6 +199,8 @@ sealed class FakeCloud : ICloud
     public Task CountInstallAsync(Guid id, CancellationToken ct) => Task.CompletedTask;
     public Task ReportAsync(Guid id, string reason, CancellationToken ct) => Task.CompletedTask;
     public Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct) => Task.CompletedTask;
+    public Task<SupporterStatus?> GetSupportAsync(CancellationToken ct) => Task.FromResult<SupporterStatus?>(new(true, DateTimeOffset.Now.AddDays(300), true));
+    public Task SetBadgeVisibleAsync(bool visible, CancellationToken ct) => Task.CompletedTask;
 }
 
 /// <summary>A PC like the one MyRGB is developed on: an 8-core CPU, an RTX card with two fans.</summary>
