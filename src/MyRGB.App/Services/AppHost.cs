@@ -95,6 +95,7 @@ public sealed class AppHost : IAsyncDisposable
         Sensors.SetFanSettings(Settings.Fans);
         SensorFeed.Use(Sensors.Get);
 
+        Devices.DevicesChanged += (_, _) => WatchDeviceCommands();
         Lights.StateChanged += (_, _) => ScheduleSave();
         Presets.Changed += (_, _) => { ScheduleSave(); ScheduleSync(); };
         Layout.Changed += (_, _) => ScheduleSave();
@@ -128,6 +129,32 @@ public sealed class AppHost : IAsyncDisposable
     public LightingService Lights { get; }
     public BatteryMonitor Batteries { get; }
     public SensorHub Sensors { get; }
+
+    private readonly HashSet<IDeviceCommands> _commandSources = [];
+
+    /// <summary>Listen to buttons on newly found devices (a keyboard's brightness keys, say).</summary>
+    private void WatchDeviceCommands()
+    {
+        lock (_commandSources)
+            foreach (var d in Devices.Devices.OfType<IDeviceCommands>())
+                if (_commandSources.Add(d)) d.Command += OnDeviceCommand;
+    }
+
+    private void OnDeviceCommand(IRgbDevice device, DeviceCommand command)
+    {
+        double b = Engine.Brightness;
+        switch (command)
+        {
+            case DeviceCommand.BrightnessUp: Lights.SetBrightness(Math.Min(1, b + 0.1)); break;
+            case DeviceCommand.BrightnessDown: Lights.SetBrightness(Math.Max(0, b - 0.1)); break;
+            case DeviceCommand.BrightnessNudgeUp: Lights.SetBrightness(Math.Min(1, b + 0.05)); break;
+            case DeviceCommand.BrightnessNudgeDown: Lights.SetBrightness(Math.Max(0, b - 0.05)); break;
+            case DeviceCommand.NextPreset: Lights.StepPreset(1); break;
+            // A short flash on the device itself says which way the dial now goes.
+            case DeviceCommand.DialControlsBrightness: Lights.Flash([device.Id], new Rgb(255, 170, 30), TimeSpan.FromSeconds(0.8)); break;
+            case DeviceCommand.DialControlsVolume: Lights.Flash([device.Id], new Rgb(40, 140, 255), TimeSpan.FromSeconds(0.8)); break;
+        }
+    }
 
     /// <summary>Change how one fan is driven; takes effect within a second and is saved.</summary>
     public void SetFan(FanSetting setting)
@@ -176,6 +203,7 @@ public sealed class AppHost : IAsyncDisposable
         var preset = (Settings.ActivePresetId is { } id ? Presets.Find(id) : null) ?? Presets.BuiltIns[0];
         Lights.ActivatePreset(preset.Id);
         Engine.Start();
+        WatchDeviceCommands();
         Batteries.Start();
         Sensors.Start();
 

@@ -38,6 +38,22 @@ public sealed record ResizableZone(string Name, int LedCount, int Min, int Max);
 /// <summary>A saved LED count for one zone of one device. Providers re-apply these on every discovery.</summary>
 public sealed record ZoneSize(string DeviceId, string Zone, int LedCount);
 
+public enum DeviceCommand
+{
+    BrightnessUp, BrightnessDown,           // a key press: a big step
+    BrightnessNudgeUp, BrightnessNudgeDown, // a dial click: a small one
+    NextPreset, DialControlsVolume, DialControlsBrightness,
+}
+
+/// <summary>
+/// A device with its own buttons that ask the app for something: a keyboard's brightness keys, or
+/// a dial switched over to brightness. Raised on the device's own thread.
+/// </summary>
+public interface IDeviceCommands
+{
+    event Action<IRgbDevice, DeviceCommand>? Command;
+}
+
 /// <summary>A device with user-sized zones. It can have zero <see cref="IRgbDevice.Leds"/> until they are sized.</summary>
 public interface IResizableDevice : IRgbDevice
 {

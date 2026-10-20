@@ -86,22 +86,31 @@ public class CorsairTests
     }
 
     [Fact]
-    public void Volume_wheel_reports_become_volume_steps_and_mute()
+    public void Keyboard_controls_follow_the_captured_reports()
     {
         // Captured from the Vanguard Pro 96 in software mode (report id included), padded to 65 bytes.
         static byte[] Report(string hex) => [.. Convert.FromHexString(hex), .. new byte[65 - hex.Length / 2]];
-        bool pressed = false;
+        var keys = new KeyboardControls.KeyState();
+        KeyboardControls.Control[] Controls(string hex) => KeyboardControls.Parse(Report(hex), keys).Select(a => a.Control).ToArray();
 
-        Assert.Equal((1, false), VolumeWheel.Parse(Report("00000000056000010000000000000000000000000000000000"), ref pressed));
-        Assert.Equal((-1, false), VolumeWheel.Parse(Report("00000000056000FFFFFFFF0000000000000000000000000000"), ref pressed));
+        // Wheel: one click up, one down.
+        Assert.Equal([(KeyboardControls.Control.VolumeSteps, 1)], KeyboardControls.Parse(Report("00000000056000010000000000000000000000000000000000"), keys));
+        Assert.Equal([(KeyboardControls.Control.VolumeSteps, -1)], KeyboardControls.Parse(Report("00000000056000FFFFFFFF0000000000000000000000000000"), keys));
 
         // Wheel pressed (byte 21 bit 1), held, then released: one mute.
-        Assert.Equal((0, true), VolumeWheel.Parse(Report("000000000200000000000000000000000000000000020000"), ref pressed));
-        Assert.Equal((0, false), VolumeWheel.Parse(Report("000000000200000000000000000000000000000000020000"), ref pressed));
-        Assert.Equal((0, false), VolumeWheel.Parse(Report("000000000200000000000000000000000000000000000000"), ref pressed));
+        Assert.Equal([KeyboardControls.Control.Mute], Controls("000000000200000000000000000000000000000000020000"));
+        Assert.Empty(Controls("000000000200000000000000000000000000000000020000"));
+        Assert.Empty(Controls("000000000200000000000000000000000000000000000000"));
 
-        // Ordinary keys and other buttons don't touch the volume.
-        Assert.Equal((0, false), VolumeWheel.Parse(Report("000000000200001000000000000000000000000004000000"), ref pressed));
+        // Fn (byte 20 bit 2) with F3, F4 and F12.
+        Assert.Equal([KeyboardControls.Control.BrightnessDown], Controls("000000000200000000000000100000000000000004000000"));
+        Assert.Equal([KeyboardControls.Control.BrightnessUp], Controls("000000000200000000000000200000000000000004000000"));
+        Assert.Equal([KeyboardControls.Control.DialMode], Controls("000000000200000000000000002000000000000004000000"));
+
+        // F3 without Fn is just F3, and Fn+F5 (stop) the keyboard handles itself.
+        Assert.Empty(Controls("000000000200000000000000000000000000000000000000"));
+        Assert.Empty(Controls("000000000200000000000000100000000000000000000000"));
+        Assert.Empty(Controls("000000000200000000000000400000000000000004000000"));
     }
 
     /// <summary>Captured wire bytes with the report id Windows adds in front.</summary>
