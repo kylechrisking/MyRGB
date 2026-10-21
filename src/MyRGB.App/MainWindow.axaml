@@ -507,7 +507,7 @@
                         </Button.ContextMenu>
                         <Grid RowDefinitions="*,Auto" Margin="8">
                           <!-- A still of the preset; it plays while hovered or while it's the one on. -->
-                          <ctl:EffectPreview Definition="{Binding Effect}" Settings="{Binding Settings}" Columns="24" Rows="11" CornerRadius="9"
+                          <ctl:EffectPreview Definition="{Binding Effect}" Settings="{Binding Settings}" CornerRadius="9"
                                              IsVisible="{Binding HasEffect}">
                             <ctl:EffectPreview.Animate>
                               <MultiBinding Converter="{x:Static BoolConverters.Or}">
@@ -590,7 +590,7 @@
                     <Border Classes="tile" Height="NaN" Width="260" Padding="10">
                       <StackPanel Spacing="8">
                         <Panel Height="84">
-                          <ctl:EffectPreview Definition="{Binding Effect}" Settings="{Binding Settings}" Columns="24" Rows="8" CornerRadius="9"
+                          <ctl:EffectPreview Definition="{Binding Effect}" Settings="{Binding Settings}" CornerRadius="9"
                                              Animate="{Binding $parent[Border].IsPointerOver}" IsVisible="{Binding Supported}" />
                           <Border Background="{Binding Swatch}" CornerRadius="9" IsVisible="{Binding !Supported}" />
                         </Panel>
