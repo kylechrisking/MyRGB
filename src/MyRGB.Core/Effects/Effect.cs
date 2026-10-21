@@ -1,7 +1,19 @@
 namespace MyRGB.Core.Effects;
 
-/// <summary>One LED as an effect sees it: a point on the shared canvas, where both axes run 0..1.</summary>
-public readonly record struct LedPoint(float X, float Y);
+/// <summary>
+/// One LED as an effect sees it: a point on the shared canvas, where both axes run 0..1. Most effects
+/// paint the canvas, so one picture flows across the whole desk. <see cref="LocalX"/> and
+/// <see cref="LocalY"/> say where the LED sits within its own device (also 0..1), for effects that
+/// draw the whole picture on every device, like the Visualizer's "Each device".
+/// </summary>
+public readonly record struct LedPoint(float X, float Y)
+{
+    public float LocalX { get; init; }
+    public float LocalY { get; init; }
+
+    /// <summary>A point that is its own whole device (previews, where the canvas is the device).</summary>
+    public static LedPoint Whole(float x, float y) => new(x, y) { LocalX = x, LocalY = y };
+}
 
 public readonly record struct FrameContext(double Time, double DeltaTime);
 

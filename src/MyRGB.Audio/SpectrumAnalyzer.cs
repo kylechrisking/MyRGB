@@ -73,12 +73,22 @@ public sealed class SpectrumAnalyzer
         Fft(_re, _im);
 
         var raw = new double[AudioFrame.BandCount];
+        var fixedScale = new float[AudioFrame.BandCount];
         double bass = 0, loudest = 0;
         for (int b = 0; b < AudioFrame.BandCount; b++)
         {
             var (from, to) = _bands[b];
             double energy = 0;
-            for (int k = from; k < to; k++) energy += _re[k] * _re[k] + _im[k] * _im[k];
+            double strongest = 0;
+            for (int k = from; k < to; k++)
+            {
+                double e = _re[k] * _re[k] + _im[k] * _im[k];
+                energy += e;
+                strongest = Math.Max(strongest, e);
+            }
+            // A full-scale sine peaks at N/4 through a Hann window; scale so it reads as 1 (0 dB).
+            double db = 20 * Math.Log10(Math.Sqrt(strongest) / (FftSize / 4.0) + 1e-9);
+            fixedScale[b] = (float)Math.Clamp((db + 50) / 45, 0, 1);
             double v = Math.Log10(1 + Math.Sqrt(energy / (to - from)) * 10);
             if (b < 4) bass += v;
             // Music carries far less energy up top; tilt the treble up so it shows at all.
@@ -113,7 +123,7 @@ public sealed class SpectrumAnalyzer
             _sinceBeat = 0;
         }
 
-        Frame = new AudioFrame(rms < 1e-5 ? 0 : _level, bands, _beats);
+        Frame = new AudioFrame(rms < 1e-5 ? 0 : _level, bands, _beats, fixedScale);
     }
 
     /// <summary>In-place radix-2 FFT. <paramref name="re"/>.Length must be a power of two.</summary>

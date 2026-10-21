@@ -67,7 +67,7 @@ public sealed class PresetLibrary
         if (def is null) return [Rgb.Black];
         var effect = def.Create(new EffectSettings(preset.Settings));
         var points = Enumerable.Range(0, count)
-            .Select(i => count == 1 ? new LedPoint(0.5f, 0.5f) : new LedPoint(i / (float)(count - 1), i / (float)(count - 1)))
+            .Select(i => count == 1 ? LedPoint.Whole(0.5f, 0.5f) : LedPoint.Whole(i / (float)(count - 1), i / (float)(count - 1)))
             .ToArray();
         var frame = new Rgb[count];
         var best = new Rgb[count];

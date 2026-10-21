@@ -10,14 +10,6 @@ internal static class Music
 
     /// <summary>Sensitivity 1..10 as a gain on a 0..1 value.</summary>
     public static double Gain(double value, double sensitivity) => Math.Clamp(value * (0.4 + sensitivity * 0.16), 0, 1);
-
-    /// <summary>The band under a canvas position, left to right or mirrored out from the middle.</summary>
-    public static float BandAt(AudioFrame f, double x, bool fromCenter)
-    {
-        double pos = fromCenter ? Math.Abs(x - 0.5) * 2 : x;
-        int i = Math.Clamp((int)(pos * AudioFrame.BandCount), 0, AudioFrame.BandCount - 1);
-        return f.Bands[i];
-    }
 }
 
 internal sealed class MusicPulseEffect : Effect
@@ -48,46 +40,6 @@ internal sealed class MusicPulseEffect : Effect
             : Music.Gain(audio.Level, s.GetNumber("sensitivity"));
         var color = s.GetString("colors") == "One color" ? s.GetColor("color") : Rgb.FromHsv(_hue, 1, 1);
         output.Fill(color.Scale(floor + (1 - floor) * level));
-    }
-}
-
-internal sealed class MusicSpectrumEffect : Effect
-{
-    public static readonly EffectDefinition Definition = new(
-        "audio-spectrum", "Music Spectrum", "An equalizer across your whole desk: bass on one side, treble on the other.", "Music",
-        [
-            new ChoiceParameter("layout", "Layout", ["Left to right", "From the center"], "From the center"),
-            new ChoiceParameter("colors", "Colors", ["Heat", "Rainbow", "Two colors"], "Heat"),
-            new ColorParameter("low", "Low color", new Rgb(0, 220, 255)),
-            new ColorParameter("high", "High color", new Rgb(255, 0, 140)),
-            new NumberParameter("sensitivity", "Sensitivity", 1, 10, 5),
-        ],
-        () => new MusicSpectrumEffect());
-
-    public override void Render(in FrameContext frame, ReadOnlySpan<LedPoint> leds, Span<Rgb> output)
-    {
-        var s = Settings;
-        var audio = AudioFeed.Get();
-        bool silent = Music.Silent(audio), center = s.GetString("layout") == "From the center";
-        string colors = s.GetString("colors");
-        double sensitivity = s.GetNumber("sensitivity");
-        Rgb low = s.GetColor("low"), high = s.GetColor("high");
-
-        for (int i = 0; i < leds.Length; i++)
-        {
-            var p = leds[i];
-            double height = silent
-                ? 0.12 + 0.08 * Math.Sin(frame.Time * 1.5 + p.X * 7) // a low ripple while it waits
-                : Music.Gain(Music.BandAt(audio, p.X, center), sensitivity);
-            double up = 1 - p.Y; // 0 at the bottom of the canvas, 1 at the top
-            var c = colors switch
-            {
-                "Rainbow" => Rgb.FromHsv((center ? Math.Abs(p.X - 0.5) * 2 : p.X) * 300, 1, 1),
-                "Two colors" => Rgb.LerpHue(low, high, up),
-                _ => Rgb.LerpHue(new Rgb(0, 255, 90), new Rgb(255, 20, 0), up), // green at the bottom to red at the top
-            };
-            output[i] = up <= height ? c : c.Scale(0.04);
-        }
     }
 }
 

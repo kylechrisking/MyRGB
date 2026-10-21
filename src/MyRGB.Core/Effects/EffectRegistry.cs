@@ -25,7 +25,7 @@ public sealed class EffectRegistry
             LavaLampEffect.Definition,
             SensorMeterEffect.Definition,
             MusicPulseEffect.Definition,
-            MusicSpectrumEffect.Definition,
+            VisualizerEffect.Definition,
             MusicWavesEffect.Definition,
         })
             r.Register(d);

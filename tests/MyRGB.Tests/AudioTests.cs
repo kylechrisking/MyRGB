@@ -49,6 +49,30 @@ public class AudioTests
     }
 
     [Fact]
+    public void Visualizer_draws_bars_and_brings_the_background_up_in_silence()
+    {
+        var def = MyRGB.Core.Effects.EffectRegistry.CreateDefault().Find("visualizer")!;
+        var effect = def.Create(new MyRGB.Core.Effects.EffectSettings(new Dictionary<string, string> { ["background"] = "White", ["bgBrightness"] = "0" }));
+        // Two LEDs at the bottom: one under the bass end, one under the treble end.
+        MyRGB.Core.Effects.LedPoint[] leds = [MyRGB.Core.Effects.LedPoint.Whole(0.01f, 0.99f), MyRGB.Core.Effects.LedPoint.Whole(0.99f, 0.99f)];
+        var output = new MyRGB.Core.Rgb[2];
+        try
+        {
+            var loudBass = new float[AudioFrame.BandCount];
+            loudBass[0] = loudBass[1] = 1;
+            AudioFeed.Publish(new AudioFrame(1, loudBass, 0, loudBass));
+            effect.Render(new MyRGB.Core.Effects.FrameContext(0, 1 / 30.0), leds, output);
+            Assert.True(output[0].G == 255 && output[0].R < 20 && output[0].B == 0, $"{output[0]}"); // a bar, green at the bottom
+            Assert.Equal(MyRGB.Core.Rgb.Black, output[1]);          // no treble, background off
+
+            AudioFeed.Publish(AudioFrame.Silent);
+            for (int f = 0; f < 30 * 6; f++) effect.Render(new MyRGB.Core.Effects.FrameContext(f / 30.0, 1 / 30.0), leds, output);
+            Assert.Equal(new MyRGB.Core.Rgb(255, 255, 255), output[1]); // after the timeout, the background is up
+        }
+        finally { AudioFeed.Publish(AudioFrame.Silent); }
+    }
+
+    [Fact]
     public void Fft_finds_a_pure_bin()
     {
         int n = 64;

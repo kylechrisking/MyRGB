@@ -77,7 +77,7 @@ public sealed class EffectPreview : Control
         _colors = new Rgb[cols * rows];
         for (int r = 0; r < rows; r++)
             for (int c = 0; c < cols; c++)
-                _points[r * cols + c] = new LedPoint(c / (float)(cols - 1), rows == 1 ? 0.5f : r / (float)(rows - 1));
+                _points[r * cols + c] = LedPoint.Whole(c / (float)(cols - 1), rows == 1 ? 0.5f : r / (float)(rows - 1));
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)

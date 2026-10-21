@@ -284,7 +284,8 @@ public sealed class LightingEngine : IDisposable
                     .Select(l =>
                     {
                         var (x, y) = p.Map(l, turned);
-                        return new LedPoint((float)x, (float)y);
+                        // Within the device, the line runs the way the box does, like on the canvas.
+                        return new LedPoint((float)x, (float)y) { LocalX = turned ? l.Y : l.X, LocalY = turned ? l.X : l.Y };
                     })
                     .ToArray();
 

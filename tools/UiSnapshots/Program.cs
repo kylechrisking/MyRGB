@@ -5,6 +5,7 @@ using MyRGB.App;
 using MyRGB.App.Services;
 using MyRGB.App.ViewModels;
 using MyRGB.Core;
+using MyRGB.Core.Audio;
 using MyRGB.Core.Devices;
 using MyRGB.Cloud;
 using MyRGB.Core.Presets;
@@ -82,6 +83,11 @@ vm.SelectedTab = MainViewModel.CommunityTab; Thread.Sleep(300); Shoot("03b-commu
 vm.EditPreset("ocean"); Shoot("04-studio");
 vm.Studio.SelectedTarget = vm.Studio.Targets[1]; Shoot("04b-studio-device");
 vm.Studio.SelectedTarget = vm.Studio.Targets[0];
+// A made-up spectrum (strong bass tapering to the treble) so the Visualizer has something to draw.
+var song = Enumerable.Range(0, AudioFrame.BandCount).Select(b => (float)Math.Clamp(0.95 - b * 0.022 + 0.12 * Math.Sin(b * 1.3), 0, 1)).ToArray();
+AudioFeed.Publish(new AudioFrame(0.8f, song, 3, song));
+vm.EditPreset("visualizer"); Shoot("04c-visualizer");
+AudioFeed.Publish(AudioFrame.Silent);
 vm.SelectedTab = MainViewModel.LayoutTab; Shoot("05-layout");
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
 vm.Supported.Query = "razer basilisk"; Console.WriteLine($"supported search: {vm.Supported.Summary} first={vm.Supported.Results.FirstOrDefault()?.Name}");
