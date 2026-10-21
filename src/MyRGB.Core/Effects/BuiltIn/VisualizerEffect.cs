@@ -26,7 +26,7 @@ internal sealed class VisualizerEffect : Effect
             new ChoiceParameter("drawOn", "Draw on", ["Each device", "Whole desk"], "Each device"),
             new ChoiceParameter("foreground", "Foreground", Patterns, "Green/Yellow/Red"),
             new ChoiceParameter("background", "Background", Patterns, "Rainbow"),
-            new NumberParameter("bgBrightness", "Background brightness %", 0, 100, 10),
+            new NumberParameter("bgBrightness", "Background brightness %", 0, 100, 0),
             new NumberParameter("amplitude", "Amplitude %", 10, 400, 100, 5),
             new NumberParameter("decay", "Decay %", 0, 98, 80),
             new NumberParameter("average", "Average size", 1, 8, 1),

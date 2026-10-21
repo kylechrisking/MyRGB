@@ -59,18 +59,22 @@ internal sealed class RazerBatterySource(string path, string name, string hardwa
     private byte? Query(SafeFileHandle h, byte command)
     {
         var request = RazerReport.Build(transactionId, commandClass: 0x07, command, dataSize: 0x02);
-        // Other software (OpenRGB, Synapse) may be talking to the device too, so a reply can be
-        // theirs or "busy"; retry a few times and only accept our own command echoed back.
-        for (int attempt = 0; attempt < 4; attempt++)
+        // The device keeps one reply slot, and OpenRGB rewrites it with every lighting frame it
+        // sends, so read it back quickly and often, and only accept our own command echoed back.
+        // A dongle whose mouse is asleep answers with a failure; one of those can also be a
+        // hiccup while the radio is busy, so it takes a few in a row to call the mouse asleep.
+        int noResponse = 0;
+        for (int attempt = 0; attempt < 10 && noResponse < 3; attempt++)
         {
             if (!HidDevices.SetFeature(h, request)) return null;
-            Thread.Sleep(40 + attempt * 30);
-            var reply = new byte[RazerReport.Length + 1];
-            if (!HidDevices.GetFeature(h, reply)) continue;
-            switch (RazerReport.Parse(reply, 0x07, command))
+            for (int poll = 0; poll < 10; poll++)
             {
-                case { Ok: true } r: return r.Argument1;
-                case { NoResponse: true }: return null;
+                Thread.Sleep(4);
+                var reply = new byte[RazerReport.Length + 1];
+                if (!HidDevices.GetFeature(h, reply)) continue;
+                var r = RazerReport.Parse(reply, 0x07, command);
+                if (r.Ok) return r.Argument1;
+                if (r.NoResponse) { noResponse++; break; }
             }
         }
         return null;

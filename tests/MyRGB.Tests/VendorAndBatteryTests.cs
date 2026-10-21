@@ -1,4 +1,5 @@
 using MyRGB.Battery;
+using MyRGB.Core.Devices;
 using MyRGB.Core.Vendors;
 
 namespace MyRGB.Tests;
@@ -61,4 +62,28 @@ public class VendorAndBatteryTests
     [InlineData(3730, 35)]
     [InlineData(3300, 0)]
     public void Voltage_curve(int mv, int pct) => Assert.Equal(pct, LogitechBatterySource.VoltageToPercent(mv));
+
+    [Fact]
+    public async Task One_missed_read_keeps_the_last_battery_level()
+    {
+        var source = new FlakySource { Next = new BatteryStatus(70, false) };
+        await using var monitor = new BatteryMonitor([new OneSource(source)]);
+        await monitor.RefreshAsync();
+        source.Next = null;
+        await monitor.RefreshAsync();
+        Assert.Equal(70, monitor.Readings["usb:test"].Status?.Percent);
+    }
+
+    private sealed class FlakySource : IBatterySource
+    {
+        public BatteryStatus? Next;
+        public string HardwareKey => "usb:test";
+        public string Name => "Test mouse";
+        public Task<BatteryStatus?> ReadAsync(CancellationToken ct) => Task.FromResult(Next);
+    }
+
+    private sealed class OneSource(IBatterySource source) : IBatteryProvider
+    {
+        public IReadOnlyList<IBatterySource> Discover() => [source];
+    }
 }

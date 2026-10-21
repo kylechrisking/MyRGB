@@ -40,11 +40,27 @@ public partial class App : Application
 
             desktop.ShutdownRequested += (_, _) => _window.AllowClose = true;
             desktop.Exit += (_, _) => _host.Shutdown();
+            WatchForHandover(desktop);
 
             _ = _host.StartAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Close when MyRGB starts as administrator, so that one gets the devices.</summary>
+    private void WatchForHandover(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        if (Program.Handover is not { } handover) return;
+        new Thread(() =>
+        {
+            handover.WaitOne();
+            Dispatcher.UIThread.Post(() =>
+            {
+                _window!.AllowClose = true;
+                desktop.Shutdown();
+            });
+        }) { IsBackground = true, Name = "Handover" }.Start();
     }
 
     private void CreateTray(IClassicDesktopStyleApplicationLifetime desktop)

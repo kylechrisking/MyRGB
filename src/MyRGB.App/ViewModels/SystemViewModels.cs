@@ -299,7 +299,14 @@ public sealed partial class CoolingViewModel : ObservableObject
     public ObservableCollection<FanRowViewModel> Fans { get; } = [];
 
     [ObservableProperty] private bool _hasFans;
-    [ObservableProperty] private bool _boardFansMissing;
+    [ObservableProperty] private string _adminStatus = "";
+
+    /// <summary>True while MyRGB runs without admin rights.</summary>
+    public bool NeedsAdmin { get; init; } = !Program.IsElevated;
+
+    [RelayCommand]
+    private void RestartAsAdmin() =>
+        AdminStatus = Program.RestartElevated() ? "Opening MyRGB as administrator…" : "Windows didn't give permission, so MyRGB is still running without it.";
 
     public string SafetyText =>
         $"MyRGB never runs a fan below {FanController.Floor:0} %, runs any fan flat out once its temperature reaches {FanController.EmergencyTemp:0} °C, and hands every fan back to automatic when it closes.";
@@ -320,7 +327,6 @@ public sealed partial class CoolingViewModel : ObservableObject
                 _ => Color.FromRgb(86, 219, 143),
             });
         }
-        BoardFansMissing = hub.Get(SensorKeys.CpuTemp) is null;
 
         var fans = hub.Fans;
         if (fans.Count != Fans.Count || fans.Where((f, i) => f.Id != Fans[i].Id).Any())

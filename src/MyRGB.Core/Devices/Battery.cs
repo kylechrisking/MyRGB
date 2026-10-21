@@ -34,11 +34,15 @@ public sealed class BatteryMonitor : IAsyncDisposable
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan RediscoverInterval = TimeSpan.FromMinutes(5);
 
+    /// <summary>How long a good reading stands in for failed ones before the device counts as asleep.</summary>
+    internal static readonly TimeSpan HoldReading = TimeSpan.FromMinutes(3);
+
     private readonly IReadOnlyList<IBatteryProvider> _providers;
     private readonly ILogger _log;
     private readonly CancellationTokenSource _cts = new();
     private readonly SemaphoreSlim _pollLock = new(1, 1);
     private readonly HashSet<string> _loggedFailures = [];
+    private readonly Dictionary<string, BatteryReading> _lastGood = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<IBatterySource> _sources = [];
     private DateTime _discoveredAt = DateTime.MinValue;
     private Task _loop = Task.CompletedTask;
@@ -99,7 +103,12 @@ public sealed class BatteryMonitor : IAsyncDisposable
                     if (_loggedFailures.Add(source.HardwareKey))
                         _log.LogWarning(ex, "Reading the battery of {Device} failed", source.Name);
                 }
-                next[source.HardwareKey] = new BatteryReading(source.HardwareKey, source.Name, status, DateTime.UtcNow);
+                var reading = new BatteryReading(source.HardwareKey, source.Name, status, DateTime.UtcNow);
+                // Wireless reads miss now and then (the radio is busy, other software is talking to
+                // the device), so a failed poll soon after a good one doesn't make it "asleep" yet.
+                if (status is not null) _lastGood[source.HardwareKey] = reading;
+                else if (_lastGood.TryGetValue(source.HardwareKey, out var good) && reading.ReadAt - good.ReadAt < HoldReading) reading = good;
+                next[source.HardwareKey] = reading;
             }
 
             bool changed = next.Count != _readings.Count

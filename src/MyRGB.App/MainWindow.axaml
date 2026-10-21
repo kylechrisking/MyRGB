@@ -1037,6 +1037,18 @@
                   </Grid>
                 </Border>
 
+                <Border Classes="panel" Margin="0,0,14,0" IsVisible="{Binding NeedsAdmin}">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="6" Margin="0,0,16,0">
+                      <TextBlock Classes="section" Text="Fan control needs administrator" />
+                      <TextBlock Classes="body" Text="Your CPU's temperature, the fans on your motherboard, and on many graphics cards setting the fan speed only work for programs running as administrator. Without it MyRGB can show your graphics card's temperatures, but the speeds you set here may be ignored." />
+                      <TextBlock Classes="muted" Text="{Binding AdminStatus}" IsVisible="{Binding AdminStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="accent" VerticalAlignment="Center" Content="Restart as administrator" Command="{Binding RestartAsAdminCommand}"
+                            ToolTip.Tip="Windows asks for permission, then MyRGB reopens with admin rights and takes over from this one." />
+                  </Grid>
+                </Border>
+
                 <ItemsControl ItemsSource="{Binding Fans}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:FanRowViewModel">
@@ -1083,12 +1095,6 @@
                   <TextBlock Classes="body" Text="MyRGB hasn't found a fan it can control yet." />
                 </Border>
 
-                <Border Classes="panel" Margin="0,0,14,0" IsVisible="{Binding BoardFansMissing}">
-                  <StackPanel Spacing="6">
-                    <TextBlock Classes="section" Text="CPU temperature and case fans" />
-                    <TextBlock Classes="body" Text="Your CPU's temperature and the fans on your motherboard are behind a driver that only opens to programs running as administrator. MyRGB runs without admin rights, so it can't see them yet. Graphics card fans and temperatures work without it." />
-                  </StackPanel>
-                </Border>
               </StackPanel>
             </ScrollViewer>
           </DockPanel>
