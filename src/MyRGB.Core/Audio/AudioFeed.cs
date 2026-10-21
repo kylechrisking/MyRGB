@@ -4,7 +4,7 @@ namespace MyRGB.Core.Audio;
 /// What the PC is playing right now, as music effects see it. <see cref="Bands"/> run from bass to
 /// treble, each 0..1 and scaled to the recent loudness of that band, so quiet and loud music both
 /// fill the range. <see cref="Beats"/> counts kicks since listening started. <see cref="Raw"/> is the same
-/// bands on a fixed scale instead (each band's loudest frequency, -50 dB to -5 dB as 0..1, no auto-gain or
+/// bands on a fixed scale instead (each band's loudest frequency, -65 dB to -20 dB as 0..1, no auto-gain or
 /// smoothing), for effects that do their own, like the Visualizer.
 /// </summary>
 public sealed record AudioFrame(float Level, float[] Bands, long Beats, float[] Raw)

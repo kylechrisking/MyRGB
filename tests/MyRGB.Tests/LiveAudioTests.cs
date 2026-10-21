@@ -14,9 +14,11 @@ public class LiveAudioTests(ITestOutputHelper output)
         {
             var f = AudioFeed.Get(); // asking is what starts the listener
             if (i % 5 == 0)
-                output.WriteLine($"listening={listener.Listening} level={f.Level:0.00} beats={f.Beats} bands={string.Join("", f.Bands.Select(b => " .:-=+*#%@"[Math.Clamp((int)(b * 9.99), 0, 9)]))}");
+                output.WriteLine($"level={f.Level:0.00} beats={f.Beats} bands=[{Bars(f.Bands)}] raw=[{Bars(f.Raw)}]");
             await Task.Delay(100, TestContext.Current.CancellationToken);
         }
         Assert.True(listener.Listening);
     }
+
+    private static string Bars(float[] values) => string.Concat(values.Select(v => " .:-=+*#%@"[Math.Clamp((int)(v * 9.99), 0, 9)]));
 }

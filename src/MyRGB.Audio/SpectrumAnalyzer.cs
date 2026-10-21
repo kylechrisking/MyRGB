@@ -88,7 +88,7 @@ public sealed class SpectrumAnalyzer
             }
             // A full-scale sine peaks at N/4 through a Hann window; scale so it reads as 1 (0 dB).
             double db = 20 * Math.Log10(Math.Sqrt(strongest) / (FftSize / 4.0) + 1e-9);
-            fixedScale[b] = (float)Math.Clamp((db + 50) / 45, 0, 1);
+            fixedScale[b] = (float)Math.Clamp((db + 65) / 45, 0, 1);
             double v = Math.Log10(1 + Math.Sqrt(energy / (to - from)) * 10);
             if (b < 4) bass += v;
             // Music carries far less energy up top; tilt the treble up so it shows at all.
