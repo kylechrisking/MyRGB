@@ -22,6 +22,14 @@ public sealed class AppSettings
 
     /// <summary>False until the first-run tour has been finished or skipped.</summary>
     public bool HasSeenWelcome { get; set; }
+
+    /// <summary>Different days MyRGB has been used on; the support note waits for a week of them.</summary>
+    public int DaysUsed { get; set; }
+    public DateOnly? LastUsedDay { get; set; }
+
+    /// <summary>When the support note was last answered, and whether it was told never to ask again.</summary>
+    public DateTime? SupportAskedAt { get; set; }
+    public bool SupportAskOff { get; set; }
     public int ApiPort { get; set; } = LocalApiServer.DefaultPort;
     public List<Preset> UserPresets { get; set; } = [];
     public List<DevicePlacement> Layout { get; set; } = [];

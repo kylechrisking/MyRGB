@@ -1404,6 +1404,24 @@
       </TabControl>
     </DockPanel>
 
+    <!-- ===== Support note: bottom right, above the player bar, after a week of use ===== -->
+    <Border IsVisible="{Binding SupportNudge.IsOpen}" Width="330" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,24,84"
+            Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
+            CornerRadius="14" ClipToBounds="True" BoxShadow="0 16 40 0 #90000000">
+      <StackPanel>
+        <Border Height="3" Background="{StaticResource RgbGradient}" />
+        <StackPanel Margin="18,14,18,14" Spacing="6">
+          <TextBlock Classes="section" Text="Like MyRGB?" />
+          <TextBlock Classes="body" Text="Buy the devs a cup of joe; it keeps them going." />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+            <Button Classes="accent" Content="Buy a coffee" Command="{Binding SupportNudge.SupportCommand}" />
+            <Button Classes="ghost" Content="Maybe later" Command="{Binding SupportNudge.LaterCommand}" />
+          </StackPanel>
+          <Button Classes="link" Content="Don't ask again" Command="{Binding SupportNudge.NeverCommand}" HorizontalAlignment="Left" Margin="-6,0,0,0" FontSize="12" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
     <!-- ===== First-run tour (also opened from "How it works") ===== -->
     <Border IsVisible="{Binding ShowWelcome}" Background="{StaticResource OverlayBrush}">
       <Border Width="640" HorizontalAlignment="Center" VerticalAlignment="Center"

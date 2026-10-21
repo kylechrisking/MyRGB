@@ -165,7 +165,7 @@ public sealed partial class AccountViewModel : ObservableObject
             TaskContinuationOptions.OnlyOnFaulted);
     }
 
-    private static void OpenLink(string url)
+    internal static void OpenLink(string url)
     {
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true })?.Dispose(); }
         catch (Exception) { /* no browser registered */ }

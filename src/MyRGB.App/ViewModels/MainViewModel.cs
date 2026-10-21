@@ -93,6 +93,7 @@ public sealed partial class MainViewModel : ObservableObject
         Contact = new ContactViewModel(host, Account);
         Monitoring = new MonitoringViewModel(host);
         Cooling = new CoolingViewModel(host);
+        SupportNudge = new SupportNudgeViewModel(host, Account);
         Supported.Search();
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
@@ -112,6 +113,16 @@ public sealed partial class MainViewModel : ObservableObject
         _ = Vendors.Check();
 
         if (!host.Settings.HasSeenWelcome) OpenTour();
+
+        // First look a minute in, once the account has said whether this is a supporter; then hourly,
+        // since MyRGB usually runs for days at a time.
+        var nudge = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        nudge.Tick += (_, _) =>
+        {
+            nudge.Interval = TimeSpan.FromHours(1);
+            SupportNudge.Check(DateTime.Now);
+        };
+        nudge.Start();
     }
 
     public AppHost Host => _host;
@@ -122,6 +133,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ContactViewModel Contact { get; }
     public MonitoringViewModel Monitoring { get; }
     public CoolingViewModel Cooling { get; }
+    public SupportNudgeViewModel SupportNudge { get; }
     public SupportedDevicesViewModel Supported { get; } = new();
 
     /// <summary>Sensor pages only redraw while they're showing; the hub keeps reading either way.</summary>

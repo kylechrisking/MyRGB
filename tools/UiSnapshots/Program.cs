@@ -78,6 +78,7 @@ Shoot("01-tour-step2");
 vm.Welcome!.SkipCommand.Execute(null);
 
 vm.SelectedTab = MainViewModel.HomeTab; Shoot("02-home");
+vm.SupportNudge.IsOpen = true; Shoot("02b-support-note"); vm.SupportNudge.IsOpen = false;
 vm.SelectedTab = MainViewModel.PresetsTab; Shoot("03-presets");
 vm.SelectedTab = MainViewModel.CommunityTab; Thread.Sleep(300); Shoot("03b-community");
 vm.EditPreset("ocean"); Shoot("04-studio");
