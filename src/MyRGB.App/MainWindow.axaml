@@ -1323,7 +1323,7 @@
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                   <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Account.HasSupportLinks}"
-                             Text="Support with the same email as your MyRGB account and your perks turn on by themselves." />
+                             Text="Support with the same email as your MyRGB account, so your perks can be matched to it." />
                 </StackPanel>
               </Border>
 
