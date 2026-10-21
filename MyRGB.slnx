@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/MyRGB.Api/MyRGB.Api.csproj" />
     <Project Path="src/MyRGB.App/MyRGB.App.csproj" />
+    <Project Path="src/MyRGB.Audio/MyRGB.Audio.csproj" />
     <Project Path="src/MyRGB.Battery/MyRGB.Battery.csproj" />
     <Project Path="src/MyRGB.Cloud/MyRGB.Cloud.csproj" />
     <Project Path="src/MyRGB.Core/MyRGB.Core.csproj" />

@@ -21,7 +21,12 @@ public sealed class EffectRegistry
             RippleEffect.Definition,
             PlasmaEffect.Definition,
             FireEffect.Definition,
+            CometEffect.Definition,
+            LavaLampEffect.Definition,
             SensorMeterEffect.Definition,
+            MusicPulseEffect.Definition,
+            MusicSpectrumEffect.Definition,
+            MusicWavesEffect.Definition,
         })
             r.Register(d);
         return r;

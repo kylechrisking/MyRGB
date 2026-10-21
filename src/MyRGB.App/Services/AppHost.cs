@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MyRGB.Api;
+using MyRGB.Audio;
 using MyRGB.Battery;
 using MyRGB.Cloud;
 using MyRGB.Core;
@@ -29,6 +30,9 @@ public sealed class AppHostOptions
 
     /// <summary>Replaces reading Installed apps and running processes.</summary>
     public Func<IReadOnlyList<DetectedVendorApp>>? DetectVendorApps { get; init; }
+
+    /// <summary>Listen to what the PC plays, for the music effects. Off in snapshots and tests.</summary>
+    public bool ListenToAudio { get; init; } = true;
 
     /// <summary>Replaces the hardware sensors (CPU, GPU, fans).</summary>
     public Func<ISensorSource>? Sensors { get; init; }
@@ -94,6 +98,7 @@ public sealed class AppHost : IAsyncDisposable
         Sensors = new SensorHub(_options.Sensors?.Invoke() ?? OpenSensors(), Logs.CreateLogger<SensorHub>());
         Sensors.SetFanSettings(Settings.Fans);
         SensorFeed.Use(Sensors.Get);
+        if (_options.ListenToAudio) Audio = new AudioListener(Logs.CreateLogger<AudioListener>());
 
         Devices.DevicesChanged += (_, _) => WatchDeviceCommands();
         Lights.StateChanged += (_, _) => ScheduleSave();
@@ -129,6 +134,7 @@ public sealed class AppHost : IAsyncDisposable
     public LightingService Lights { get; }
     public BatteryMonitor Batteries { get; }
     public SensorHub Sensors { get; }
+    public AudioListener? Audio { get; }
 
     private readonly HashSet<IDeviceCommands> _commandSources = [];
 
@@ -305,6 +311,7 @@ public sealed class AppHost : IAsyncDisposable
         SaveNow();
         Engine.Dispose();
         Sensors.Dispose(); // hands any fans MyRGB was driving back to the hardware
+        Audio?.Dispose();
         await Batteries.DisposeAsync();
         _syncDebounce?.Cancel();
         (Cloud as IDisposable)?.Dispose();

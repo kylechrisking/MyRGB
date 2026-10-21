@@ -145,6 +145,46 @@ public class CoreTests
         Assert.Equal(BuiltInPresets.All[^1].Id, svc.State.ActivePresetId);
     }
 
+    [Fact]
+    public void Every_effect_runs_and_lights_something()
+    {
+        var grid = Enumerable.Range(0, 16 * 9).Select(i => new LedPoint(i % 16 / 15f, i / 16 / 8f)).ToArray();
+        var output = new Rgb[grid.Length];
+        foreach (var def in EffectRegistry.CreateDefault().All)
+        {
+            var effect = def.Create(EffectSettings.Empty);
+            bool lit = false;
+            for (int f = 0; f < 150; f++) // five seconds at 30 fps; silence for the music effects
+            {
+                effect.Render(new FrameContext(f / 30.0, 1 / 30.0), grid, output);
+                lit |= output.Any(c => c != Rgb.Black);
+            }
+            Assert.True(lit, $"{def.Name} never lit an LED");
+        }
+    }
+
+    [Fact]
+    public void Tidy_separates_overlapping_devices_and_leaves_the_rest()
+    {
+        var layout = new CanvasLayout(
+        [
+            new DevicePlacement("board", 0.40, 0.05, 0.20, 0.27),
+            new DevicePlacement("ram1", 0.58, 0.05, 0.03, 0.20),   // overlaps the board's right edge
+            new DevicePlacement("ram2", 0.60, 0.05, 0.03, 0.20),   // and the first stick
+            new DevicePlacement("keyboard", 0.20, 0.60, 0.45, 0.20),
+        ]);
+        int moved = layout.Tidy(["board", "ram1", "ram2", "keyboard"]);
+
+        var p = layout.Placements.ToDictionary(x => x.DeviceId);
+        static bool Overlap(DevicePlacement a, DevicePlacement b) =>
+            a.X < b.X + b.Width && b.X < a.X + a.Width && a.Y < b.Y + b.Height && b.Y < a.Y + a.Height;
+        Assert.False(Overlap(p["board"], p["ram1"]));
+        Assert.False(Overlap(p["ram1"], p["ram2"]));
+        Assert.Equal(new DevicePlacement("keyboard", 0.20, 0.60, 0.45, 0.20), p["keyboard"]);
+        Assert.InRange(moved, 1, 3);
+        Assert.Equal(0, layout.Tidy(["board", "ram1", "ram2", "keyboard"])); // already tidy
+    }
+
     [Theory]
     [InlineData("I2C: PawnIO SMBus i801 0, address 0x58", "A1")]
     [InlineData("I2C: PawnIO SMBus i801 0, address 0x59", "A2")]

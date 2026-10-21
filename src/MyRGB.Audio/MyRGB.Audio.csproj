@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\MyRGB.Core\MyRGB.Core.csproj" />
+    <!-- MIT. Captures what the PC is playing (WASAPI loopback) for the music effects. -->
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <InternalsVisibleTo Include="MyRGB.Tests" />
+  </ItemGroup>
+</Project>

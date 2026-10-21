@@ -75,6 +75,11 @@ Mozilla Public License 2.0 (https://mozilla.org/MPL/2.0/). Used unmodified, for 
 and Cooling pages. Source: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor,
 https://github.com/Blacktempel/DiskInfoToolkit, https://github.com/Blacktempel/RAMSPDToolkit
 
+NAudio 2.2.1 (NAudio.Wasapi, NAudio.Core)
+-----------------------------------------
+Copyright (c) Mark Heath and contributors. MIT License. https://github.com/naudio/NAudio
+Used to listen to what the PC is playing for the music effects. Nothing is recorded or sent.
+
 HidSharp 2.6.4
 --------------
 Copyright (c) James F. Bellinger. Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0).

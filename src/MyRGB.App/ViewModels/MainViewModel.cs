@@ -269,6 +269,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
     [RelayCommand] private void TogglePower() => _host.Lights.SetEnabled(!_host.Lights.State.Enabled);
     [RelayCommand] private void ResetLayout() => _host.Layout.Reset();
+    [RelayCommand] private void TidyLayout() => _host.Layout.Tidy(_host.Devices.Devices.Select(d => d.Id));
 
     [RelayCommand]
     private async Task Rescan()

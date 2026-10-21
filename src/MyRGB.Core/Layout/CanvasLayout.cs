@@ -97,6 +97,48 @@ public sealed class CanvasLayout
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Nudge overlapping devices apart, each by the least it takes, keeping everything else where
+    /// it is. Returns how many devices moved. Devices with no placement yet are left alone.
+    /// </summary>
+    public int Tidy(IEnumerable<string> deviceIds)
+    {
+        const double Gap = 0.012;
+        int moved;
+        lock (_gate)
+        {
+            var ids = deviceIds.Where(_placements.ContainsKey).ToList();
+            var original = ids.ToDictionary(id => id, id => _placements[id], StringComparer.OrdinalIgnoreCase);
+            for (int pass = 0; pass < 60; pass++)
+            {
+                bool any = false;
+                for (int i = 0; i < ids.Count; i++)
+                    for (int j = i + 1; j < ids.Count; j++)
+                    {
+                        var a = _placements[ids[i]];
+                        var b = _placements[ids[j]];
+                        double overlapX = Math.Min(a.X + a.Width, b.X + b.Width) - Math.Max(a.X, b.X) + Gap;
+                        double overlapY = Math.Min(a.Y + a.Height, b.Y + b.Height) - Math.Max(a.Y, b.Y) + Gap;
+                        if (overlapX <= 0 || overlapY <= 0) continue;
+                        any = true;
+                        // Push the second one along whichever axis needs less; on screen x is 16/9 wider.
+                        bool sideways = overlapX * Aspect <= overlapY;
+                        double dir = sideways ? (b.X + b.Width / 2 >= a.X + a.Width / 2 ? 1 : -1) : (b.Y + b.Height / 2 >= a.Y + a.Height / 2 ? 1 : -1);
+                        var nb = sideways ? b with { X = b.X + dir * overlapX } : b with { Y = b.Y + dir * overlapY };
+                        nb = Clamp(nb);
+                        // Pinned against an edge: move the first one the other way instead.
+                        if (nb == b)
+                            _placements[ids[i]] = Clamp(sideways ? a with { X = a.X - dir * overlapX } : a with { Y = a.Y - dir * overlapY });
+                        else _placements[ids[j]] = nb;
+                    }
+                if (!any) break;
+            }
+            moved = ids.Count(id => _placements[id] != original[id]);
+        }
+        if (moved > 0) Changed?.Invoke(this, EventArgs.Empty);
+        return moved;
+    }
+
     public void Reset()
     {
         lock (_gate) _placements.Clear();

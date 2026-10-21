@@ -45,6 +45,7 @@ var host = new AppHost(new AppHostOptions
     DetectVendorApps = () => VendorAppCatalog.Detect(installed, ["iCUE"]),
     Cloud = () => new FakeCloud(),
     DynamicLightingOn = () => true,
+    ListenToAudio = false,
     Sensors = () => new FakeSensors(),
 });
 // Stay on this thread: it's Avalonia's UI thread, and awaiting would resume elsewhere.

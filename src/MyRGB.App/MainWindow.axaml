@@ -656,7 +656,7 @@
                 <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,16,0,0">
                   <TextBlock Classes="kicker" Text="EFFECT" />
                   <ListBox Classes="chips" ItemsSource="{Binding Studio.Effects}" SelectedItem="{Binding Studio.SelectedEffect}"
-                           IsEnabled="{Binding Studio.ShowEffectEditor}" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                           IsEnabled="{Binding Studio.ShowEffectEditor}" MaxHeight="226" ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <ListBox.ItemsPanel>
                       <ItemsPanelTemplate>
                         <WrapPanel ItemWidth="134" />
@@ -752,7 +752,12 @@
                 <TextBlock Classes="muted" TextWrapping="Wrap"
                            Text="This rectangle is your desk seen from the front. Drag each device to where it really sits, and drag a corner to resize it. Effects sweep across the whole picture, so a good layout makes waves flow from one device to the next." />
               </StackPanel>
-              <Button Grid.Column="1" Classes="ghost" Content="Reset layout" Command="{Binding ResetLayoutCommand}" VerticalAlignment="Center" Margin="16,0,0,0" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="16,0,0,0">
+                <Button Classes="ghost" Content="Tidy up" Command="{Binding TidyLayoutCommand}"
+                        ToolTip.Tip="Nudge overlapping devices apart and leave the rest where they are" />
+                <Button Classes="ghost" Content="Reset layout" Command="{Binding ResetLayoutCommand}"
+                        ToolTip.Tip="Put every device back in its default spot" />
+              </StackPanel>
             </Grid>
             <ctl:LedCanvas Host="{Binding Host}" AllowEditing="True" />
           </DockPanel>

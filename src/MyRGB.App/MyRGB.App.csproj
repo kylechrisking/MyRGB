@@ -37,5 +37,6 @@
     <ProjectReference Include="..\MyRGB.Battery\MyRGB.Battery.csproj" />
     <ProjectReference Include="..\MyRGB.Cloud\MyRGB.Cloud.csproj" />
     <ProjectReference Include="..\MyRGB.Sensors\MyRGB.Sensors.csproj" />
+    <ProjectReference Include="..\MyRGB.Audio\MyRGB.Audio.csproj" />
   </ItemGroup>
 </Project>
