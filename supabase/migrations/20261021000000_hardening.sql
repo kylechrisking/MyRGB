@@ -1,10 +1,13 @@
 -- Tightening before the public beta.
+-- Needs 20261020000000_supporters.sql first. Safe to run again if it stopped partway.
 
 -- ---------------------------------------------------------------------------
 -- Profiles: a display name defaults to the person's name from their sign-in, so it is only
 -- public once they share a preset. Everyone else's profile stays private to them.
 -- ---------------------------------------------------------------------------
-drop policy "profiles are readable by everyone" on public.profiles;
+drop policy if exists "profiles are readable by everyone" on public.profiles;
+drop policy if exists "users read their own profile" on public.profiles;
+drop policy if exists "authors of community presets are public" on public.profiles;
 
 create policy "users read their own profile"
     on public.profiles for select using (auth.uid() = id);
@@ -23,7 +26,7 @@ revoke execute on function public.cloud_limit(uuid, text) from authenticated;
 -- ---------------------------------------------------------------------------
 -- Install counts: one per person per preset, so the Popular list can't be pumped.
 -- ---------------------------------------------------------------------------
-create table public.preset_installs (
+create table if not exists public.preset_installs (
     preset_id uuid not null references public.shared_presets (id) on delete cascade,
     user_id   uuid not null references auth.users (id) on delete cascade,
     primary key (preset_id, user_id)
