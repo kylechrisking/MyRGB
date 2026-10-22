@@ -154,7 +154,7 @@
     <Style Selector="Button.chip">
       <Setter Property="Padding" Value="0" />
       <Setter Property="Width" Value="168" />
-      <Setter Property="Height" Value="74" />
+      <Setter Property="Height" Value="96" />
       <Setter Property="Margin" Value="0,0,12,12" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
@@ -332,6 +332,63 @@
                 <TextBlock Classes="muted" Text="{Binding HomeSummary}" />
               </StackPanel>
 
+              <!-- At a glance: what's playing, how the PC is doing, and the fans -->
+              <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Border Classes="panel" Padding="16,14">
+                  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Classes="kicker" Text="{Binding PlayingLabel}" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="link" Content="Studio ›" Command="{Binding NavigateCommand}" CommandParameter="studio" Margin="0,-6,-8,-6" />
+                    </Grid>
+                    <Panel Grid.Row="1" Height="64">
+                      <ctl:EffectPreview Definition="{Binding ActiveCard.Effect}" Settings="{Binding ActiveCard.Settings}" Animate="{Binding !Paused}"
+                                         CornerRadius="8" IsVisible="{Binding ActiveHasEffect}" />
+                      <Border Background="{Binding ActiveSwatch}" CornerRadius="8" IsVisible="{Binding !ActiveHasEffect}" />
+                    </Panel>
+                    <TextBlock Grid.Row="2" Text="{Binding ActivePresetName}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </Border>
+
+                <Border Grid.Column="1" Classes="panel" Padding="16,14">
+                  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Classes="kicker" Text="SYSTEM" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="link" Content="Monitoring ›" Command="{Binding NavigateCommand}" CommandParameter="monitoring" Margin="0,-6,-8,-6" />
+                    </Grid>
+                    <StackPanel Grid.Row="1" Spacing="7" VerticalAlignment="Center">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="muted" FontSize="13" Text="CPU" />
+                        <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{Binding Monitoring.CpuSummary}" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="muted" FontSize="13" Text="GPU" />
+                        <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{Binding Monitoring.GpuSummary}" />
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="muted" FontSize="13" Text="Memory" />
+                        <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{Binding Monitoring.MemorySummary}" />
+                      </Grid>
+                    </StackPanel>
+                    <ctl:Sparkline Grid.Row="2" Values="{Binding Monitoring.Cpu.History}" Color="{Binding Monitoring.Cpu.Color}" Maximum="100" Height="26"
+                                   ToolTip.Tip="CPU load, last few minutes" />
+                  </Grid>
+                </Border>
+
+                <Border Grid.Column="2" Classes="panel" Padding="16,14">
+                  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Classes="kicker" Text="COOLING" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="link" Content="Cooling ›" Command="{Binding NavigateCommand}" CommandParameter="cooling" Margin="0,-6,-8,-6" />
+                    </Grid>
+                    <StackPanel Grid.Row="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Cooling.Hottest}" FontSize="30" FontWeight="Bold" Foreground="{Binding Cooling.HottestBrush}" />
+                      <TextBlock Classes="muted" FontSize="13" Text="{Binding Cooling.HottestLabel}" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="2" Classes="body" Text="{Binding Cooling.FanSummary}" TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </Border>
+              </Grid>
+
               <!-- Things that need attention -->
               <ItemsControl ItemsSource="{Binding Alerts}" IsVisible="{Binding HasAlerts}">
                 <ItemsControl.ItemTemplate>
@@ -426,7 +483,9 @@
                     <DataTemplate x:DataType="vm:PresetCardViewModel">
                       <Button Classes="chip" Classes.active="{Binding IsActive}" BorderBrush="{Binding Outline}" Command="{Binding ActivateCommand}">
                         <Grid RowDefinitions="*,Auto" Margin="6">
-                          <Border Background="{Binding Swatch}" CornerRadius="7" />
+                          <ctl:EffectPreview Definition="{Binding Effect}" Settings="{Binding Settings}" CornerRadius="7" IsVisible="{Binding HasEffect}"
+                                             Animate="{Binding $parent[Button].IsPointerOver}" />
+                          <Border Background="{Binding Swatch}" CornerRadius="7" IsVisible="{Binding !HasEffect}" />
                           <TextBlock Grid.Row="1" Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" Margin="3,6,3,0" TextTrimming="CharacterEllipsis" />
                         </Grid>
                       </Button>
@@ -436,14 +495,16 @@
               </StackPanel>
 
               <!-- How it works -->
-              <Border Classes="panel" Padding="22,20">
+              <Border Classes="panel" Padding="22,20" IsVisible="{Binding ShowHomeGuide}">
                 <StackPanel Spacing="16">
-                  <Grid ColumnDefinitions="*,Auto">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
                     <StackPanel Spacing="3">
                       <TextBlock Classes="section" Text="How MyRGB works" />
                       <TextBlock Classes="muted" Text="Four ideas, and you know the whole app." />
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="ghost" Content="Take the tour" Command="{Binding OpenTourCommand}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Classes="link" Content="Hide" Command="{Binding HideHomeGuideCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
+                            ToolTip.Tip="The tour stays under How it works at the top, and in Settings." />
+                    <Button Grid.Column="2" Classes="ghost" Content="Take the tour" Command="{Binding OpenTourCommand}" VerticalAlignment="Center" />
                   </Grid>
                   <UniformGrid Columns="4">
                     <StackPanel Spacing="6" Margin="0,0,18,0">
@@ -1362,21 +1423,14 @@
                   <StackPanel Orientation="Horizontal" Spacing="10">
                     <Button Classes="ghost" Content="Show the welcome tour" Command="{Binding OpenTourCommand}" />
                   </StackPanel>
-                  <StackPanel Spacing="8" IsVisible="{Binding CloudAvailable}" Margin="0,8,0,0">
-                    <TextBlock Text="Contact Root Labs" FontWeight="SemiBold" />
-                    <StackPanel Spacing="8" IsVisible="{Binding Contact.IsSignedIn}">
-                      <TextBox Text="{Binding Contact.Subject}" PlaceholderText="Subject" MaxLength="120" />
-                      <TextBox Text="{Binding Contact.Message}" PlaceholderText="How can we help? Include your device models if it's about hardware." AcceptsReturn="True" TextWrapping="Wrap" Height="110" MaxLength="5000" />
-                      <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Classes="accent" Content="Send" Command="{Binding Contact.SendCommand}" />
-                        <TextBlock Classes="muted" Text="{Binding Contact.Status}" VerticalAlignment="Center" />
-                      </StackPanel>
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                    <StackPanel Spacing="3" VerticalAlignment="Center" Margin="0,0,16,0">
+                      <TextBlock Text="Get in touch" FontWeight="SemiBold" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Questions, bugs, or a device you'd like supported? Reach Root Labs through our website." />
                     </StackPanel>
-                    <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !Contact.IsSignedIn}">
-                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Sign in to send Root Labs a message. Replies go to the email on your account." VerticalAlignment="Center" />
-                      <Button Grid.Column="1" Classes="link" Content="Sign in ›" Command="{Binding NavigateCommand}" CommandParameter="account" />
-                    </Grid>
-                  </StackPanel>
+                    <Button Grid.Column="1" Classes="accent" Content="Visit rootlabs.us ›" Command="{Binding OpenWebsiteCommand}"
+                            VerticalAlignment="Center" ToolTip.Tip="{x:Static vm:MainViewModel.WebsiteUrl}" />
+                  </Grid>
                 </StackPanel>
               </Border>
 

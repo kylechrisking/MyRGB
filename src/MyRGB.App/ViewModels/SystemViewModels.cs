@@ -102,6 +102,11 @@ public sealed partial class MonitoringViewModel : ObservableObject
         Cpu.Line("Power").Value = hub.Get(SensorKeys.CpuPower) is > 0 and var cp ? $"{cp:0} W" : "–";
         CpuTempMissing = hub.Get(SensorKeys.CpuTemp) is null;
 
+        // One-line versions for Home: load first, then temperature when there is one.
+        CpuSummary = Join(Fmt(hub.Get(SensorKeys.CpuLoad), "0", "%"), hub.Get(SensorKeys.CpuTemp) is { } cpuT ? $"{cpuT:0} °C" : null);
+        GpuSummary = Join(Fmt(hub.Get(SensorKeys.GpuLoad), "0", "%"), hub.Get(SensorKeys.GpuTemp) is { } gpuT ? $"{gpuT:0} °C" : null);
+        MemorySummary = Fmt(hub.Get(SensorKeys.MemoryLoad), "0", "% used");
+
         Gpu.Subtitle = Hardware(SensorCategory.Gpu);
         Gpu.Value = Fmt(hub.Get(SensorKeys.GpuTemp), "0");
         Gpu.Unit = "°C";
@@ -154,6 +159,12 @@ public sealed partial class MonitoringViewModel : ObservableObject
                 AllSensors.Add(new SensorRow(r.Hardware, r.Name, Describe(r)));
         }
     }
+
+    [ObservableProperty] private string _cpuSummary = "–";
+    [ObservableProperty] private string _gpuSummary = "–";
+    [ObservableProperty] private string _memorySummary = "–";
+
+    private static string Join(string first, string? second) => second is null ? first : $"{first} · {second}";
 
     private static string Fmt(double? value, string format, string suffix = "") =>
         value is { } v ? v.ToString(format, CultureInfo.CurrentCulture) + suffix : "–";
@@ -341,5 +352,19 @@ public sealed partial class CoolingViewModel : ObservableObject
         }
         var targets = hub.FanTargets;
         for (int i = 0; i < fans.Count; i++) Fans[i].Refresh(fans[i], targets.TryGetValue(fans[i].Id, out var t2) ? t2 : null);
+
+        int driven = Fans.Count(f => f.Mode != FanRowViewModel.AutoMode);
+        FanSummary = Fans.Count == 0 ? "No fans found yet"
+            : $"{Fans.Count} fan{(Fans.Count == 1 ? "" : "s")} · {(driven == 0 ? "all on automatic" : $"{driven} set by MyRGB")}";
+        var hottest = Temps.Where(t => t.Available).MaxBy(t => hub.Get(t.Key));
+        Hottest = hottest is null ? "–" : $"{hottest.Value}";
+        HottestLabel = hottest is null ? "No temperatures yet" : $"Hottest: {hottest.Label}";
+        HottestBrush = hottest?.Brush ?? Brushes.Gray;
     }
+
+    // Home's summary card.
+    [ObservableProperty] private string _fanSummary = "";
+    [ObservableProperty] private string _hottest = "–";
+    [ObservableProperty] private string _hottestLabel = "";
+    [ObservableProperty] private IBrush _hottestBrush = Brushes.Gray;
 }

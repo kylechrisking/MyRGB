@@ -77,7 +77,9 @@ vm.Welcome!.NextCommand.Execute(null);
 Shoot("01-tour-step2");
 vm.Welcome!.SkipCommand.Execute(null);
 
+for (int i = 0; i < 180; i++) host.Sensors.Poll(); // a few minutes of history for the charts
 vm.SelectedTab = MainViewModel.HomeTab; Shoot("02-home");
+window.Height = 1900; Shoot("02c-home-full"); window.Height = 860;
 vm.SupportNudge.IsOpen = true; Shoot("02b-support-note"); vm.SupportNudge.IsOpen = false;
 vm.SelectedTab = MainViewModel.PresetsTab; Shoot("03-presets");
 vm.SelectedTab = MainViewModel.CommunityTab; Thread.Sleep(300); Shoot("03b-community");
@@ -92,13 +94,13 @@ AudioFeed.Publish(AudioFrame.Silent);
 vm.SelectedTab = MainViewModel.LayoutTab; Shoot("05-layout");
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
 vm.Supported.Query = "razer basilisk"; Console.WriteLine($"supported search: {vm.Supported.Summary} first={vm.Supported.Results.FirstOrDefault()?.Name}");
-for (int i = 0; i < 180; i++) host.Sensors.Poll(); // a few minutes of history for the charts
 host.SetFan(new FanSetting { FanId = "fake/gpu/fan1", Mode = FanMode.Curve, SensorKey = SensorKeys.GpuTemp });
 vm.SelectedTab = MainViewModel.MonitoringTab; Shoot("06b-monitoring");
 vm.SelectedTab = MainViewModel.CoolingTab; Shoot("06c-cooling");
 vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");
 vm.Vendors.Apps[0].AskUninstallCommand.Execute(null); Shoot("08-vendors-confirm");
 vm.SelectedTab = MainViewModel.SettingsTab; Shoot("09-settings");
+window.Height = 2400; Shoot("09b-settings-full"); window.Height = 860;
 
 window.AllowClose = true;
 window.Close();
@@ -206,7 +208,6 @@ sealed class FakeCloud : ICloud
     public Task DeleteSharedAsync(Guid id, CancellationToken ct) => Task.CompletedTask;
     public Task CountInstallAsync(Guid id, CancellationToken ct) => Task.CompletedTask;
     public Task ReportAsync(Guid id, string reason, CancellationToken ct) => Task.CompletedTask;
-    public Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct) => Task.CompletedTask;
     public Task<SupporterStatus?> GetSupportAsync(CancellationToken ct) => Task.FromResult<SupporterStatus?>(new(true, DateTimeOffset.Now.AddDays(300), true));
     public Task SetBadgeVisibleAsync(bool visible, CancellationToken ct) => Task.CompletedTask;
 }

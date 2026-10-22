@@ -30,8 +30,6 @@ public interface ICloud
     Task CountInstallAsync(Guid id, CancellationToken ct);
     Task ReportAsync(Guid id, string reason, CancellationToken ct);
 
-    Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct);
-
     /// <summary>The signed-in user's supporter status; null when signed out or the service doesn't track it.</summary>
     Task<SupporterStatus?> GetSupportAsync(CancellationToken ct);
 

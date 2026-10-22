@@ -90,13 +90,13 @@ public sealed partial class MainViewModel : ObservableObject
         Vendors = new VendorAppsViewModel(host);
         Account = new AccountViewModel(host);
         Community = new CommunityViewModel(host, Account);
-        Contact = new ContactViewModel(host, Account);
         Monitoring = new MonitoringViewModel(host);
         Cooling = new CoolingViewModel(host);
         SupportNudge = new SupportNudgeViewModel(host, Account);
         Supported.Search();
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
+        _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
         _openRgbPath = host.Settings.OpenRgb.ExecutablePath ?? "";
 
@@ -130,7 +130,6 @@ public sealed partial class MainViewModel : ObservableObject
     public VendorAppsViewModel Vendors { get; }
     public AccountViewModel Account { get; }
     public CommunityViewModel Community { get; }
-    public ContactViewModel Contact { get; }
     public MonitoringViewModel Monitoring { get; }
     public CoolingViewModel Cooling { get; }
     public SupportNudgeViewModel SupportNudge { get; }
@@ -139,8 +138,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Sensor pages only redraw while they're showing; the hub keeps reading either way.</summary>
     private void RefreshSensors()
     {
-        if (SelectedTab == MonitoringTab) Monitoring.Refresh();
-        if (SelectedTab == CoolingTab) Cooling.Refresh();
+        // Home shows a summary of both.
+        if (SelectedTab is MonitoringTab or HomeTab) Monitoring.Refresh();
+        if (SelectedTab is CoolingTab or HomeTab) Cooling.Refresh();
     }
 
     /// <summary>Builds without an account service hide Community and the account panels.</summary>
@@ -178,6 +178,23 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [ObservableProperty] private int _selectedTab;
+
+    /// <summary>The card of the preset that's on, for Home's live preview; null for the Studio's unsaved draft.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActiveHasEffect))]
+    private PresetCardViewModel? _activeCard;
+
+    public bool ActiveHasEffect => ActiveCard?.HasEffect == true;
+
+    [ObservableProperty] private bool _showHomeGuide;
+
+    [RelayCommand]
+    private void HideHomeGuide()
+    {
+        ShowHomeGuide = false;
+        _host.Settings.HideHomeGuide = true;
+        _host.ScheduleSave();
+    }
     [ObservableProperty] private bool _enabled;
     [ObservableProperty] private double _brightness;
     [ObservableProperty] private string _activePresetName = "";
@@ -237,6 +254,11 @@ public sealed partial class MainViewModel : ObservableObject
             _ => SelectedTab,
         };
     }
+
+    public const string WebsiteUrl = "https://www.rootlabs.us";
+
+    [RelayCommand]
+    private static void OpenWebsite() => AccountViewModel.OpenLink(WebsiteUrl);
 
     [RelayCommand]
     private void OpenTour() => Welcome = new WelcomeViewModel(page =>
@@ -346,6 +368,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         foreach (var p in Presets) p.IsActive = p.Id == s.ActivePresetId;
         // The Studio's unsaved draft has no card; keep showing the last preset's colors for it.
+        ActiveCard = Presets.FirstOrDefault(p => p.IsActive);
         if (Presets.FirstOrDefault(p => p.IsActive) is { } active) ActiveSwatch = active.Swatch;
         else if (ActiveSwatch is null && Application.Current?.TryGetResource("RgbGradient", null, out var gradient) == true)
             ActiveSwatch = gradient as IBrush;

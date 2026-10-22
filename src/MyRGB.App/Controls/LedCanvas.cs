@@ -1,9 +1,12 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Media.Immutable;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using MyRGB.App.Services;
 using MyRGB.Core;
@@ -35,7 +38,6 @@ public sealed class LedCanvas : Control
     private static readonly IPen DevicePen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromRgb(46, 64, 75)), 1);
     private static readonly IPen ActivePen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromRgb(86, 219, 143)), 1.5);
     private static readonly IBrush HandleBrush = new ImmutableSolidColorBrush(Color.FromRgb(86, 219, 143));
-    private static readonly IBrush SocketBrush = new ImmutableSolidColorBrush(Color.FromRgb(28, 40, 48));
     private static readonly IBrush LabelBrush = new ImmutableSolidColorBrush(Color.FromRgb(188, 199, 199));
     private static readonly IBrush LabelActiveBrush = new ImmutableSolidColorBrush(Color.FromRgb(226, 234, 229));
     private static readonly IBrush IconBrush = new ImmutableSolidColorBrush(Color.FromRgb(130, 146, 152));
@@ -169,26 +171,17 @@ public sealed class LedCanvas : Control
                     new BoxShadows(new BoxShadow { Blur = 22, Spread = 1, Color = glow }));
             ctx.DrawRectangle(BodyBrush, active ? ActivePen : DevicePen, rect, radius, radius);
 
-            // LEDs: sized from their spacing so a keyboard, a fan strip and a single-LED logo all read
-            // well, and inset so the edge LEDs sit inside the body. Each is a soft halo under a bright core.
+            // LEDs as smooth light, like the effect tiles: every pixel of a small image over the body
+            // takes its nearest LED's color, and the image is scaled up with smoothing. Pixels far
+            // from any LED stay dark, so a fan ring or a strip keeps its shape.
             double dot = DotSize(rect, device.Leds);
-            double padX = Math.Min(dot * 0.6 + 3, rect.Width / 2), padY = Math.Min(dot * 0.6 + 3, rect.Height / 2);
-            var inner = rect.Deflate(new Thickness(padX, padY));
-            var body = new DevicePlacement(device.Id, inner.X, inner.Y, inner.Width, inner.Height);
-            for (int i = 0; i < count; i++)
-            {
-                var c = colors[i];
-                var (x, y) = body.Map(device.Leds[i], turned);
-                var center = new Point(x, y);
-                int peak = Math.Max(c.R, Math.Max(c.G, c.B));
-                if (peak < 16)
-                {
-                    ctx.DrawEllipse(SocketBrush, null, center, dot / 2, dot / 2);
-                    continue;
-                }
-                ctx.DrawEllipse(new ImmutableSolidColorBrush(Color.FromArgb((byte)(peak * 0.28), c.R, c.G, c.B)), null, center, dot * 0.85, dot * 0.85);
-                ctx.DrawEllipse(new ImmutableSolidColorBrush(Color.FromRgb(c.R, c.G, c.B)), null, center, dot / 2, dot / 2);
-            }
+            double pad = Math.Min(4, Math.Min(rect.Width, rect.Height) / 4);
+            var inner = rect.Deflate(pad);
+            var surface = Surface(device, inner, turned, dot);
+            surface.Paint(colors, count);
+            using (ctx.PushClip(new RoundedRect(inner, Math.Max(2, radius - pad))))
+            using (ctx.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.MediumQuality }))
+                ctx.DrawImage(surface.Bitmap, new Rect(0, 0, surface.Cols, surface.Rows), inner);
 
             // Narrow devices (a RAM stick) only show their name on hover, so neighbours' labels don't collide.
             if (rect.Width >= 46 || active)
@@ -196,6 +189,82 @@ public sealed class LedCanvas : Control
                           active ? double.PositiveInfinity : Math.Max(rect.Width + 24, 96), active);
             if (AllowEditing && active)
                 ctx.DrawRectangle(HandleBrush, null, new Rect(rect.Right - HandleSize / 2, rect.Bottom - HandleSize / 2, HandleSize, HandleSize), 3, 3);
+        }
+    }
+
+    private readonly Dictionary<string, LedSurface> _surfaces = [];
+
+    /// <summary>The device's cached surface, rebuilt when it's moved, resized or turned.</summary>
+    private LedSurface Surface(IRgbDevice device, Rect inner, bool turned, double dot)
+    {
+        if (_surfaces.TryGetValue(device.Id, out var s) && s.Fits(inner, turned, device.Leds.Count)) return s;
+        s = new LedSurface(device, inner, turned, dot);
+        _surfaces[device.Id] = s;
+        return s;
+    }
+
+    /// <summary>A small image of one device's light: which LED lights each pixel, and the pixels themselves.</summary>
+    private sealed class LedSurface
+    {
+        private static readonly int Dark = unchecked((int)0xFF0C171C);
+
+        private readonly Size _size;
+        private readonly bool _turned;
+        private readonly int _ledCount;
+        private readonly int[] _owner; // nearest LED per pixel, or -1 when none is close
+        private readonly int[] _pixels;
+        private readonly double _cell; // screen pixels per image pixel: about one LED apart, so smoothing blends neighbours
+
+        public LedSurface(IRgbDevice device, Rect inner, bool turned, double dot)
+        {
+            _size = inner.Size;
+            _turned = turned;
+            _ledCount = device.Leds.Count;
+            _cell = Math.Max(3, dot);
+            Cols = Math.Max(1, (int)Math.Ceiling(inner.Width / _cell));
+            Rows = Math.Max(1, (int)Math.Ceiling(inner.Height / _cell));
+            _owner = new int[Cols * Rows];
+            _pixels = new int[Cols * Rows];
+            Bitmap = new WriteableBitmap(new PixelSize(Cols, Rows), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+
+            // LED positions in image pixels, then the nearest one for every pixel within reach.
+            var body = new DevicePlacement(device.Id, 0, 0, inner.Width, inner.Height);
+            var points = device.Leds.Select(l => body.Map(l, turned)).Select(p => (X: p.Item1 / _cell, Y: p.Item2 / _cell)).ToArray();
+            double reach = Math.Max(dot * 2, LedShapes.Of(device.Leds) is LedShape.Row or LedShape.Column ? Math.Max(inner.Width, inner.Height) : 0) / _cell;
+            if (points.Length == 1) reach = double.MaxValue; // a single LED lights its whole body
+            for (int r = 0; r < Rows; r++)
+                for (int c = 0; c < Cols; c++)
+                {
+                    int best = -1;
+                    double bestD = reach * reach;
+                    for (int i = 0; i < points.Length; i++)
+                    {
+                        double dx = points[i].X - (c + 0.5), dy = points[i].Y - (r + 0.5), d = dx * dx + dy * dy;
+                        if (d < bestD) { bestD = d; best = i; }
+                    }
+                    _owner[r * Cols + c] = best;
+                }
+        }
+
+        public int Cols { get; }
+        public int Rows { get; }
+        public WriteableBitmap Bitmap { get; }
+
+        public bool Fits(Rect inner, bool turned, int ledCount) =>
+            Math.Abs(inner.Width - _size.Width) < 0.5 && Math.Abs(inner.Height - _size.Height) < 0.5 && turned == _turned && ledCount == _ledCount;
+
+        public void Paint(Rgb[] colors, int count)
+        {
+            for (int p = 0; p < _owner.Length; p++)
+            {
+                int i = _owner[p];
+                if (i < 0 || i >= count) { _pixels[p] = Dark; continue; }
+                var c = colors[i];
+                _pixels[p] = Math.Max(c.R, Math.Max(c.G, c.B)) < 16 ? Dark : unchecked((int)0xFF000000) | c.R << 16 | c.G << 8 | c.B;
+            }
+            using var fb = Bitmap.Lock();
+            for (int r = 0; r < Rows; r++)
+                Marshal.Copy(_pixels, r * Cols, fb.Address + r * fb.RowBytes, Cols);
         }
     }
 

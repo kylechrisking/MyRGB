@@ -23,6 +23,9 @@ public sealed class AppSettings
     /// <summary>False until the first-run tour has been finished or skipped.</summary>
     public bool HasSeenWelcome { get; set; }
 
+    /// <summary>The "How MyRGB works" card on Home was hidden.</summary>
+    public bool HideHomeGuide { get; set; }
+
     /// <summary>Different days MyRGB has been used on; the support note waits for a week of them.</summary>
     public int DaysUsed { get; set; }
     public DateOnly? LastUsedDay { get; set; }

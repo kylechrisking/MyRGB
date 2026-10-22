@@ -190,9 +190,6 @@ public sealed partial class SupabaseCloud : ICloud, IDisposable
     public Task ReportAsync(Guid id, string reason, CancellationToken ct) =>
         Send(HttpMethod.Post, "rest/v1/preset_reports", new { preset_id = id, reason = reason.Trim() }, ct, prefer: "return=minimal");
 
-    public Task SendSupportMessageAsync(string subject, string body, string appVersion, CancellationToken ct) =>
-        Send(HttpMethod.Post, "rest/v1/support_messages", new { subject = subject.Trim(), body = body.Trim(), app_version = appVersion }, ct, prefer: "return=minimal");
-
     // ---- Supporters -------------------------------------------------------
 
     private sealed record SupporterRow(DateTimeOffset? Until);
