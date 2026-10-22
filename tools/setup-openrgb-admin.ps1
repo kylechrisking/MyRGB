@@ -21,7 +21,11 @@ param(
 $ErrorActionPreference = 'Stop'
 $taskPath = '\MyRGB\'
 $taskName = 'OpenRGB'
-$machineDir = Join-Path $env:ProgramFiles 'MyRGB'
+# The 64-bit Program Files even when the installer starts 32-bit PowerShell (where ProgramFiles is the x86 one).
+$programFiles = if ($env:ProgramW6432) { $env:ProgramW6432 } else { $env:ProgramFiles }
+$machineDir = Join-Path $programFiles 'MyRGB'
+# Where an earlier build of this script put its files by mistake; cleaned up below.
+$strayDir = if (${env:ProgramFiles(x86)}) { Join-Path ${env:ProgramFiles(x86)} 'MyRGB' }
 # Everything the elevated task touches lives in Program Files, which only administrators can change:
 # the launcher, and OpenRGB's config folder. OpenRGB loads plugin DLLs from its config folder, so with
 # the default one (the user's AppData) any program could get its code run as administrator through the task.
@@ -79,6 +83,7 @@ try {
         Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$machineDir\*" } | Stop-Process -Force
         Start-Sleep -Milliseconds 500
         Remove-Item $machineDir -Recurse -Force -ErrorAction SilentlyContinue
+        if ($strayDir) { Remove-Item $strayDir -Recurse -Force -ErrorAction SilentlyContinue }
         Log 'Removed.'
         return
     }
@@ -128,6 +133,7 @@ sh.Run """$OpenRgbPath"" --server --server-host 127.0.0.1 --server-port $Port --
         -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
     Register-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Action $action -Principal $principal `
         -Settings $settings -Description 'Starts OpenRGB elevated and hidden for MyRGB (SMBus devices such as RGB RAM).' -Force | Out-Null
+    if ($strayDir -and $strayDir -ne $machineDir) { Remove-Item $strayDir -Recurse -Force -ErrorAction SilentlyContinue }
 
     # An unelevated OpenRGB that MyRGB started earlier can't see SMBus; stop it so MyRGB relaunches through the task.
     Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $sourceExe } | Stop-Process -Force
