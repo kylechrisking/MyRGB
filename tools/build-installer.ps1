@@ -10,6 +10,17 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+
+# Accounts, sync and the community only exist in a build that knows the cloud project: the URL and
+# the publishable key are baked in from these variables. Without them the app hides sign-in, so a
+# release built without them ships broken. Never put the secret or service_role key here.
+if (-not $env:MYRGB_SUPABASE_URL -or -not $env:MYRGB_SUPABASE_KEY) {
+    throw 'Set MYRGB_SUPABASE_URL and MYRGB_SUPABASE_KEY (the publishable key) before building the installer.'
+}
+if ($env:MYRGB_SUPABASE_KEY -notlike 'sb_publishable_*') {
+    throw 'MYRGB_SUPABASE_KEY must be the publishable key (sb_publishable_...), never a secret key.'
+}
+
 $root = Split-Path $PSScriptRoot -Parent
 $artifacts = Join-Path $root 'artifacts'
 $cache = Join-Path $artifacts 'cache'
