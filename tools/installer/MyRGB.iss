@@ -123,16 +123,25 @@ var
 begin
   Bundled := ExpandConstant('{app}\OpenRGB\OpenRGB.exe');
   Machine := ExpandConstant('{commonpf64}\MyRGB\OpenRGB\OpenRGB.exe');
+  { The launcher in Program Files marks a setup from after the elevated task's files moved out of
+    user-writable places; anything older is redone. }
   Result := RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\PawnIO') and TaskExists
-    and FileExists(Machine) and (GetSHA256OfFile(Bundled) = GetSHA256OfFile(Machine));
+    and FileExists(Machine) and (GetSHA256OfFile(Bundled) = GetSHA256OfFile(Machine))
+    and FileExists(ExpandConstant('{commonpf64}\MyRGB\openrgb-hidden.vbs'));
 end;
 
-{ Runs setup-openrgb-admin.ps1 elevated and hidden. False if UAC was declined. }
+{ Runs setup-openrgb-admin.ps1 elevated and hidden. False if UAC was declined. Setting up runs the
+  script just installed; removing runs the copy setup left in Program Files, which only administrators
+  can change, rather than one that has sat in the user's folder since. }
 function RunAdminScript(const Params: String; var ExitCode: Integer): Boolean;
+var
+  Script: String;
 begin
+  Script := ExpandConstant('{commonpf64}\MyRGB\setup-openrgb-admin.ps1');
+  if (Pos('-Remove', Params) <> 1) or not FileExists(Script) then
+    Script := ExpandConstant('{app}\setup\setup-openrgb-admin.ps1');
   Result := ShellExec('runas', 'powershell.exe',
-    '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "' +
-    ExpandConstant('{app}\setup\setup-openrgb-admin.ps1') + '" ' + Params,
+    '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + Script + '" ' + Params,
     '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
 end;
 

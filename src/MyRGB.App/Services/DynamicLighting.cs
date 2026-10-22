@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using Microsoft.Win32;
+using MyRGB.Cloud;
 
 namespace MyRGB.App.Services;
 
@@ -29,5 +29,5 @@ public static class DynamicLighting
 
     /// <summary>Open Settings › Personalization › Dynamic Lighting.</summary>
     public static void OpenSettings() =>
-        Process.Start(new ProcessStartInfo("ms-settings:personalization-lighting") { UseShellExecute = true })?.Dispose();
+        Browser.Open("ms-settings:personalization-lighting");
 }

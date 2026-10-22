@@ -199,8 +199,15 @@ public sealed class LocalApiServer : IAsyncDisposable
     private static async Task<T?> ReadBody<T>(HttpListenerRequest req) where T : class
     {
         if (!req.HasEntityBody) return null;
+        // Every request body is a tiny JSON object; refuse anything big rather than buffer it.
+        const int MaxBody = 16 * 1024;
+        if (req.ContentLength64 > MaxBody) throw new JsonException("Request body too large.");
         using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
-        var text = await reader.ReadToEndAsync();
+        var buffer = new char[MaxBody + 1];
+        int read = 0, n;
+        while (read < buffer.Length && (n = await reader.ReadAsync(buffer.AsMemory(read))) > 0) read += n;
+        if (read > MaxBody) throw new JsonException("Request body too large.");
+        var text = new string(buffer, 0, read);
         return string.IsNullOrWhiteSpace(text) ? null : JsonSerializer.Deserialize<T>(text, Json);
     }
 

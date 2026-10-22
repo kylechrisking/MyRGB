@@ -48,7 +48,7 @@ class Program
     /// <summary>Ask the running instance to close, then wait for it to let go of the mutex.</summary>
     private static bool TakeOver(Mutex mutex)
     {
-        if (!EventWaitHandle.TryOpenExisting(HandoverName, out var handover)) return false; // the running one is elevated too
+        if (!OperatingSystem.IsWindows() || !EventWaitHandle.TryOpenExisting(HandoverName, out var handover)) return false; // the running one is elevated too
         using (handover) handover.Set();
         try
         {

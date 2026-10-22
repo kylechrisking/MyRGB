@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -42,7 +41,7 @@ internal static class BrowserSignIn
     {
         using var listener = Listen(out int port);
         string redirect = $"http://localhost:{port}/callback";
-        Process.Start(new ProcessStartInfo(authorizeUrl(redirect)) { UseShellExecute = true })?.Dispose();
+        Browser.Open(authorizeUrl(redirect));
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromMinutes(5));

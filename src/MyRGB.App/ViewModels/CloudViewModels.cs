@@ -167,11 +167,11 @@ public sealed partial class AccountViewModel : ObservableObject
 
     internal static void OpenLink(string url)
     {
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true })?.Dispose(); }
+        try { Browser.Open(url); }
         catch (Exception) { /* no browser registered */ }
     }
 
-    /// <summary>Lets other pages (Community, Contact) update their signed-in-only parts.</summary>
+    /// <summary>Lets other pages (Community) update their signed-in-only parts.</summary>
     public event Action? SignedInChanged;
 }
 

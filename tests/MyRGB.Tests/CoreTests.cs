@@ -10,6 +10,30 @@ namespace MyRGB.Tests;
 public class CoreTests
 {
     [Theory]
+    [InlineData("1e308")]
+    [InlineData("-1e308")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    [InlineData("not a number")]
+    public void Hostile_preset_numbers_stay_in_range(string value)
+    {
+        // Community presets are other people's data: every number must land inside its parameter's range.
+        var leds = Enumerable.Range(0, 64).Select(i => LedPoint.Whole(i % 8 / 7f, i / 8 / 7f)).ToArray();
+        var output = new Rgb[leds.Length];
+        foreach (var def in EffectRegistry.CreateDefault().All)
+        {
+            var hostile = def.Parameters.OfType<NumberParameter>().ToDictionary(p => p.Key, _ => value);
+            var effect = def.Create(new EffectSettings(hostile));
+            foreach (var p in def.Parameters.OfType<NumberParameter>())
+            {
+                double n = effect.Settings.GetNumber(p.Key);
+                Assert.InRange(n, p.Min, p.Max);
+            }
+            for (int f = 0; f < 5; f++) effect.Render(new FrameContext(f / 30.0, 1 / 30.0), leds, output);
+        }
+    }
+
+    [Theory]
     [InlineData(0, 255, 0, 0)]
     [InlineData(120, 0, 255, 0)]
     [InlineData(240, 0, 0, 255)]

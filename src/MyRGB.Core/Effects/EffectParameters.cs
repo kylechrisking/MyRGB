@@ -62,8 +62,17 @@ public sealed class EffectSettings
 
     public Rgb GetColor(string key) => Rgb.TryParse(GetString(key), out var c) ? c : Rgb.White;
 
-    public double GetNumber(string key) =>
-        double.TryParse(GetString(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : 0;
+    /// <summary>
+    /// The value, kept inside its parameter's range. Presets can come from strangers (the community),
+    /// so an out-of-range, infinite or NaN number falls back rather than reaching an effect.
+    /// </summary>
+    public double GetNumber(string key)
+    {
+        var spec = _specs.OfType<NumberParameter>().FirstOrDefault(s => s.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+        if (!double.TryParse(GetString(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var d) || !double.IsFinite(d))
+            return spec?.Default ?? 0;
+        return spec is null ? d : Math.Clamp(d, spec.Min, spec.Max);
+    }
 
     public bool GetBool(string key) => GetString(key).Equals("true", StringComparison.OrdinalIgnoreCase);
 }

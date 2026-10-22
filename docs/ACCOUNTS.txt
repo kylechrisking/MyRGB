@@ -18,7 +18,8 @@ build log.
 
 2. Create the tables and rules
 ------------------------------
-- SQL Editor > New query: paste supabase/migrations/20261019000000_accounts.sql and run it.
+- SQL Editor > New query: run each file in supabase/migrations, oldest first (accounts,
+  supporters, hardening).
   (Or, with the Supabase CLI: supabase link, then supabase db push.)
 - Table Editor should now show profiles, synced_presets, shared_presets, preset_reports and
   support_messages, each marked "RLS enabled".
@@ -63,11 +64,11 @@ For release builds on GitHub Actions, store both as repository secrets with thos
 For quick testing, setting the same two environment variables before starting MyRGB works too.
 
 
-6. Reading support messages and reports
----------------------------------------
-Table Editor > support_messages and preset_reports. Users can only write these; only the
-project's team can read them. Reply to support messages using the email on the user's account
-(Authentication > Users). To hide a community preset, set hidden = true on its row in
+6. Reading reports
+------------------
+Table Editor > preset_reports. Users can only write these; only the project's team can read
+them. (support_messages holds messages from the old in-app contact form; it takes no new ones.)
+To hide a community preset, set hidden = true on its row in
 shared_presets.
 
 

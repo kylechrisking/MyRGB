@@ -21,9 +21,14 @@ param(
 $ErrorActionPreference = 'Stop'
 $taskPath = '\MyRGB\'
 $taskName = 'OpenRGB'
-# ProgramData, not AppData: packaged/sandboxed shells get AppData writes redirected, and the task wouldn't see them.
-$launcher = Join-Path $env:ProgramData 'MyRGB\openrgb-hidden.vbs'
 $machineDir = Join-Path $env:ProgramFiles 'MyRGB'
+# Everything the elevated task touches lives in Program Files, which only administrators can change:
+# the launcher, and OpenRGB's config folder. OpenRGB loads plugin DLLs from its config folder, so with
+# the default one (the user's AppData) any program could get its code run as administrator through the task.
+$launcher = Join-Path $machineDir 'openrgb-hidden.vbs'
+$configDir = Join-Path $machineDir 'config'
+# Where older versions put the launcher. Ordinary users can create files in ProgramData, so it is retired.
+$oldLauncher = Join-Path $env:ProgramData 'MyRGB\openrgb-hidden.vbs'
 
 # Pinned PawnIO release. Its installer may not be redistributed, so it is fetched from the official release.
 $pawnIoUrl = 'https://github.com/namazso/PawnIO.Setup/releases/download/2.2.0/PawnIO_setup.exe'
@@ -68,8 +73,8 @@ try {
 
     if ($Remove) {
         Unregister-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-        Remove-Item $launcher -ErrorAction SilentlyContinue
-        Remove-Item (Split-Path $launcher) -ErrorAction SilentlyContinue # only if empty
+        Remove-Item $oldLauncher -ErrorAction SilentlyContinue
+        Remove-Item (Split-Path $oldLauncher) -ErrorAction SilentlyContinue # only if empty
         # The elevated OpenRGB the task started holds the copied files open.
         Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$machineDir\*" } | Stop-Process -Force
         Start-Sleep -Milliseconds 500
@@ -94,14 +99,28 @@ try {
         Log "Copied OpenRGB to $CopyTo"
     }
 
+    # OpenRGB's settings (device sizes, profiles) carry over from the user's own config, but never its plugins.
+    New-Item -ItemType Directory -Force $configDir | Out-Null
+    $userConfig = Join-Path $env:APPDATA 'OpenRGB'
+    if ((Test-Path $userConfig) -and -not (Get-ChildItem $configDir -File)) {
+        Get-ChildItem $userConfig -File | Where-Object { $_.Extension -in '.json', '.ors' } | Copy-Item -Destination $configDir
+        Log "Copied OpenRGB settings from $userConfig"
+    }
+
     # wscript runs the launcher without a console window; window style 0 keeps OpenRGB hidden too.
-    New-Item -ItemType Directory -Force (Split-Path $launcher) | Out-Null
     $vbs = @"
 Set sh = CreateObject("WScript.Shell")
 sh.CurrentDirectory = "$(Split-Path $OpenRgbPath)"
-sh.Run """$OpenRgbPath"" --server --server-port $Port", 0, False
+sh.Run """$OpenRgbPath"" --server --server-host 127.0.0.1 --server-port $Port --config ""$configDir""", 0, False
 "@
     Set-Content -Path $launcher -Value $vbs -Encoding ASCII
+    Remove-Item $oldLauncher -ErrorAction SilentlyContinue
+    Remove-Item (Split-Path $oldLauncher) -ErrorAction SilentlyContinue # only if empty
+
+    # A copy of this script beside the task, so removing it later runs a file only administrators can change.
+    if ($PSCommandPath -and $PSCommandPath -ne (Join-Path $machineDir 'setup-openrgb-admin.ps1')) {
+        Copy-Item $PSCommandPath (Join-Path $machineDir 'setup-openrgb-admin.ps1') -Force
+    }
 
     $action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$launcher`""
     $principal = New-ScheduledTaskPrincipal -UserId $User -LogonType Interactive -RunLevel Highest

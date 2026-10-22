@@ -21,6 +21,9 @@ public static class InstalledPrograms
             (RegistryHive.CurrentUser, RegistryView.Default),
         })
         {
+            // Any program the user runs can write per-user uninstall entries. Running as administrator,
+            // MyRGB would start those commands with admin rights and no prompt, so it skips them then.
+            if (hive == RegistryHive.CurrentUser && Program.IsElevated) continue;
             try
             {
                 using var root = RegistryKey.OpenBaseKey(hive, view);
