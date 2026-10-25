@@ -254,7 +254,9 @@ public sealed partial class FanRowViewModel : ObservableObject
     {
         FixedMode => "Runs at one speed all the time.",
         CurveMode => "Speeds up as the temperature rises. Drag the points to shape it; double-click adds one, right-click removes one.",
-        _ => "The fan's own controller decides. MyRGB leaves it alone.",
+        _ => Name.Contains("(motherboard)")
+            ? "The motherboard's BIOS is deciding this fan's speed for now. MyRGB leaves it alone."
+            : "The fan's own controller decides. MyRGB leaves it alone.",
     };
 
     partial void OnModeChanged(string value) => Save();
