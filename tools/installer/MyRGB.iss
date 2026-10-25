@@ -67,6 +67,8 @@ Name: "{autoprograms}\MyRGB"; Filename: "{app}\MyRGB.exe"
 Name: "{autodesktop}\MyRGB"; Filename: "{app}\MyRGB.exe"; Tasks: desktopicon
 
 [Run]
+; MyRGB's own updater starts setup with /UPDATED; after such a silent update, start the new build.
+Filename: "{app}\MyRGB.exe"; Flags: nowait; Check: UpdatedInstall
 Filename: "{app}\MyRGB.exe"; Description: "Launch MyRGB"; Flags: nowait postinstall skipifsilent
 Filename: "powershell.exe"; Parameters: "-NoProfile -NonInteractive -WindowStyle Hidden -Command ""Get-Process StreamDeck -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep 2; Start-Process '{commonpf64}\Elgato\StreamDeck\StreamDeck.exe' -ArgumentList '--runinbk'"""; Description: "Restart Stream Deck to load the MyRGB plugin"; Tasks: streamdeck; Check: StreamDeckExeExists; Flags: postinstall skipifsilent unchecked runhidden nowait
 
@@ -88,6 +90,12 @@ end;
 function StreamDeckInstalled: Boolean;
 begin
   Result := StreamDeckExeExists or DirExists(ExpandConstant('{userappdata}\Elgato\StreamDeck'));
+end;
+
+{ True when setup was started by MyRGB's in-app updater, which then wants the new build started for it. }
+function UpdatedInstall: Boolean;
+begin
+  Result := Pos('/UPDATED', Uppercase(GetCmdTail)) > 0;
 end;
 
 { A PowerShell single-quoted string literal. }

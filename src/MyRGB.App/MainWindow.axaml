@@ -279,6 +279,25 @@
         </Grid>
       </Border>
 
+      <!-- Update strip: a newer release is out, one click installs it -->
+      <Border DockPanel.Dock="Top" IsVisible="{Binding Update.ShowStrip}"
+              Background="{StaticResource AccentWashBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1" Padding="20,9">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <PathIcon Data="{x:Static ctl:NavIcons.Download}" Width="17" Height="17" Foreground="{StaticResource AccentBrush}" />
+            <TextBlock Text="{Binding Update.Available.Version, StringFormat='MyRGB {0} is available'}" VerticalAlignment="Center" FontWeight="SemiBold" />
+            <ProgressBar Classes="meter" Width="150" Maximum="1" Value="{Binding Update.Progress}" IsVisible="{Binding Update.Busy}" VerticalAlignment="Center" />
+            <TextBlock Classes="muted" Text="{Binding Update.Status}" VerticalAlignment="Center"
+                       IsVisible="{Binding Update.Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding !Update.Busy}">
+            <Button Classes="accent" Content="Download and install" Command="{Binding Update.InstallCommand}" />
+            <Button Classes="ghost" Content="What's new" Command="{Binding Update.OpenNotesCommand}" />
+            <Button Classes="link" Content="Dismiss" Command="{Binding Update.DismissCommand}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
       <!-- Player bar: what's playing, preset transport, and how MyRGB reaches the hardware -->
       <Border DockPanel.Dock="Bottom" Background="{StaticResource ChromeBrush}" Padding="20,10" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0">
         <Grid ColumnDefinitions="*,Auto,*">
@@ -1394,6 +1413,21 @@
                   <ToggleSwitch IsChecked="{Binding StartWithWindows}" OnContent="Start with Windows" OffContent="Start with Windows" />
                   <ToggleSwitch IsChecked="{Binding StartMinimized}" OnContent="Start hidden in the tray" OffContent="Start hidden in the tray" />
                   <TextBlock Classes="muted" TextWrapping="Wrap" Text="Closing the window never quits MyRGB; it keeps your lights running from the tray. Quit from the tray icon's menu." />
+                </StackPanel>
+              </Border>
+
+              <!-- Updates: quiet checks against the project's GitHub releases -->
+              <Border Classes="panel">
+                <StackPanel Spacing="10">
+                  <TextBlock Classes="section" Text="Updates" />
+                  <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                    <ToggleSwitch IsChecked="{Binding CheckForUpdates}" OnContent="Check for updates when MyRGB starts" OffContent="Check for updates when MyRGB starts" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Update.VersionText}" VerticalAlignment="Center" />
+                    <Button Grid.Column="2" Classes="ghost" Content="Check now" Command="{Binding Update.CheckCommand}" IsEnabled="{Binding !Update.Busy}" />
+                  </Grid>
+                  <TextBlock Classes="muted" Text="{Binding Update.Status}" TextWrapping="Wrap"
+                             IsVisible="{Binding Update.Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Updates download from the project's GitHub releases and install in place; Windows never asks for permission. A download is checked against the checksum published with the release before it runs." />
                 </StackPanel>
               </Border>
 

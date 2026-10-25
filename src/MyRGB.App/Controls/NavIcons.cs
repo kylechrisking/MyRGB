@@ -18,6 +18,7 @@ public static class NavIcons
     public static Geometry Help { get; } = StreamGeometry.Parse("F0 M12,2 A10,10 0 1 1 11.99,2 Z M12,4 A8,8 0 1 0 12.01,4 Z M11,16 H13 V18 H11 Z M12,6 C14.2,6 16,7.6 16,9.6 C16,11.3 14.9,12 13.9,12.6 C13.3,13 13,13.3 13,14 V14.5 H11 V13.8 C11,12.4 11.8,11.7 12.7,11.1 C13.5,10.6 14,10.3 14,9.6 C14,8.7 13.1,8 12,8 C10.9,8 10,8.7 10,9.7 H8 C8,7.6 9.8,6 12,6 Z");
     public static Geometry Warning { get; } = StreamGeometry.Parse("F0 M12,2 L23,21 H1 Z M12,6 L4.5,19 H19.5 Z M11,10 H13 V15 H11 Z M11,16.5 H13 V18.5 H11 Z");
     public static Geometry Info { get; } = StreamGeometry.Parse("F0 M12,2 A10,10 0 1 1 11.99,2 Z M12,4 A8,8 0 1 0 12.01,4 Z M11,10 H13 V17 H11 Z M11,6.5 H13 V8.5 H11 Z");
+    public static Geometry Download { get; } = StreamGeometry.Parse("M11,3 H13 V12 H17.5 L12,17.5 L6.5,12 H11 Z M4,20 H20 V21.5 H4 Z");
     public static Geometry Check { get; } = StreamGeometry.Parse("M9,16.2 L4.8,12 L3.4,13.4 L9,19 L21,7 L19.6,5.6 Z");
 
     // Flash a device, and the player bar's transport buttons.

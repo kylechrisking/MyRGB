@@ -43,6 +43,9 @@ public sealed class AppHostOptions
     /// <summary>Replaces the account service.</summary>
     public Func<ICloud>? Cloud { get; init; }
 
+    /// <summary>Replaces the GitHub release feed; returning null turns update checks off (snapshots, tests).</summary>
+    public Func<UpdateFeed?>? Updates { get; init; }
+
     public bool EnableApi { get; init; } = true;
 }
 
@@ -93,6 +96,7 @@ public sealed class AppHost : IAsyncDisposable
 
         Cloud = _options.Cloud?.Invoke()
                 ?? (CloudConfig.Load() is { } cloud ? new SupabaseCloud(cloud, _options.DataDirectory) : new OfflineCloud());
+        Updates = _options.Updates?.Invoke() ?? new UpdateFeed();
         Sync = new PresetSync(Cloud, Presets, _options.DataDirectory);
 
         Sensors = new SensorHub(_options.Sensors?.Invoke() ?? OpenSensors(), Logs.CreateLogger<SensorHub>());
@@ -108,6 +112,7 @@ public sealed class AppHost : IAsyncDisposable
     }
 
     public ICloud Cloud { get; }
+    public UpdateFeed Updates { get; }
     public PresetSync Sync { get; }
 
     /// <summary>Sync presets a few seconds after the last change, so a burst of edits is one upload.</summary>
@@ -317,6 +322,7 @@ public sealed class AppHost : IAsyncDisposable
         (Cloud as IDisposable)?.Dispose();
         if (Api is not null) await Api.DisposeAsync();
         await Devices.DisposeAsync();
+        Updates.Dispose();
         Logs.Dispose();
     }
 }

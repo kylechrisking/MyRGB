@@ -17,6 +17,9 @@ public sealed class AppSettings
     public int Fps { get; set; } = 30;
     public bool StartMinimized { get; set; }
 
+    /// <summary>Look for a newer MyRGB release when it starts.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+
     /// <summary>Keep presets in sync across PCs while signed in.</summary>
     public bool SyncPresets { get; set; } = true;
 

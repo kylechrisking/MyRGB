@@ -45,6 +45,7 @@ var host = new AppHost(new AppHostOptions
     BatteryProviders = () => [new FakeBatteries()],
     DetectVendorApps = () => VendorAppCatalog.Detect(installed, ["iCUE"]),
     Cloud = () => new FakeCloud(),
+    Updates = () => null,
     DynamicLightingOn = () => true,
     ListenToAudio = false,
     Sensors = () => new FakeSensors(),
@@ -81,6 +82,12 @@ for (int i = 0; i < 180; i++) host.Sensors.Poll(); // a few minutes of history f
 vm.SelectedTab = MainViewModel.HomeTab; Shoot("02-home");
 window.Height = 1900; Shoot("02c-home-full"); window.Height = 860;
 vm.SupportNudge.IsOpen = true; Shoot("02b-support-note"); vm.SupportNudge.IsOpen = false;
+vm.Update.Available = new UpdateInfo(new Version(0, 3, 0),
+    new Uri("https://github.com/kylechrisking/MyRGB/releases/download/v0.3.0-beta/MyRGB-Setup-0.3.0.exe"), 74681712,
+    "e4849f02d118e04e9fd9f4c2d159e4ed26f38c98d4f34510fafbdb62fd5a4870",
+    new Uri("https://github.com/kylechrisking/MyRGB/releases/tag/v0.3.0-beta"));
+Shoot("02d-update");
+vm.Update.Available = null;
 vm.SelectedTab = MainViewModel.PresetsTab; Shoot("03-presets");
 vm.SelectedTab = MainViewModel.CommunityTab; Thread.Sleep(300); Shoot("03b-community");
 vm.EditPreset("ocean"); Shoot("04-studio");

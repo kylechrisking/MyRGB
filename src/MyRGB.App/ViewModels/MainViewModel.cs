@@ -93,9 +93,11 @@ public sealed partial class MainViewModel : ObservableObject
         Monitoring = new MonitoringViewModel(host);
         Cooling = new CoolingViewModel(host);
         SupportNudge = new SupportNudgeViewModel(host, Account);
+        Update = new UpdateViewModel(host);
         Supported.Search();
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
+        _checkForUpdates = host.Settings.CheckForUpdates;
         _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
         _openRgbPath = host.Settings.OpenRgb.ExecutablePath ?? "";
@@ -123,6 +125,12 @@ public sealed partial class MainViewModel : ObservableObject
             SupportNudge.Check(DateTime.Now);
         };
         nudge.Start();
+
+        // The update check comes a little later, once the desk is already lit; its strip only
+        // appears when a newer release is actually out.
+        var updateCheck = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+        updateCheck.Tick += (_, _) => { updateCheck.Stop(); Update.CheckOnStart(); };
+        updateCheck.Start();
     }
 
     public AppHost Host => _host;
@@ -133,6 +141,7 @@ public sealed partial class MainViewModel : ObservableObject
     public MonitoringViewModel Monitoring { get; }
     public CoolingViewModel Cooling { get; }
     public SupportNudgeViewModel SupportNudge { get; }
+    public UpdateViewModel Update { get; }
     public SupportedDevicesViewModel Supported { get; } = new();
 
     /// <summary>Sensor pages only redraw while they're showing; the hub keeps reading either way.</summary>
@@ -211,6 +220,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _homeSummary = "Looking for your devices…";
     [ObservableProperty] private int _fps;
     [ObservableProperty] private bool _startMinimized;
+    [ObservableProperty] private bool _checkForUpdates;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private string _openRgbPath;
     [ObservableProperty] private bool _isScanning;
@@ -340,6 +350,12 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnStartMinimizedChanged(bool value)
     {
         _host.Settings.StartMinimized = value;
+        _host.ScheduleSave();
+    }
+
+    partial void OnCheckForUpdatesChanged(bool value)
+    {
+        _host.Settings.CheckForUpdates = value;
         _host.ScheduleSave();
     }
 
