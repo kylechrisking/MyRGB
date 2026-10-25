@@ -131,7 +131,14 @@ try {
         Register-ScheduledTask -TaskPath $taskPath -TaskName 'Sensors' -Action $action -Principal $principal -Trigger $trigger `
             -Settings $settings -Description 'Reads temperatures and fans for MyRGB, so MyRGB itself needs no administrator rights.' -Force | Out-Null
         Start-ScheduledTask -TaskPath $taskPath -TaskName 'Sensors'
-        Log "Registered and started ${taskPath}Sensors for $User."
+        # The task start is asynchronous; wait a little and say honestly whether it came up.
+        $up = $false
+        foreach ($i in 1..20) {
+            Start-Sleep -Milliseconds 500
+            if (Get-Process MyRGB.Sensors.Helper -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$sensorsDir\*" }) { $up = $true; break }
+        }
+        if ($up) { Log "Registered and started ${taskPath}Sensors for $User." }
+        else { Log "Registered ${taskPath}Sensors for $User, but the helper has not come up yet; it may still be starting." }
     }
 
     if (-not (Test-Path $OpenRgbPath)) { throw "OpenRGB not found at $OpenRgbPath" }

@@ -29,7 +29,6 @@ public class SensorPipeTests : IDisposable
         return client;
     }
 
-    
     [Fact]
     public async Task Readings_and_fans_round_trip()
     {
@@ -41,6 +40,7 @@ public class SensorPipeTests : IDisposable
         var reading = Assert.Single(readings);
         Assert.Equal("helper/cpu/temp", reading.Id);
         Assert.Equal(55, reading.Value);
+        Assert.NotNull(client.HelperVersion);
         var fan = Assert.Single(client.Fans);
         Assert.Equal("helper/cpu fan", fan.Name);
         Assert.Equal(SensorKeys.CpuTemp, fan.GuardKey);
@@ -93,7 +93,8 @@ public class SensorPipeTests : IDisposable
     public async Task A_helper_started_later_is_picked_up_without_restarting()
     {
         var client = Client(new FakeSensors("fallback")); // no helper yet: the fallback answers
-        Assert.Equal("fallback/cpu/temp", Assert.Single(client.Read()).Id);
+        var first = Assert.Single(client.Read());
+        Assert.Equal("fallback/cpu/temp", first.Id);
 
         StartServer(new FakeSensors());
         var readings = Wait.For(() => client.Read() is { Count: > 0 } r ? r : null);
@@ -107,9 +108,11 @@ public class SensorPipeTests : IDisposable
         var server = StartServer(new FakeSensors());
         var client = Client(new FakeSensors("fallback"));
         Wait.For(() => client.Read().Count > 0);
+        Assert.NotNull(client.HelperVersion);
 
         server.Dispose();
         Assert.Equal("fallback/cpu/temp", Assert.Single(client.Read()).Id);
+        Assert.Null(client.HelperVersion);
 
         StartServer(new FakeSensors());
         var readings = Wait.For(() => client.Read().Count > 0 && client.Read()[0].Id == "helper/cpu/temp"
@@ -135,15 +138,16 @@ public class SensorPipeTests : IDisposable
     {
         using var server = new NamedPipeServerStream(_pipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
         using var client = new NamedPipeClientStream(".", _pipe, PipeDirection.InOut, PipeOptions.Asynchronous);
-        var connected = client.ConnectAsync(5000);
+        var connected = client.ConnectAsync(5000, TestContext.Current.CancellationToken);
         await server.WaitForConnectionAsync(TestContext.Current.CancellationToken);
         await connected;
 
         var header = new byte[4];
         BinaryPrimitives.WriteInt32LittleEndian(header, int.MaxValue);
-        var write = Task.Run(() => client.Write(header));
+        var write = Task.Run(() => client.Write(header), TestContext.Current.CancellationToken);
 
         Assert.Throws<IOException>(() => SensorPipe.ReadFrame(server, TestContext.Current.CancellationToken));
+        await write;
     }
 
     public void Dispose()
@@ -183,9 +187,11 @@ file static class Wait
 {
     public static T For<T>(Func<T?> condition, int seconds = 10)
     {
+        var ct = TestContext.Current.CancellationToken;
         var deadline = DateTime.UtcNow.AddSeconds(seconds);
         while (DateTime.UtcNow < deadline)
         {
+            ct.ThrowIfCancellationRequested();
             try { if (condition() is { } value) return value; }
             catch (Exception) { /* not ready yet */ }
             Thread.Sleep(20);

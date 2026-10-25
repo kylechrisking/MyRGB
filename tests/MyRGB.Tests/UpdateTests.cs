@@ -84,7 +84,8 @@ public class UpdateTests : IDisposable
         var path = Path.Combine(_dir, "MyRGB-Setup-0.3.0.exe");
         var seen = 0d;
 
-        await feed.DownloadAsync(update, path, new Progress<double>(p => seen = Math.Max(seen, p)));
+        await feed.DownloadAsync(update, path, new Progress<double>(p => seen = Math.Max(seen, p)),
+            TestContext.Current.CancellationToken);
 
         Assert.Equal(body, File.ReadAllBytes(path));
         Assert.True(seen >= 0.999);
@@ -99,7 +100,8 @@ public class UpdateTests : IDisposable
             body.Length, Sha256("something else entirely"u8.ToArray()), new Uri("https://example.com/rel"));
         var path = Path.Combine(_dir, "MyRGB-Setup-0.3.0.exe");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => feed.DownloadAsync(update, path));
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => feed.DownloadAsync(update, path, null, TestContext.Current.CancellationToken));
         Assert.False(File.Exists(path));
     }
 
