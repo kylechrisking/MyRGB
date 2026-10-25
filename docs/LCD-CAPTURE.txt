@@ -1,0 +1,45 @@
+Capturing the Vanguard Pro 96's LCD protocol
+============================================
+
+The plan for the "MyRGB on your LCD" feature (backlog item 4). The keyboard's 320x170 screen is
+driven by iCUE over USB; we record that traffic once, work out the frame format from it, and
+then implement it in MyRGB.Providers.Corsair. Needs Kyle at the PC for one UAC prompt (the
+capture tool) and about ten minutes. USBPcap is already installed (C:\Program Files\USBPcap).
+
+Before capturing
+
+1. Exit MyRGB from the tray (it owns the keyboard).
+2. Start iCUE and confirm the LCD shows what you set. Close every other RGB app.
+
+Capturing (the ten minutes)
+
+1. Open a terminal AS ADMINISTRATOR and run:
+
+     & 'C:\Program Files\USBPcap\USBPcapCMD.exe'
+
+2. It lists USB controllers/hubs. Pick the number of the hub the keyboard sits under (if unsure,
+   pick the root hub: the file gets bigger but nothing is missed). Type its number, Enter.
+3. When it asks for an output file, give it a full path:
+
+     E:\MyRGB\artifacts\lcd-capture.pcapng
+
+4. Now change the LCD in deliberate steps, about ten seconds apart, so each change is easy to
+   find in the recording:
+     a. solid red, b. solid green, c. solid blue, d. all black,
+     e. the clock or any text, f. a hardware-image screen if the profile has one.
+5. Stop the capture with Ctrl+C, exit iCUE, start MyRGB again from the tray.
+
+Afterwards
+
+Tell the session where the file is and the order of the steps. From there it's all mine: filter
+the keyboard's endpoint out of the capture, find where the RGB bytes moved between steps a-c,
+work out the header, checksum and framing, and build the driver. The interesting USB traffic
+will be OUT transfers to the keyboard's LCD interface; a Corsair keyboard exposes several
+interfaces, so expect the screen to have its own.
+
+Notes
+
+- The capture contains nothing personal: it is USB packets to a keyboard, screen pixels included.
+- If the screen only updates on the vendor's own press of Fn+Left/Right/Enter, do step 4 twice:
+  once by changing iCUE's profile, once with the keyboard's own Fn keys, and tell me which was
+  which - the second set of packets is what MyRGB will have to send to make those keys work.

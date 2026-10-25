@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
 
   const email = payment.email?.trim().toLowerCase();
   if (!email) return new Response("OK (no email to match)", { status: 200 });
+  if (!payment.kofi_transaction_id) return new Response("OK (nothing to record)", { status: 200 });
 
   const days = payment.is_subscription_payment || payment.type === "Subscription" ? MONTHLY_DAYS : ONE_OFF_DAYS;
   const reference = `kofi:${payment.kofi_transaction_id}`.slice(0, 200);
@@ -47,6 +48,15 @@ Deno.serve(async (req) => {
   const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
     auth: { persistSession: false },
   });
+
+  // Ko-fi retries on any hiccup; a payment already recorded answers itself instead of extending twice.
+  const { data: seen } = await db.from("supporters").select("user_id").eq("reference", reference).limit(1).maybeSingle();
+  if (!seen) {
+    const { data: seenClaim } = await db.from("supporter_claims").select("email").eq("reference", reference).limit(1).maybeSingle();
+    if (seenClaim) return new Response("OK (already recorded)", { status: 200 });
+  } else {
+    return new Response("OK (already recorded)", { status: 200 });
+  }
 
   const userId = await findUser(db, email);
   if (userId) {

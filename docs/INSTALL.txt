@@ -1,8 +1,10 @@
 Installing MyRGB
 
 Download MyRGB-Setup-<version>.exe and run it. That is the only thing to install: the .NET
-runtime and OpenRGB come inside it. Setup installs for your Windows account only and does not ask
-for administrator rights, unless you tick Enable RAM / SMBus lighting (see below).
+runtime and OpenRGB come inside it. Setup installs for your Windows account only and does not
+ask for administrator rights. Two optional things may later, each with a single prompt: RAM /
+SMBus lighting (an option in setup, see below) and CPU temperatures with motherboard fans (a
+button on the Cooling page, see "Sensors and fans").
 
 What gets installed
 
@@ -33,7 +35,7 @@ Ticking this option shows one UAC prompt, then:
    rights silently.
 3. Registers the scheduled task \MyRGB\OpenRGB ("run with highest privileges", only for your
    account). MyRGB starts OpenRGB through this task, so there is no UAC prompt each time.
-   The task's launcher script is C:\ProgramData\MyRGB\openrgb-hidden.vbs.
+   The task's launcher script is C:\Program Files\MyRGB\openrgb-hidden.vbs.
 
 Your account must be an administrator for this to work. If you skip it now, run setup again later
 and tick the option. Upgrading MyRGB doesn't prompt again unless the bundled OpenRGB changed.
@@ -41,17 +43,32 @@ A log of this step is written to %LOCALAPPDATA%\Programs\MyRGB\setup.log.
 
 Sensors and fans
 
-The Monitoring and Cooling pages need no setup. Without admin rights MyRGB reads CPU load, memory,
-drives, network and everything on the graphics card, and can drive the graphics card's fans. CPU
-temperatures and motherboard fans sit behind a driver that only opens to administrators, so they
-show "needs admin" for now. MyRGB only ever drives a fan you set to a fixed speed or a curve, never
-below 30 %, always flat out from 85 °C, and hands every fan back to automatic when it closes.
+The Monitoring and Cooling pages need no setup. Without any permission MyRGB reads CPU load,
+memory, drives, network and everything on the graphics card, and can drive the graphics card's
+fans. CPU temperatures and motherboard fans sit behind a driver that only opens to
+administrators; the Cooling page's "Enable CPU temperatures and fans" button sets that up with
+one Windows prompt:
+
+1. Copies the fan helper (MyRGB.Sensors.Helper, which came inside the installer) to
+   C:\Program Files\MyRGB\sensors. A program that runs with admin rights must not start from a
+   folder your account can write to, or any program could swap the file and get admin rights
+   silently.
+2. Registers the scheduled task \MyRGB\Sensors ("run with highest privileges", only for your
+   account, starts at sign-in). The helper answers MyRGB over a pipe that only your account can
+   open; MyRGB itself keeps running without any administrator rights. It notices a newer MyRGB
+   and offers to update the helper with one more prompt.
+
+MyRGB only ever drives a fan you set to a fixed speed or a curve, never below 30 %, always flat
+out from 85 °C, and hands every fan back to automatic when it closes. If MyRGB ever closes
+without warning, the helper notices within ten seconds and hands the fans back itself. "Turn
+off" on the Cooling page removes the helper (one prompt); uninstalling MyRGB removes it too.
 
 Uninstalling
 
 Use Settings → Apps → Installed apps → MyRGB → Uninstall. It removes the app, OpenRGB, the
-shortcuts, the startup entry and the Stream Deck plugin. If RAM lighting was enabled, it shows one
-UAC prompt to remove the scheduled task, C:\Program Files\MyRGB and C:\ProgramData\MyRGB.
+shortcuts, the startup entry and the Stream Deck plugin. If RAM lighting was enabled or the fan
+helper was turned on, it shows one UAC prompt to remove the scheduled tasks,
+C:\Program Files\MyRGB and C:\ProgramData\MyRGB.
 It asks whether to delete your settings in %APPDATA%\MyRGB (kept by default).
 
 PawnIO is left installed, because other tools (FanControl, LibreHardwareMonitor, OpenRGB itself)
@@ -66,7 +83,8 @@ MyRGB-Setup-0.1.0.exe /VERYSILENT /TASKS="startup,smbus"      # also RAM lightin
 
 
 /DIR="…" installs elsewhere, and /LOG="…" writes a setup log. Task names: startup,
-desktopicon, streamdeck, smbus.
+desktopicon, streamdeck, smbus. The fan helper is not a setup task: it is added from the app's
+Cooling page (or removed there, or by uninstalling).
 
 Building the installer
 
