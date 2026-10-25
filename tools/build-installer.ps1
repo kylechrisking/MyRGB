@@ -74,6 +74,13 @@ if (-not $SkipPublish) {
     # DebugType=none covers our assemblies, not the ~100 MB of native symbols SkiaSharp/HarfBuzz ship.
     Get-ChildItem $appOut -Recurse -Filter *.pdb | Remove-Item
 
+    # The elevated sensor helper the Cooling page can install: self-contained, so the task needs no .NET.
+    Write-Output 'Publishing the sensor helper (self-contained)...'
+    & $dotnet publish (Join-Path $root 'src\MyRGB.Sensors.Helper') -c Release -r win-x64 --self-contained true `
+        -p:DebugType=none -p:SatelliteResourceLanguages=en -o (Join-Path $appOut 'helper') -nologo -v q
+    if ($LASTEXITCODE -ne 0) { throw 'Sensor helper publish failed.' }
+    Get-ChildItem (Join-Path $appOut 'helper') -Recurse -Filter *.pdb | Remove-Item
+
     Write-Output 'Publishing Stream Deck plugin (self-contained, single file)...'
     Copy-Item (Join-Path $root 'streamdeck\com.myrgb.streamdeck.sdPlugin') $deckOut -Recurse -Exclude bin
     Remove-Item (Join-Path $deckOut 'bin') -Recurse -Force -ErrorAction SilentlyContinue

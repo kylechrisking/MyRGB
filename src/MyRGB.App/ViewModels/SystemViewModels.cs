@@ -315,9 +315,49 @@ public sealed partial class CoolingViewModel : ObservableObject
     /// <summary>True while MyRGB runs without admin rights.</summary>
     public bool NeedsAdmin { get; init; } = !Program.IsElevated;
 
+    /// <summary>Whether the elevated sensor helper is answering; temperatures appear once it is.</summary>
+    [ObservableProperty] private bool _helperConnected;
+
     [RelayCommand]
     private void RestartAsAdmin() =>
         AdminStatus = Program.RestartElevated() ? "Opening MyRGB as administrator…" : "Windows didn't give permission, so MyRGB is still running without it.";
+
+    /// <summary>
+    /// One Windows prompt installs and starts the sensor helper: a tiny service that runs as
+    /// administrator and reads temperatures for MyRGB, which carries on without any. It comes
+    /// back on its own after a restart, and uninstalling MyRGB removes it.
+    /// </summary>
+    [RelayCommand]
+    private void EnableHelper()
+    {
+        var script = Path.Combine(AppContext.BaseDirectory, "setup", "setup-openrgb-admin.ps1");
+        if (!File.Exists(script))
+        {
+            AdminStatus = "The setup script is missing from MyRGB's folder; reinstall MyRGB to add it.";
+            return;
+        }
+        AdminStatus = Program.Elevate("powershell.exe",
+            $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{script}\" " +
+            $"-InstallSensors \"{AppContext.BaseDirectory.TrimEnd('\\')}\" -User \"{Environment.UserDomainName}\\{Environment.UserName}\"")
+            ? "Permission granted; CPU temperatures and the fans appear here within a few seconds."
+            : "Windows didn't give permission, so nothing was changed.";
+    }
+
+    /// <summary>Undo the helper: one prompt, then MyRGB goes back to reading what it can without admin.</summary>
+    [RelayCommand]
+    private void TurnOffHelper()
+    {
+        var script = Path.Combine(AppContext.BaseDirectory, "setup", "setup-openrgb-admin.ps1");
+        if (!File.Exists(script))
+        {
+            AdminStatus = "The setup script is missing from MyRGB's folder; reinstall MyRGB to add it.";
+            return;
+        }
+        AdminStatus = Program.Elevate("powershell.exe",
+            $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{script}\" -RemoveSensors")
+            ? "The helper was removed; MyRGB is back to reading what it can without administrator rights."
+            : "Windows didn't give permission, so the helper is still running.";
+    }
 
     public string SafetyText =>
         $"MyRGB never runs a fan below {FanController.Floor:0} %, runs any fan flat out once its temperature reaches {FanController.EmergencyTemp:0} °C, and hands every fan back to automatic when it closes.";
@@ -325,6 +365,7 @@ public sealed partial class CoolingViewModel : ObservableObject
     public void Refresh()
     {
         var hub = _host.Sensors;
+        HelperConnected = _host.SensorHelperConnected;
         foreach (var t in Temps)
         {
             var v = hub.Get(t.Key);

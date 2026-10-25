@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- WinExe: the scheduled task starts it at logon, and no console window may appear. -->
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>MyRGB.Sensors.Helper</AssemblyName>
+    <RootNamespace>MyRGB.Sensors.Helper</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyRGB.Sensors\MyRGB.Sensors.csproj" />
+  </ItemGroup>
+
+</Project>

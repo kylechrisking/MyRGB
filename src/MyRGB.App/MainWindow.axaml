@@ -1118,15 +1118,25 @@
                 </Border>
 
                 <Border Classes="panel" Margin="0,0,14,0" IsVisible="{Binding NeedsAdmin}">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Spacing="6" Margin="0,0,16,0">
-                      <TextBlock Classes="section" Text="Fan control needs administrator" />
-                      <TextBlock Classes="body" Text="Your CPU's temperature, the fans on your motherboard, and on many graphics cards setting the fan speed only work for programs running as administrator. Without it MyRGB can show your graphics card's temperatures, but the speeds you set here may be ignored." />
-                      <TextBlock Classes="muted" Text="{Binding AdminStatus}" IsVisible="{Binding AdminStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  <StackPanel Spacing="10">
+                    <TextBlock Classes="section" Text="Fan control needs administrator" />
+                    <TextBlock Classes="body" IsVisible="{Binding !HelperConnected}"
+                               Text="Your CPU's temperature and the fans on your motherboard are only readable for programs running as administrator. One Windows permission prompt sets up a small helper that reads them for MyRGB, which carries on running normally without any." />
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !HelperConnected}">
+                      <Button Classes="accent" Content="Enable CPU temperatures and fans" Command="{Binding EnableHelperCommand}"
+                              ToolTip.Tip="Windows asks for permission once. MyRGB keeps running; temperatures appear within a few seconds." />
+                      <Button Classes="ghost" Content="Restart as administrator" Command="{Binding RestartAsAdminCommand}"
+                              ToolTip.Tip="Windows asks for permission, then MyRGB reopens with admin rights and takes over from this one." />
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="accent" VerticalAlignment="Center" Content="Restart as administrator" Command="{Binding RestartAsAdminCommand}"
-                            ToolTip.Tip="Windows asks for permission, then MyRGB reopens with admin rights and takes over from this one." />
-                  </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HelperConnected}">
+                      <PathIcon Data="{x:Static ctl:NavIcons.Check}" Width="16" Height="16" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" />
+                      <TextBlock Classes="body" VerticalAlignment="Center" TextWrapping="Wrap"
+                                 Text="The helper is running: CPU temperatures and fan control are on. It starts with Windows, and uninstalling MyRGB removes it." />
+                      <Button Classes="link" Content="Turn off" Command="{Binding TurnOffHelperCommand}" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Classes="muted" Text="{Binding AdminStatus}" TextWrapping="Wrap"
+                               IsVisible="{Binding AdminStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  </StackPanel>
                 </Border>
 
                 <ItemsControl ItemsSource="{Binding Fans}">

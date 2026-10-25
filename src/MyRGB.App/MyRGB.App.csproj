@@ -38,5 +38,26 @@
     <ProjectReference Include="..\MyRGB.Cloud\MyRGB.Cloud.csproj" />
     <ProjectReference Include="..\MyRGB.Sensors\MyRGB.Sensors.csproj" />
     <ProjectReference Include="..\MyRGB.Audio\MyRGB.Audio.csproj" />
+    <!-- Build-order only: the helper's files are staged into helper\ below, not referenced. -->
+    <ProjectReference Include="..\MyRGB.Sensors.Helper\MyRGB.Sensors.Helper.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- The one-prompt setup script the Cooling page runs; the installer bundles the same file. -->
+    <Content Include="..\..\tools\setup-openrgb-admin.ps1" Link="setup\setup-openrgb-admin.ps1" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Dev builds carry the helper in helper\ so the Cooling page's enable flow works without the installer.
+       The whole output tree, deps.json included: the runtime finds LibreHardwareMonitorLib through it. -->
+  <Target Name="StageSensorHelper" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <PropertyGroup>
+      <HelperOut>$(MSBuildThisFileDirectory)..\MyRGB.Sensors.Helper\bin\$(Configuration)\net10.0</HelperOut>
+    </PropertyGroup>
+    <ItemGroup>
+      <HelperFiles Include="$(HelperOut)\**\*.*" Exclude="$(HelperOut)\**\*.pdb" />
+    </ItemGroup>
+    <Copy SourceFiles="@(HelperFiles)"
+          DestinationFiles="@(HelperFiles->'$(OutDir)helper\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

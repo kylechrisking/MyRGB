@@ -12,6 +12,12 @@ param(
     [string]$CopyTo,
     # Download the official PawnIO installer, check its hash and signature, and install it silently.
     [switch]$InstallPawnIO,
+    # Copy the sensor helper from this app folder (its helper\ subfolder) to Program Files,
+    # and register a log-on task that runs it elevated: CPU temperatures and motherboard fans
+    # for MyRGB, without MyRGB itself running as administrator.
+    [string]$InstallSensors,
+    # Undo the sensor helper only (the OpenRGB task and its files stay).
+    [switch]$RemoveSensors,
     # Account the task runs as; the installer passes the user who started it (UAC may elevate as another admin).
     [string]$User = [Security.Principal.WindowsIdentity]::GetCurrent().Name,
     [string]$LogPath,
@@ -31,6 +37,8 @@ $strayDir = if (${env:ProgramFiles(x86)}) { Join-Path ${env:ProgramFiles(x86)} '
 # the default one (the user's AppData) any program could get its code run as administrator through the task.
 $launcher = Join-Path $machineDir 'openrgb-hidden.vbs'
 $configDir = Join-Path $machineDir 'config'
+# The sensor helper lives beside it, equally admin-only: a task must never run an exe a user could swap.
+$sensorsDir = Join-Path $machineDir 'sensors'
 # Where older versions put the launcher. Ordinary users can create files in ProgramData, so it is retired.
 $oldLauncher = Join-Path $env:ProgramData 'MyRGB\openrgb-hidden.vbs'
 
@@ -77,6 +85,9 @@ try {
 
     if ($Remove) {
         Unregister-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+        Unregister-ScheduledTask -TaskPath $taskPath -TaskName 'Sensors' -Confirm:$false -ErrorAction SilentlyContinue
+        # The helper holds its copied files open.
+        Get-Process MyRGB.Sensors.Helper -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$machineDir\*" } | Stop-Process -Force
         Remove-Item $oldLauncher -ErrorAction SilentlyContinue
         Remove-Item (Split-Path $oldLauncher) -ErrorAction SilentlyContinue # only if empty
         # The elevated OpenRGB the task started holds the copied files open.
@@ -86,6 +97,41 @@ try {
         if ($strayDir) { Remove-Item $strayDir -Recurse -Force -ErrorAction SilentlyContinue }
         Log 'Removed.'
         return
+    }
+
+    if ($RemoveSensors) {
+        Unregister-ScheduledTask -TaskPath $taskPath -TaskName 'Sensors' -Confirm:$false -ErrorAction SilentlyContinue
+        Get-Process MyRGB.Sensors.Helper -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$sensorsDir\*" } | Stop-Process -Force
+        Start-Sleep -Milliseconds 500
+        Remove-Item $sensorsDir -Recurse -Force -ErrorAction SilentlyContinue
+        Log 'Sensor helper removed.'
+        return
+    }
+
+    if ($InstallSensors) {
+        # Release installs stage the helper into <app>\helper; a dev build may point at the folder directly.
+        $helperSrc = Join-Path $InstallSensors 'helper'
+        if (-not (Test-Path (Join-Path $helperSrc 'MyRGB.Sensors.Helper.exe'))) { $helperSrc = $InstallSensors }
+        if (-not (Test-Path (Join-Path $helperSrc 'MyRGB.Sensors.Helper.exe'))) {
+            throw "Sensor helper not found under $InstallSensors"
+        }
+
+        Get-Process MyRGB.Sensors.Helper -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$sensorsDir\*" } | Stop-Process -Force
+        Start-Sleep -Milliseconds 300
+        New-Item -ItemType Directory -Force $sensorsDir | Out-Null
+        Copy-Item (Join-Path $helperSrc '*') $sensorsDir -Recurse -Force
+        Log "Copied the sensor helper to $sensorsDir"
+
+        # The pipe accepts the desktop user MyRGB runs as (see --allow): UAC may have elevated a different admin.
+        $action = New-ScheduledTaskAction -Execute (Join-Path $sensorsDir 'MyRGB.Sensors.Helper.exe') -Argument "--allow `"$User`""
+        $principal = New-ScheduledTaskPrincipal -UserId $User -LogonType Interactive -RunLevel Highest
+        $trigger = New-ScheduledTaskTrigger -AtLogOn -User $User
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+            -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
+        Register-ScheduledTask -TaskPath $taskPath -TaskName 'Sensors' -Action $action -Principal $principal -Trigger $trigger `
+            -Settings $settings -Description 'Reads temperatures and fans for MyRGB, so MyRGB itself needs no administrator rights.' -Force | Out-Null
+        Start-ScheduledTask -TaskPath $taskPath -TaskName 'Sensors'
+        Log "Registered and started ${taskPath}Sensors for $User."
     }
 
     if (-not (Test-Path $OpenRgbPath)) { throw "OpenRGB not found at $OpenRgbPath" }

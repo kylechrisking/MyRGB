@@ -99,7 +99,8 @@ public sealed class AppHost : IAsyncDisposable
         Updates = _options.Updates?.Invoke() ?? new UpdateFeed();
         Sync = new PresetSync(Cloud, Presets, _options.DataDirectory);
 
-        Sensors = new SensorHub(_options.Sensors?.Invoke() ?? OpenSensors(), Logs.CreateLogger<SensorHub>());
+        SensorSource = _options.Sensors?.Invoke() ?? OpenSensors();
+        Sensors = new SensorHub(SensorSource, Logs.CreateLogger<SensorHub>());
         Sensors.SetFanSettings(Settings.Fans);
         SensorFeed.Use(Sensors.Get);
         if (_options.ListenToAudio) Audio = new AudioListener(Logs.CreateLogger<AudioListener>());
@@ -177,13 +178,26 @@ public sealed class AppHost : IAsyncDisposable
 
     private ISensorSource OpenSensors()
     {
-        try { return new HardwareSensors(); }
+        try
+        {
+            // Elevated, MyRGB reads the hardware itself. Otherwise it asks the sensor helper -
+            // the small elevated service - and falls back to its own, partial reading while the
+            // helper isn't running (CPU load, memory and the GPU work without admin).
+            if (Program.IsElevated) return new HardwareSensors();
+            return new PipeSensors(Logs.CreateLogger<PipeSensors>());
+        }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "Hardware sensors unavailable");
             return new NoSensors();
         }
     }
+
+    /// <summary>The source the sensor hub reads from; faked in tests and snapshots.</summary>
+    public ISensorSource SensorSource { get; }
+
+    /// <summary>Whether the elevated sensor helper is answering (never true in an elevated MyRGB, which reads the hardware itself).</summary>
+    public bool SensorHelperConnected => SensorSource is PipeSensors { Connected: true };
     public LocalApiServer? Api { get; private set; }
 
     /// <summary>Whether Windows Dynamic Lighting is switched on (null if this Windows has none).</summary>
