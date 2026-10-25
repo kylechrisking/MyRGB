@@ -126,10 +126,15 @@ public sealed partial class MainViewModel : ObservableObject
         };
         nudge.Start();
 
-        // The update check comes a little later, once the desk is already lit; its strip only
-        // appears when a newer release is actually out.
+        // The update check comes a little later, once the desk is already lit, then runs hourly
+        // while MyRGB is open (it usually runs for days); its strip only appears when a newer
+        // release is actually out.
         var updateCheck = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
-        updateCheck.Tick += (_, _) => { updateCheck.Stop(); Update.CheckOnStart(); };
+        updateCheck.Tick += (_, _) =>
+        {
+            Update.CheckOnStart();
+            updateCheck.Interval = TimeSpan.FromHours(1);
+        };
         updateCheck.Start();
     }
 

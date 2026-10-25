@@ -198,6 +198,9 @@ public sealed class AppHost : IAsyncDisposable
 
     /// <summary>Whether the elevated sensor helper is answering (never true in an elevated MyRGB, which reads the hardware itself).</summary>
     public bool SensorHelperConnected => SensorSource is PipeSensors { Connected: true };
+
+    /// <summary>The helper's version, when it's connected; an older one than the app deserves a re-enable.</summary>
+    public string? SensorHelperVersion => SensorSource is PipeSensors { Connected: true } p ? p.HelperVersion : null;
     public LocalApiServer? Api { get; private set; }
 
     /// <summary>Whether Windows Dynamic Lighting is switched on (null if this Windows has none).</summary>

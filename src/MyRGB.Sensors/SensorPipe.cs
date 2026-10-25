@@ -47,11 +47,12 @@ public static class SensorPipe
         [property: JsonPropertyName("r")] double? Rpm,
         [property: JsonPropertyName("p")] double? Percent);
 
-    /// <summary>Answers carry ok; failures carry what went wrong in error. Extra fields per op.</summary>
+    /// <summary>Answers carry ok; failures carry what went wrong in error. Extra fields per op. v is the helper's version.</summary>
     public sealed class Response
     {
         [JsonPropertyName("ok")] public bool Ok { get; set; }
         [JsonPropertyName("error")] public string? Error { get; set; }
+        [JsonPropertyName("v")] public string? Version { get; set; }
         [JsonPropertyName("r")] public List<ReadingDto>? Readings { get; set; }
         [JsonPropertyName("f")] public List<FanDto>? Fans { get; set; }
     }
@@ -216,16 +217,20 @@ public sealed class SensorPipeServer : IDisposable
     {
         try
         {
+            // Every answer carries the helper's version, so an app that updated itself can tell
+            // when the copy in Program Files is older and ask for one more permission prompt.
+            var version = typeof(SensorPipeServer).Assembly.GetName().Version?.ToString(3);
             switch (request.Op)
             {
                 case "ping":
-                    return new SensorPipe.Response { Ok = true };
+                    return new SensorPipe.Response { Ok = true, Version = version };
                 case "readings":
                 {
                     var readings = _source.Read();
                     return new SensorPipe.Response
                     {
                         Ok = true,
+                        Version = version,
                         Readings = [.. readings.Select(r => new SensorPipe.ReadingDto(r.Id, r.Category, r.Hardware, r.Name, r.Kind, r.Value, r.Key))],
                         Fans = [.. _source.Fans.Select(f => new SensorPipe.FanDto(f.Id, f.Name, f.GuardKey, f.Rpm, f.Percent))],
                     };
@@ -310,6 +315,9 @@ public sealed class PipeSensors : ISensorSource
     /// <summary>Whether the elevated helper answered the last reading.</summary>
     public bool Connected => _connected;
 
+    /// <summary>The helper's version, from its last answer; null while it isn't connected.</summary>
+    public string? HelperVersion { get; private set; }
+
     /// <summary>Never blocks on the pipe: the helper's fans while it answers, the fallback's otherwise.</summary>
     public IReadOnlyList<IFanChannel> Fans => _connected ? _fansSnapshot : _fallback.Fans;
 
@@ -350,6 +358,7 @@ public sealed class PipeSensors : ISensorSource
             SensorPipe.WriteFrame(_pipe!, new SensorPipe.Request("readings"));
             var reply = ReadReply();
             if (reply is not { Ok: true } or { Readings: null }) return false;
+            HelperVersion = reply.Version;
             readings = [.. reply.Readings.Select(r => new SensorReading(r.Id, r.Category, r.Hardware, r.Name, r.Kind, r.Value, r.Key))];
             RefreshFans(reply.Fans ?? []);
             return true;
@@ -433,6 +442,7 @@ public sealed class PipeSensors : ISensorSource
     private void Disconnect()
     {
         _connected = false;
+        HelperVersion = null;
         _pipe?.Dispose();
         _pipe = null;
         _fans.Clear();

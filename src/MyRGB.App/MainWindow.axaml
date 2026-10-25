@@ -1134,6 +1134,11 @@
                                  Text="The helper is running: CPU temperatures and fan control are on. It starts with Windows, and uninstalling MyRGB removes it." />
                       <Button Classes="link" Content="Turn off" Command="{Binding TurnOffHelperCommand}" VerticalAlignment="Center" />
                     </StackPanel>
+                    <StackPanel Spacing="10" IsVisible="{Binding HelperOutdated}">
+                      <TextBlock Classes="body" TextWrapping="Wrap"
+                                 Text="The helper is an older version than this MyRGB. One more permission prompt brings it up to date; your fan settings stay as they are." />
+                      <Button Classes="ghost" Content="Update the helper" Command="{Binding EnableHelperCommand}" HorizontalAlignment="Left" />
+                    </StackPanel>
                     <TextBlock Classes="muted" Text="{Binding AdminStatus}" TextWrapping="Wrap"
                                IsVisible="{Binding AdminStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                   </StackPanel>

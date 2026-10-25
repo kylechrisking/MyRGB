@@ -31,10 +31,8 @@ public sealed partial class UpdateViewModel(AppHost host) : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowStrip))]
     private UpdateInfo? _available;
 
-    /// <summary>The strip hides when dismissed, until a later check finds something again.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowStrip))]
-    private bool _dismissed;
+    /// <summary>The release the strip was dismissed for; a different (newer) one shows the strip again.</summary>
+    private Version? _dismissed;
 
     /// <summary>What the strip and Settings say while a check, download or install is under way — or why one failed.</summary>
     [ObservableProperty] private string? _status;
@@ -44,13 +42,13 @@ public sealed partial class UpdateViewModel(AppHost host) : ObservableObject
     /// <summary>0..1 while an installer downloads.</summary>
     [ObservableProperty] private double _progress;
 
-    public bool ShowStrip => Available is not null && !Dismissed;
+    public bool ShowStrip => Available is not null && _dismissed != Available.Version;
     public string VersionText => $"MyRGB {CurrentVersion}";
 
-    /// <summary>The quiet first look a little after startup; a check that finds nothing says nothing.</summary>
+    /// <summary>The quiet first look a little after startup, then hourly while MyRGB runs; a check that finds nothing says nothing.</summary>
     public void CheckOnStart()
     {
-        if (_host.Settings.CheckForUpdates && _host.Updates is not null && Available is null)
+        if (_host.Settings.CheckForUpdates && _host.Updates is not null)
             _ = CheckAsync(notify: false);
     }
 
@@ -70,7 +68,6 @@ public sealed partial class UpdateViewModel(AppHost host) : ObservableObject
         if (found is { } update)
         {
             Available = update;
-            Dismissed = false;
             Status = null;
         }
         else Status = notify ? $"MyRGB {CurrentVersion} is up to date." : null;
@@ -119,7 +116,11 @@ public sealed partial class UpdateViewModel(AppHost host) : ObservableObject
     }
 
     [RelayCommand]
-    private void Dismiss() => Dismissed = true;
+    private void Dismiss()
+    {
+        _dismissed = Available?.Version;
+        OnPropertyChanged(nameof(ShowStrip));
+    }
 
     /// <summary>Quit now so setup can replace MyRGB's files; it starts the new build itself (/UPDATED).</summary>
     private static void QuitForInstaller()

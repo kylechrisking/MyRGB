@@ -97,7 +97,7 @@ public sealed partial class MonitoringViewModel : ObservableObject
         Cpu.Value = Fmt(hub.Get(SensorKeys.CpuLoad), "0");
         Cpu.Unit = "% load";
         Cpu.History = hub.History(SensorKeys.CpuLoad);
-        Cpu.Line("Temperature").Value = hub.Get(SensorKeys.CpuTemp) is { } ct ? $"{ct:0} °C" : "needs admin";
+        Cpu.Line("Temperature").Value = hub.Get(SensorKeys.CpuTemp) is { } ct ? $"{ct:0} °C" : "needs the helper (see Cooling)";
         Cpu.Line("Clock").Value = hub.Get(SensorKeys.CpuClock) is { } cc ? $"{cc / 1000:0.00} GHz" : "–";
         Cpu.Line("Power").Value = hub.Get(SensorKeys.CpuPower) is > 0 and var cp ? $"{cp:0} W" : "–";
         CpuTempMissing = hub.Get(SensorKeys.CpuTemp) is null;
@@ -318,6 +318,9 @@ public sealed partial class CoolingViewModel : ObservableObject
     /// <summary>Whether the elevated sensor helper is answering; temperatures appear once it is.</summary>
     [ObservableProperty] private bool _helperConnected;
 
+    /// <summary>The helper is connected but older than this MyRGB; one more prompt brings it current.</summary>
+    [ObservableProperty] private bool _helperOutdated;
+
     [RelayCommand]
     private void RestartAsAdmin() =>
         AdminStatus = Program.RestartElevated() ? "Opening MyRGB as administrator…" : "Windows didn't give permission, so MyRGB is still running without it.";
@@ -366,6 +369,9 @@ public sealed partial class CoolingViewModel : ObservableObject
     {
         var hub = _host.Sensors;
         HelperConnected = _host.SensorHelperConnected;
+        HelperOutdated = HelperConnected
+            && Version.TryParse(_host.SensorHelperVersion ?? "", out var helperVersion)
+            && helperVersion < UpdateViewModel.CurrentVersion;
         foreach (var t in Temps)
         {
             var v = hub.Get(t.Key);
