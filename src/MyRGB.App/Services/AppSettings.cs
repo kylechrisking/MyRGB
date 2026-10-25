@@ -20,6 +20,9 @@ public sealed class AppSettings
     /// <summary>Look for a newer MyRGB release when it starts.</summary>
     public bool CheckForUpdates { get; set; } = true;
 
+    /// <summary>Show the Cooling page's fans as compact tiles instead of full rows.</summary>
+    public bool CoolingGrid { get; set; }
+
     /// <summary>Keep presets in sync across PCs while signed in.</summary>
     public bool SyncPresets { get; set; } = true;
 

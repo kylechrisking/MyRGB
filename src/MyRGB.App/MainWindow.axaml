@@ -1144,7 +1144,14 @@
                   </StackPanel>
                 </Border>
 
-                <ItemsControl ItemsSource="{Binding Fans}">
+                <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,14,10" IsVisible="{Binding HasFans}">
+                  <TextBlock Classes="muted" Text="{Binding FanSummary}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="ghost" Content="All automatic" Command="{Binding AllAutomaticCommand}"
+                          ToolTip.Tip="Every fan back to its hardware default" Margin="0,0,10,0" />
+                  <ToggleSwitch Grid.Column="2" IsChecked="{Binding GridView}" OnContent="Grid" OffContent="List" VerticalAlignment="Center" />
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding Fans}" IsVisible="{Binding !GridView}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:FanRowViewModel">
                       <Border Classes="panel" Margin="0,0,14,14">
@@ -1183,6 +1190,29 @@
                               <Button Classes="ghost" Content="Full speed" Command="{Binding FullSpeedCommand}" />
                             </StackPanel>
                           </StackPanel>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Grid view: compact tiles for switching several fans at a glance.
+                     The chart stays in the list view; tiles carry name, speed and mode. -->
+                <ItemsControl ItemsSource="{Binding Fans}" IsVisible="{Binding GridView}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FanRowViewModel">
+                      <Border Classes="panel" Width="264" Margin="0,0,12,12" Padding="14,12">
+                        <StackPanel Spacing="8">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" ToolTip.Tip="{Binding Name}" />
+                            <Border Grid.Column="1" Classes="badge"><TextBlock Text="{Binding Speed}" /></Border>
+                          </Grid>
+                          <ComboBox ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                          <TextBlock Classes="muted" Text="{Binding Status}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                       </Border>
                     </DataTemplate>

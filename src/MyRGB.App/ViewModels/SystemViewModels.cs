@@ -299,6 +299,7 @@ public sealed partial class CoolingViewModel : ObservableObject
     public CoolingViewModel(AppHost host)
     {
         _host = host;
+        _gridView = host.Settings.CoolingGrid;
         Temps =
         [
             new TempGauge("CPU", SensorKeys.CpuTemp),
@@ -313,6 +314,22 @@ public sealed partial class CoolingViewModel : ObservableObject
 
     [ObservableProperty] private bool _hasFans;
     [ObservableProperty] private string _adminStatus = "";
+
+    /// <summary>Compact tiles instead of full rows: switching several fans' mode takes one glance.</summary>
+    [ObservableProperty] private bool _gridView;
+
+    partial void OnGridViewChanged(bool value)
+    {
+        _host.Settings.CoolingGrid = value;
+        _host.ScheduleSave();
+    }
+
+    /// <summary>Everything back to its hardware default, e.g. after a test session.</summary>
+    [RelayCommand]
+    private void AllAutomatic()
+    {
+        foreach (var fan in Fans) fan.Mode = FanRowViewModel.AutoMode;
+    }
 
     /// <summary>True while MyRGB runs without admin rights.</summary>
     public bool NeedsAdmin { get; init; } = !Program.IsElevated;

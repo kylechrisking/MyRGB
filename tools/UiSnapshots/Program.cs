@@ -110,6 +110,7 @@ vm.Cooling.Fans[0].SilentCommand.Execute(null);
 vm.Cooling.Fans[1].Mode = FanRowViewModel.FixedMode;
 vm.Cooling.Fans[1].FixedPercent = 0;
 window.Height = 1500; Shoot("06c-cooling"); window.Height = 860;
+vm.Cooling.GridView = true; Shoot("06d-cooling-grid"); vm.Cooling.GridView = false;
 vm.Cooling.Fans[0].Mode = FanRowViewModel.AutoMode;
 vm.Cooling.Fans[1].Mode = FanRowViewModel.AutoMode;
 vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");
