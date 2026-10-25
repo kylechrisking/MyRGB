@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <Version>0.4.0</Version>
+    <Version>0.4.1</Version>
     <Authors>Kyle King</Authors>
     <Company>Root Labs</Company>
     <Product>MyRGB</Product>

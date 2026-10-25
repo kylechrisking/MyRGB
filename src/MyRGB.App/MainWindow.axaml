@@ -1169,6 +1169,16 @@
                           </Grid>
                           <TextBlock Classes="muted" Text="{Binding ModeHint}" />
 
+                          <!-- One click from automatic to a working curve. -->
+                          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsAuto}">
+                            <TextBlock Classes="muted" Text="Make it a curve:" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <Button Classes="ghost" Content="Silent" Command="{Binding QuickCurveCommand}" CommandParameter="silent" />
+                            <Button Classes="ghost" Content="Quiet" Command="{Binding QuickCurveCommand}" CommandParameter="quiet" />
+                            <Button Classes="ghost" Content="Balanced" Command="{Binding QuickCurveCommand}" CommandParameter="balanced" />
+                            <Button Classes="ghost" Content="Performance" Command="{Binding QuickCurveCommand}" CommandParameter="performance" />
+                            <Button Classes="ghost" Content="Full speed" Command="{Binding QuickCurveCommand}" CommandParameter="full" />
+                          </StackPanel>
+
                           <Grid ColumnDefinitions="*,60" IsVisible="{Binding IsFixed}">
                             <Slider Minimum="0" Maximum="100" Value="{Binding FixedPercent}" TickFrequency="1" IsSnapToTickEnabled="True" />
                             <TextBlock Grid.Column="1" Text="{Binding FixedPercent, StringFormat='{}{0:0} %'}" HorizontalAlignment="Right" VerticalAlignment="Center"

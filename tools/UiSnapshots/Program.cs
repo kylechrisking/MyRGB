@@ -113,6 +113,7 @@ window.Height = 1500; Shoot("06c-cooling"); window.Height = 860;
 vm.Cooling.GridView = true; Shoot("06d-cooling-grid"); vm.Cooling.GridView = false;
 vm.Cooling.Fans[0].Mode = FanRowViewModel.AutoMode;
 vm.Cooling.Fans[1].Mode = FanRowViewModel.AutoMode;
+Shoot("06e-cooling-auto");
 vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");
 vm.Vendors.Apps[0].AskUninstallCommand.Execute(null); Shoot("08-vendors-confirm");
 vm.SelectedTab = MainViewModel.SettingsTab; Shoot("09-settings");

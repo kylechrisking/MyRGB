@@ -212,7 +212,7 @@ public sealed partial class FanRowViewModel : ObservableObject
 {
     public const string AutoMode = "Automatic";
     public const string FixedMode = "Fixed speed";
-    public const string CurveMode = "Fan curve";
+    public const string CurveMode = "Custom curve";
 
     private readonly AppHost _host;
     private bool _loading;
@@ -237,7 +237,7 @@ public sealed partial class FanRowViewModel : ObservableObject
     public IReadOnlyList<FollowOption> Follow { get; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsFixed), nameof(IsCurve), nameof(ModeHint))]
+    [NotifyPropertyChangedFor(nameof(IsFixed), nameof(IsCurve), nameof(IsAuto), nameof(ModeHint))]
     private string _mode = AutoMode;
 
     [ObservableProperty] private double _fixedPercent;
@@ -249,6 +249,8 @@ public sealed partial class FanRowViewModel : ObservableObject
 
     public bool IsFixed => Mode == FixedMode;
     public bool IsCurve => Mode == CurveMode;
+    /// <summary>Automatic rows offer the curve presets inline, so a curve is one click away.</summary>
+    public bool IsAuto => Mode == AutoMode;
 
     public string ModeHint => Mode switch
     {
@@ -267,6 +269,21 @@ public sealed partial class FanRowViewModel : ObservableObject
     [RelayCommand] private void Balanced() => Points = [.. FanCurve.Balanced];
     [RelayCommand] private void Performance() => Points = [new(30, 45), new(45, 55), new(60, 75), new(70, 90), new(78, 100)];
     [RelayCommand] private void FullSpeed() => Points = [new(25, 100)];
+
+    /// <summary>One click from Automatic to a working curve: switch mode and apply the shape together.</summary>
+    [RelayCommand]
+    private void QuickCurve(string? preset)
+    {
+        switch (preset)
+        {
+            case "silent": Silent(); break;
+            case "quiet": Quiet(); break;
+            case "performance": Performance(); break;
+            case "full": FullSpeed(); break;
+            default: Balanced(); break;
+        }
+        Mode = CurveMode;
+    }
 
     private void Save()
     {
