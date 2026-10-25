@@ -154,6 +154,7 @@ public sealed class LedCanvas : Control
             _namesFor = frame.Devices;
         }
 
+        var labels = new List<(IRgbDevice Device, Rect Rect, bool Active)>();
         for (int d = 0; d < frame.Devices.Count; d++)
         {
             var device = frame.Devices[d];
@@ -183,12 +184,32 @@ public sealed class LedCanvas : Control
             using (ctx.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.MediumQuality }))
                 ctx.DrawImage(surface.Bitmap, new Rect(0, 0, surface.Cols, surface.Rows), inner);
 
-            // Narrow devices (a RAM stick) only show their name on hover, so neighbours' labels don't collide.
-            if (rect.Width >= 46 || active)
-                DrawLabel(ctx, area, device.Type, _names.GetValueOrDefault(device.Id, device.Name), new Point(rect.X, rect.Bottom + 6),
-                          active ? double.PositiveInfinity : Math.Max(rect.Width + 24, 96), active);
+            labels.Add((device, rect, active));
             if (AllowEditing && active)
                 ctx.DrawRectangle(HandleBrush, null, new Rect(rect.Right - HandleSize / 2, rect.Bottom - HandleSize / 2, HandleSize, HandleSize), 3, 3);
+        }
+
+        DrawLabels(ctx, area, labels);
+    }
+
+    /// <summary>
+    /// Labels under the devices, without pile-ups: hovered and active devices label first, the rest
+    /// go left to right, and any label that would sit on top of an already-drawn one is skipped
+    /// (narrow devices like RAM sticks only label while hovered anyway). Hovering shows what was
+    /// skipped, so nothing is unreachable.
+    /// </summary>
+    private void DrawLabels(DrawingContext ctx, Rect area, List<(IRgbDevice Device, Rect Rect, bool Active)> labels)
+    {
+        var drawn = new List<Rect>();
+        foreach (var (device, rect, active) in labels
+                     .OrderByDescending(l => l.Active ? 1 : 0)
+                     .ThenBy(l => l.Rect.X))
+        {
+            bool narrow = rect.Width < 46;
+            if (narrow && !active) continue;
+            var bounds = DrawLabel(ctx, area, device.Type, _names.GetValueOrDefault(device.Id, device.Name),
+                new Point(rect.X, rect.Bottom + 6), active ? double.PositiveInfinity : Math.Max(rect.Width + 24, 96), active);
+            if (active || !drawn.Any(b => b.Intersects(bounds))) drawn.Add(bounds);
         }
     }
 
@@ -292,8 +313,8 @@ public sealed class LedCanvas : Control
     private static FormattedText Text(string text, double size, IBrush brush) =>
         new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, LabelFace, size, brush);
 
-    /// <summary>A device's name under it, after a small glyph for its type, kept inside the stage.</summary>
-    private static void DrawLabel(DrawingContext ctx, Rect area, DeviceType type, string name, Point at, double maxWidth, bool active)
+    /// <summary>A device's name under it, after a small glyph for its type, kept inside the stage. Returns what it drew.</summary>
+    private Rect DrawLabel(DrawingContext ctx, Rect area, DeviceType type, string name, Point at, double maxWidth, bool active)
     {
         const double Icon = 12, Gap = 5;
         var ft = Text(name, 11, active ? LabelActiveBrush : LabelBrush);
@@ -308,6 +329,7 @@ public sealed class LedCanvas : Control
         using (ctx.PushTransform(Matrix.CreateScale(Icon / 24, Icon / 24) * Matrix.CreateTranslation(x, at.Y + 1)))
             ctx.DrawGeometry(active ? LabelActiveBrush : IconBrush, null, DeviceIcons.For(type));
         ctx.DrawText(ft, new Point(x + Icon + Gap, at.Y));
+        return new Rect(x, at.Y, Icon + Gap + ft.Width, ft.Height + 4);
     }
 
     private (string Id, DevicePlacement Placement, bool OnHandle)? HitTest(Point p)

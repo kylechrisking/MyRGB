@@ -16,7 +16,7 @@ internal sealed partial class OpenRgbDevice : IResizableDevice
         _client = client;
         _index = index;
         Data = data;
-        Name = data.Name;
+        Name = CleanName(data.Name);
         Vendor = string.IsNullOrWhiteSpace(data.Vendor) ? "Unknown" : data.Vendor;
         Type = MapType(data.Type);
         Id = MakeId(data);
@@ -26,6 +26,21 @@ internal sealed partial class OpenRgbDevice : IResizableDevice
         ResizableZones = data.Zones.Where(z => z.Resizable)
             .Select(z => new ResizableZone(z.Name, (int)z.LedCount, (int)z.LedsMin, (int)z.LedsMax))
             .ToArray();
+    }
+
+    /// <summary>
+    /// Some devices report their name doubled ("G733 Gaming HeadG733 Gaming Head"), so the two
+    /// halves are the same text. Show just one copy; the id keeps the raw name so saved layouts
+    /// and settings survive the cleanup.
+    /// </summary>
+    internal static string CleanName(string name)
+    {
+        var trimmed = name.Trim();
+        int half = trimmed.Length / 2;
+        if (half > 0 && trimmed.Length % 2 == 0 &&
+            trimmed[..half].Equals(trimmed[half..], StringComparison.OrdinalIgnoreCase))
+            return trimmed[..half].Trim();
+        return trimmed;
     }
 
     /// <summary>Doesn't depend on LED counts, so resizing a zone keeps the device's layout and overrides.</summary>
