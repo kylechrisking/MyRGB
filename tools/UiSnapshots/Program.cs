@@ -103,7 +103,15 @@ vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
 vm.Supported.Query = "razer basilisk"; Console.WriteLine($"supported search: {vm.Supported.Summary} first={vm.Supported.Results.FirstOrDefault()?.Name}");
 host.SetFan(new FanSetting { FanId = "fake/gpu/fan1", Mode = FanMode.Curve, SensorKey = SensorKeys.GpuTemp });
 vm.SelectedTab = MainViewModel.MonitoringTab; Shoot("06b-monitoring");
-vm.SelectedTab = MainViewModel.CoolingTab; Shoot("06c-cooling");
+vm.SelectedTab = MainViewModel.CoolingTab;
+// Show the curve editor on fan 1 and the zero-percent floor on fan 2.
+vm.Cooling.Fans[0].Mode = FanRowViewModel.CurveMode;
+vm.Cooling.Fans[0].SilentCommand.Execute(null);
+vm.Cooling.Fans[1].Mode = FanRowViewModel.FixedMode;
+vm.Cooling.Fans[1].FixedPercent = 0;
+window.Height = 1500; Shoot("06c-cooling"); window.Height = 860;
+vm.Cooling.Fans[0].Mode = FanRowViewModel.AutoMode;
+vm.Cooling.Fans[1].Mode = FanRowViewModel.AutoMode;
 vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");
 vm.Vendors.Apps[0].AskUninstallCommand.Execute(null); Shoot("08-vendors-confirm");
 vm.SelectedTab = MainViewModel.SettingsTab; Shoot("09-settings");

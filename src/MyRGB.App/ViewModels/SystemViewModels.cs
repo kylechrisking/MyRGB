@@ -253,7 +253,7 @@ public sealed partial class FanRowViewModel : ObservableObject
     public string ModeHint => Mode switch
     {
         FixedMode => "Runs at one speed all the time.",
-        CurveMode => "Speeds up as the temperature rises. Drag the points to shape the curve.",
+        CurveMode => "Speeds up as the temperature rises. Drag the points to shape it; double-click adds one, right-click removes one.",
         _ => "The fan's own controller decides. MyRGB leaves it alone.",
     };
 
@@ -262,9 +262,11 @@ public sealed partial class FanRowViewModel : ObservableObject
     partial void OnPointsChanged(IReadOnlyList<CurvePoint> value) => Save();
     partial void OnSensorChanged(FollowOption? value) => Save();
 
+    [RelayCommand] private void Silent() => Points = [new(25, 0), new(40, 15), new(55, 35), new(70, 65), new(78, 100)];
     [RelayCommand] private void Quiet() => Points = [new(30, 30), new(55, 35), new(70, 55), new(78, 80), new(83, 100)];
     [RelayCommand] private void Balanced() => Points = [.. FanCurve.Balanced];
     [RelayCommand] private void Performance() => Points = [new(30, 45), new(45, 55), new(60, 75), new(70, 90), new(78, 100)];
+    [RelayCommand] private void FullSpeed() => Points = [new(25, 100)];
 
     private void Save()
     {
@@ -363,7 +365,7 @@ public sealed partial class CoolingViewModel : ObservableObject
     }
 
     public string SafetyText =>
-        $"MyRGB never runs a fan below {FanController.Floor:0} %, runs any fan flat out once its temperature reaches {FanController.EmergencyTemp:0} °C, and hands every fan back to automatic when it closes.";
+        $"MyRGB only drives fans you set to a fixed speed or a curve, and they may go all the way down to 0 % - some fans won't spin below their own minimum. Any fan runs flat out once its temperature reaches {FanController.EmergencyTemp:0} °C, and every fan goes back to automatic when MyRGB closes.";
 
     public void Refresh()
     {

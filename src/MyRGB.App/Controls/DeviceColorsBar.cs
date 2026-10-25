@@ -1,22 +1,32 @@
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Media.Immutable;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using MyRGB.App.Services;
 using MyRGB.Core.Engine;
 
 namespace MyRGB.App.Controls;
 
-/// <summary>A strip showing the colors one device is displaying right now, left to right as its LEDs sit.</summary>
+/// <summary>
+/// A strip showing the colors one device is displaying right now, left to right as its LEDs sit.
+/// Drawn as smooth light, like the effect tiles: the samples go into a tiny image one pixel wide
+/// per sample, and the GPU blends it as it stretches it across the bar.
+/// </summary>
 public sealed class DeviceColorsBar : Control
 {
     public static readonly StyledProperty<AppHost?> HostProperty = AvaloniaProperty.Register<DeviceColorsBar, AppHost?>(nameof(Host));
     public static readonly StyledProperty<string?> DeviceIdProperty = AvaloniaProperty.Register<DeviceColorsBar, string?>(nameof(DeviceId));
 
-    private const int Samples = 14;
-    private static readonly IBrush Empty = new SolidColorBrush(Color.FromRgb(22, 33, 39));
+    private const int Samples = 32;
+    private static readonly IBrush Empty = new ImmutableSolidColorBrush(Color.FromRgb(22, 33, 39));
 
     private readonly DispatcherTimer _timer;
+    private readonly int[] _pixels = new int[Samples];
+    private WriteableBitmap? _bitmap;
     private AppHost? _subscribed;
     private volatile Color[]? _colors;
     private volatile string? _deviceId;
@@ -25,7 +35,7 @@ public sealed class DeviceColorsBar : Control
 
     public DeviceColorsBar()
     {
-        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(80), DispatcherPriority.Render, (_, _) => InvalidateVisual());
+        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(33), DispatcherPriority.Render, (_, _) => InvalidateVisual());
     }
 
     public AppHost? Host
@@ -108,18 +118,21 @@ public sealed class DeviceColorsBar : Control
             ctx.DrawRectangle(Empty, null, rect, radius, radius);
             return;
         }
-        if (colors.Length == 1)
+
+        // One pixel per sample in, stretched across the bar with smoothing: neighbours blend, so a
+        // rainbow reads as continuous light rather than segments.
+        if (_bitmap is null)
+            _bitmap = new WriteableBitmap(new PixelSize(Samples, 1), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+        for (int i = 0; i < Samples; i++)
         {
-            ctx.DrawRectangle(new SolidColorBrush(colors[0]), null, rect, radius, radius);
-            return;
+            var c = colors[i * colors.Length / Samples];
+            _pixels[i] = unchecked((int)0xFF000000) | c.R << 16 | c.G << 8 | c.B;
         }
-        var brush = new LinearGradientBrush
-        {
-            StartPoint = new RelativePoint(0, 0.5, RelativeUnit.Relative),
-            EndPoint = new RelativePoint(1, 0.5, RelativeUnit.Relative),
-        };
-        for (int i = 0; i < colors.Length; i++)
-            brush.GradientStops.Add(new GradientStop(colors[i], i / (double)(colors.Length - 1)));
-        ctx.DrawRectangle(brush, null, rect, radius, radius);
+        using (var fb = _bitmap.Lock())
+            Marshal.Copy(_pixels, 0, fb.Address, Samples);
+
+        using var clip = ctx.PushClip(new RoundedRect(rect, radius));
+        using var smooth = ctx.PushRenderOptions(new RenderOptions { BitmapInterpolationMode = BitmapInterpolationMode.MediumQuality });
+        ctx.DrawImage(_bitmap, new Rect(0, 0, Samples, 1), rect);
     }
 }

@@ -22,12 +22,12 @@ public class SensorTests
     }
 
     [Fact]
-    public void Fixed_speed_is_held_above_the_floor()
+    public void A_fixed_speed_of_zero_is_honoured()
     {
         var fan = new FakeFan("gpu1");
-        var settings = Settings(new FanSetting { FanId = "gpu1", Mode = FanMode.Fixed, FixedPercent = 5 });
+        var settings = Settings(new FanSetting { FanId = "gpu1", Mode = FanMode.Fixed, FixedPercent = 0 });
         new FanController().Apply([fan], settings, _ => 40);
-        Assert.Equal(["set 30"], fan.Commands);
+        Assert.Equal(["set 0"], fan.Commands);
     }
 
     [Fact]

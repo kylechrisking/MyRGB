@@ -58,7 +58,8 @@ one Windows prompt:
    open; MyRGB itself keeps running without any administrator rights. It notices a newer MyRGB
    and offers to update the helper with one more prompt.
 
-MyRGB only ever drives a fan you set to a fixed speed or a curve, never below 30 %, always flat
+MyRGB only ever drives a fan you set to a fixed speed or a curve, as low as 0 % if you like
+(some fans won't spin below their own minimum), always flat
 out from 85 °C, and hands every fan back to automatic when it closes. If MyRGB ever closes
 without warning, the helper notices within ten seconds and hands the fans back itself. "Turn
 off" on the Cooling page removes the helper (one prompt); uninstalling MyRGB removes it too.

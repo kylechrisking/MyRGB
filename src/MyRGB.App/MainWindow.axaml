@@ -1163,22 +1163,25 @@
                           <TextBlock Classes="muted" Text="{Binding ModeHint}" />
 
                           <Grid ColumnDefinitions="*,60" IsVisible="{Binding IsFixed}">
-                            <Slider Minimum="30" Maximum="100" Value="{Binding FixedPercent}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                            <Slider Minimum="0" Maximum="100" Value="{Binding FixedPercent}" TickFrequency="1" IsSnapToTickEnabled="True" />
                             <TextBlock Grid.Column="1" Text="{Binding FixedPercent, StringFormat='{}{0:0} %'}" HorizontalAlignment="Right" VerticalAlignment="Center"
                                        FontFamily="{StaticResource BrandMono}" />
                           </Grid>
 
                           <StackPanel Spacing="10" IsVisible="{Binding IsCurve}">
-                            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-                              <TextBlock Text="Follows" VerticalAlignment="Center" Margin="0,0,10,0" />
-                              <ComboBox Grid.Column="1" ItemsSource="{Binding Follow}" SelectedItem="{Binding Sensor}" MinWidth="200" />
-                              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
-                                <Button Classes="ghost" Content="Quiet" Command="{Binding QuietCommand}" />
-                                <Button Classes="ghost" Content="Balanced" Command="{Binding BalancedCommand}" />
-                                <Button Classes="ghost" Content="Performance" Command="{Binding PerformanceCommand}" />
-                              </StackPanel>
-                            </Grid>
-                            <ctl:FanCurveChart Points="{Binding Points}" CurrentTemp="{Binding CurrentTemp}" Height="210" />
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                              <TextBlock Text="Follows" VerticalAlignment="Center" />
+                              <ComboBox ItemsSource="{Binding Follow}" SelectedItem="{Binding Sensor}" MinWidth="220" />
+                            </StackPanel>
+                            <ctl:FanCurveChart Points="{Binding Points}" CurrentTemp="{Binding CurrentTemp}" Height="230" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                              <TextBlock Classes="muted" Text="Presets:" VerticalAlignment="Center" Margin="0,0,4,0" />
+                              <Button Classes="ghost" Content="Silent" Command="{Binding SilentCommand}" />
+                              <Button Classes="ghost" Content="Quiet" Command="{Binding QuietCommand}" />
+                              <Button Classes="ghost" Content="Balanced" Command="{Binding BalancedCommand}" />
+                              <Button Classes="ghost" Content="Performance" Command="{Binding PerformanceCommand}" />
+                              <Button Classes="ghost" Content="Full speed" Command="{Binding FullSpeedCommand}" />
+                            </StackPanel>
                           </StackPanel>
                         </StackPanel>
                       </Border>

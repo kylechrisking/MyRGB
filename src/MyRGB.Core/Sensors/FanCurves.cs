@@ -37,14 +37,15 @@ public static class FanCurve
 }
 
 /// <summary>
-/// Drives fans from their settings, with rules that hold whatever the settings say: never below
-/// <see cref="Floor"/>, flat out once the fan's guard temperature reaches <see cref="EmergencyTemp"/>,
-/// and back to the hardware's own control when the temperature a curve follows can't be read.
-/// Fans left on Auto are never touched. Call <see cref="ResetAll"/> on the way out.
+/// Drives fans from their settings. The only rules that hold whatever the settings say: flat out
+/// once the fan's guard temperature reaches <see cref="EmergencyTemp"/>, and back to the
+/// hardware's own control when the temperature a curve follows can't be read. Fans may be set
+/// all the way to 0 %; hardware that can't go that low keeps its own minimum. Fans left on Auto
+/// are never touched. Call <see cref="ResetAll"/> on the way out.
 /// </summary>
 public sealed class FanController
 {
-    public const double Floor = 30;
+    public const double Floor = 0;
     public const double EmergencyTemp = 85;
     private static readonly TimeSpan Refresh = TimeSpan.FromSeconds(10);
 
