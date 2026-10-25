@@ -252,11 +252,9 @@ public sealed partial class FanRowViewModel : ObservableObject
 
     public string ModeHint => Mode switch
     {
-        FixedMode => "Runs at one speed all the time.",
-        CurveMode => "Speeds up as the temperature rises. Drag the points to shape it; double-click adds one, right-click removes one.",
-        _ => Name.Contains("(motherboard)")
-            ? "The motherboard's BIOS is deciding this fan's speed for now. MyRGB leaves it alone."
-            : "The fan's own controller decides. MyRGB leaves it alone.",
+        FixedMode => "MyRGB holds this fan at one speed, all the time.",
+        CurveMode => "MyRGB speeds it up as the temperature rises. Drag the points to shape it; double-click adds one, right-click removes one.",
+        _ => "Runs on its hardware default until you give MyRGB a speed or a curve to hold.",
     };
 
     partial void OnModeChanged(string value) => Save();
@@ -367,7 +365,7 @@ public sealed partial class CoolingViewModel : ObservableObject
     }
 
     public string SafetyText =>
-        $"MyRGB only drives fans you set to a fixed speed or a curve, and they may go all the way down to 0 % - some fans won't spin below their own minimum. Any fan runs flat out once its temperature reaches {FanController.EmergencyTemp:0} °C, and every fan goes back to automatic when MyRGB closes.";
+        $"MyRGB controls every fan on this page: set any of them anywhere from 0 to 100 % (some fans won't spin below their own minimum). If a temperature ever reaches {FanController.EmergencyTemp:0} °C, that fan runs flat out no matter what, and when MyRGB closes every fan returns to its hardware default.";
 
     public void Refresh()
     {

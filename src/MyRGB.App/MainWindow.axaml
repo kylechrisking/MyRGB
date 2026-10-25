@@ -1088,7 +1088,7 @@
           <DockPanel DataContext="{Binding Cooling}" x:DataType="vm:CoolingViewModel">
             <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,20">
               <TextBlock Classes="h1" Text="Cooling" />
-              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Temperatures, and fans you can give a fixed speed or a curve. Fans you leave on Automatic are never touched." />
+              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Temperatures, and fans MyRGB drives for you. Give any fan a fixed speed or a curve; anything you leave on Automatic runs on its hardware default." />
             </StackPanel>
             <ScrollViewer>
               <StackPanel Spacing="14" Margin="0,0,8,8">
