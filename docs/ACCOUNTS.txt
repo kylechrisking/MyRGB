@@ -19,7 +19,7 @@ build log.
 2. Create the tables and rules
 ------------------------------
 - SQL Editor > New query: run each file in supabase/migrations, oldest first (accounts,
-  supporters, hardening).
+  supporters, hardening, function_grants, bmc_source).
   (Or, with the Supabase CLI: supabase link, then supabase db push.)
 - Table Editor should now show profiles, synced_presets, shared_presets, preset_reports and
   support_messages, each marked "RLS enabled".
@@ -78,8 +78,9 @@ Every feature of MyRGB is free. Supporters get a badge on presets they share and
 limits (sync 200 presets and share 15, instead of 50 and 5). Run the second migration,
 supabase/migrations/20261020000000_supporters.sql, in the SQL Editor the same way as the first.
 
-Ko-fi makes supporters automatically:
+Ko-fi and Buy Me a Coffee make supporters automatically:
 
+  Ko-fi:
   1. On ko-fi.com: Settings > API > Webhooks. Copy the verification token.
   2. With the Supabase CLI, from the repository folder:
        supabase secrets set KOFI_VERIFICATION_TOKEN=<token>
@@ -88,9 +89,25 @@ Ko-fi makes supporters automatically:
        https://<project>.supabase.co/functions/v1/kofi-webhook
      and use "Send Single Donation Test" to check it answers.
 
+  Buy Me a Coffee:
+  1. On buymeacoffee.com: developer settings > Webhooks. Create a webhook and copy the
+     signing secret.
+  2. With the Supabase CLI, from the repository folder:
+       supabase secrets set BMC_WEBHOOK_SECRET=<secret>
+       supabase functions deploy bmc-webhook --no-verify-jwt
+  3. Back on Buy Me a Coffee, point the webhook at
+       https://<project>.supabase.co/functions/v1/bmc-webhook
+     and tick the events it should send. Until the secret is set the function answers 401,
+     which is the sign the secret step was missed.
+
 A payment is matched to the MyRGB account with the payer's email. Monthly memberships count for
 35 days from each payment; one-off donations for a year. If there's no account with that email
-yet, it waits in supporter_claims and applies when that account signs up.
+yet, it waits in supporter_claims and applies when that account signs up. Both webhooks ignore
+repeats of a payment they have already recorded, so BMC's retries can't extend support twice.
+
+Supporter matching is by email, which is why sign-ups with email and password stay off in
+Authentication > Providers: an open email sign-up would let anyone claim a supporter's email.
+Sign-in is the OAuth providers only.
 
 To add a supporter by hand (a GitHub Sponsor, a different email), in the SQL Editor:
 
