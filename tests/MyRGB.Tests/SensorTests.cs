@@ -42,7 +42,8 @@ public class SensorTests
         Assert.Equal(100, points[^1].Percent);
         Assert.Equal(50, points[2].Percent); // halfway up, halfway fast
 
-        Assert.Equal(25, FanCurve.Evaluate(points, 40));
+        Assert.Equal(0, FanCurve.Evaluate(points, 40)); // at the start: the minimum
+        Assert.Equal(25, FanCurve.Evaluate(points, 50));
         Assert.Equal(0, FanCurve.Evaluate(points, 30)); // below the start, flat at the minimum
         Assert.Equal(100, FanCurve.Evaluate(points, 95));
     }
@@ -86,6 +87,40 @@ public class SensorTests
         var settings = Settings(new FanSetting { FanId = "gpu1", Mode = FanMode.Fixed, FixedPercent = 40 });
         new FanController().Apply([fan], settings, key => key == SensorKeys.GpuTemp ? 91 : null);
         Assert.Equal(["set 100"], fan.Commands);
+    }
+
+    [Fact]
+    public void A_curve_drop_waits_out_the_hysteresis()
+    {
+        var fan = new FakeFan("gpu1");
+        var controller = new FanController { Hysteresis = TimeSpan.FromMilliseconds(80) };
+        var settings = Settings(new FanSetting { FanId = "gpu1", Mode = FanMode.Curve, SensorKey = SensorKeys.GpuTemp });
+
+        controller.Apply([fan], settings, _ => 65);
+        Assert.Equal(["set 60"], fan.Commands);
+
+        // The temperature dips below the bend: the fan holds its speed a moment.
+        controller.Apply([fan], settings, _ => 61);
+        Assert.Equal(["set 60"], fan.Commands);
+
+        Thread.Sleep(120);
+        controller.Apply([fan], settings, _ => 61);
+        Assert.Equal(["set 60", "set 55"], fan.Commands);
+    }
+
+    [Fact]
+    public void A_rise_and_a_deep_drop_skip_the_wait()
+    {
+        var fan = new FakeFan("gpu1");
+        var controller = new FanController { Hysteresis = TimeSpan.FromSeconds(30) };
+        var settings = Settings(new FanSetting { FanId = "gpu1", Mode = FanMode.Curve, SensorKey = SensorKeys.GpuTemp });
+
+        controller.Apply([fan], settings, _ => 65);
+        controller.Apply([fan], settings, _ => 70); // rising: immediate
+        controller.Apply([fan], settings, _ => 66); // a small dip: held
+        controller.Apply([fan], settings, _ => 40); // a deep drop: immediate
+
+        Assert.Equal(["set 60", "set 70", "set 35"], fan.Commands);
     }
 
     [Fact]

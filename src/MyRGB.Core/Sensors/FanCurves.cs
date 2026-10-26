@@ -88,7 +88,16 @@ public sealed class FanController
     public const double EmergencyTemp = 85;
     private static readonly TimeSpan Refresh = TimeSpan.FromSeconds(10);
 
+    /// <summary>
+    /// How long a curve's lower target must hold before the fan is slowed to it. Stops the
+    /// ramp-flatten-ramp noise when a temperature hovers around a bend in the curve; a deep
+    /// enough drop skips the wait. Rising speeds are always immediate.
+    /// </summary>
+    public TimeSpan Hysteresis { get; set; } = TimeSpan.FromSeconds(8);
+    public const double HysteresisDeepDrop = 15;
+
     private readonly Dictionary<string, (double Percent, DateTime At)> _driven = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DateTime> _coolingSince = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The speed MyRGB last asked each fan for, by fan id; absent when the fan is on its own control.</summary>
     public IReadOnlyDictionary<string, double> Targets => _driven.ToDictionary(p => p.Key, p => p.Value.Percent, StringComparer.OrdinalIgnoreCase);
@@ -110,19 +119,37 @@ public sealed class FanController
         return Math.Clamp(wanted, Floor, 100);
     }
 
-    public void Apply(IReadOnlyList<IFanChannel> fans, IReadOnlyDictionary<string, FanSetting> settings, Func<string, double?> read)
+    public void Apply(IReadOnlyList<IFanChannel> fans, IReadOnlyDictionary<string, FanSetting> settings, Func<string, double?> read) =>
+        Apply(fans, settings, read, DateTime.UtcNow);
+
+    public void Apply(IReadOnlyList<IFanChannel> fans, IReadOnlyDictionary<string, FanSetting> settings,
+        Func<string, double?> read, DateTime now)
     {
-        var now = DateTime.UtcNow;
         foreach (var fan in fans)
         {
             var target = Target(settings.GetValueOrDefault(fan.Id), read, fan.GuardKey);
             if (target is not { } percent)
             {
                 if (_driven.Remove(fan.Id)) Try(fan.Reset);
+                _coolingSince.Remove(fan.Id);
                 continue;
             }
+
+            // Hysteresis: when a curve asks for less, hold the current speed a moment before
+            // following it down, so a temperature sitting on a bend doesn't saw the fan up and down.
+            if (_driven.TryGetValue(fan.Id, out var last) && percent < last.Percent - 0.5)
+            {
+                var since = _coolingSince.TryGetValue(fan.Id, out var held) ? held : now;
+                if (now - since < Hysteresis && last.Percent - percent < HysteresisDeepDrop)
+                {
+                    _coolingSince[fan.Id] = since;
+                    continue;
+                }
+            }
+            _coolingSince.Remove(fan.Id);
+
             // Resend now and then too: some drivers quietly take a fan back.
-            if (_driven.TryGetValue(fan.Id, out var last) && Math.Abs(last.Percent - percent) < 1 && now - last.At < Refresh) continue;
+            if (_driven.TryGetValue(fan.Id, out var driven) && Math.Abs(driven.Percent - percent) < 1 && now - driven.At < Refresh) continue;
             Try(() => fan.Set(percent));
             _driven[fan.Id] = (percent, now);
         }
@@ -132,6 +159,7 @@ public sealed class FanController
     {
         foreach (var fan in fans.Where(f => _driven.ContainsKey(f.Id))) Try(fan.Reset);
         _driven.Clear();
+        _coolingSince.Clear();
     }
 
     private static void Try(Action action)

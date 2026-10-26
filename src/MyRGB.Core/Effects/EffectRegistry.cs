@@ -23,6 +23,8 @@ public sealed class EffectRegistry
             FireEffect.Definition,
             CometEffect.Definition,
             LavaLampEffect.Definition,
+            CylonEffect.Definition,
+            CandleEffect.Definition,
             SensorMeterEffect.Definition,
             MusicPulseEffect.Definition,
             VisualizerEffect.Definition,
