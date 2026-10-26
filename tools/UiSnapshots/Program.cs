@@ -115,7 +115,7 @@ vm.Cooling.Fans[0].Mode = FanRowViewModel.AutoMode;
 vm.Cooling.Fans[1].Mode = FanRowViewModel.AutoMode;
 Shoot("06e-cooling-auto");
 vm.Cooling.Fans[0].Mode = FanRowViewModel.CurveMode;
-vm.Cooling.Builder.Open(vm.Cooling.Fans[0]);
+vm.Cooling.Builder.Open();
 Shoot("06f-curve-builder");
 vm.Cooling.Builder.CancelCommand.Execute(null);
 vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");
