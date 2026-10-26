@@ -86,6 +86,14 @@ public sealed class SensorHub : IDisposable
             return;
         }
 
+        // One averaged temperature, so case fans can follow the whole system instead of one chip.
+        var temps = readings.Where(r => r.Kind == SensorKind.Temperature && r.Value is not null)
+            .Select(r => r.Value!.Value).ToList();
+        if (temps.Count > 0)
+            readings = [.. readings,
+                new SensorReading("myrgb/avg/temp", SensorCategory.Other, "All sensors", "Average temperature",
+                    SensorKind.Temperature, temps.Average(), SensorKeys.AvgTemp)];
+
         lock (_gate)
         {
             int slot = _ticks % HistoryLength;

@@ -207,6 +207,109 @@ public sealed record FollowOption(string Key, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>
+/// Builds a curve from a description instead of dragging points: what it follows, where the ramp
+/// starts, where it tops out, its minimum, and how hard it climbs - with a live preview on the
+/// fan's own chart. Shapes can be saved by name and applied to any fan later.
+/// </summary>
+public sealed partial class CurveBuilderViewModel : ObservableObject
+{
+    private readonly AppHost _host;
+    private FanRowViewModel? _fan;
+
+    public CurveBuilderViewModel(AppHost host)
+    {
+        _host = host;
+        Follows = [.. SensorKeys.Followable.Select(f => new FollowOption(f.Key, f.Label))];
+    }
+
+    public static IReadOnlyList<FanCurve.CurveShape> Shapes { get; } =
+        [FanCurve.CurveShape.Gentle, FanCurve.CurveShape.Linear, FanCurve.CurveShape.Steep];
+
+    public IReadOnlyList<FollowOption> Follows { get; }
+
+    [ObservableProperty] private bool _isOpen;
+    [ObservableProperty] private string _fanName = "";
+    [ObservableProperty] private FollowOption? _follow;
+    [ObservableProperty] private double _start = 40;
+    [ObservableProperty] private double _full = 75;
+    [ObservableProperty] private double _min;
+    [ObservableProperty] private FanCurve.CurveShape _shape = FanCurve.CurveShape.Linear;
+    [ObservableProperty] private IReadOnlyList<CurvePoint> _preview = FanCurve.Balanced;
+    [ObservableProperty] private double _currentTemp;
+    [ObservableProperty] private string _shapeName = "";
+
+    public IReadOnlyList<SavedCurve> Saved => _host.Settings.SavedCurves;
+
+    partial void OnStartChanged(double value) => Rebuild();
+    partial void OnFullChanged(double value) => Rebuild();
+    partial void OnMinChanged(double value) => Rebuild();
+    partial void OnShapeChanged(FanCurve.CurveShape value) => Rebuild();
+
+    private void Rebuild() => Preview = FanCurve.Generate(Start, Full, Min, Shape);
+
+    /// <summary>Opens the builder for one fan. The follow picker starts at what that fan protects.</summary>
+    public void Open(FanRowViewModel fan)
+    {
+        _fan = fan;
+        FanName = fan.Name;
+        var key = fan.Sensor?.Key ?? fan.GuardKey;
+        Follow = Follows.FirstOrDefault(f => f.Key == key) ?? Follows.First(f => f.Key == SensorKeys.AvgTemp);
+        CurrentTemp = fan.CurrentTemp ?? _host.Sensors.Get(key) ?? 0;
+        Rebuild();
+        ShapeName = "";
+        IsOpen = true;
+    }
+
+    /// <summary>Keeps the preview's live marker honest while the dialog is open.</summary>
+    public void Tick()
+    {
+        if (!IsOpen || _fan is null) return;
+        var key = Follow?.Key;
+        CurrentTemp = _fan.CurrentTemp ?? (key is null ? null : _host.Sensors.Get(key)) ?? 0;
+    }
+
+    [RelayCommand]
+    private void Apply()
+    {
+        if (_fan is null || Follow is null) return;
+        _fan.ApplyCurve(Follow, Preview);
+        IsOpen = false;
+    }
+
+    [RelayCommand]
+    private void Cancel() => IsOpen = false;
+
+    [RelayCommand]
+    private void SaveShape()
+    {
+        var name = ShapeName.Trim();
+        if (name.Length == 0) name = $"Starts {Start:0}°, full {Full:0}°";
+        _host.Settings.SavedCurves.RemoveAll(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        _host.Settings.SavedCurves.Add(new SavedCurve(name, Follow?.Key ?? SensorKeys.AvgTemp, Preview));
+        _host.ScheduleSave();
+        OnPropertyChanged(nameof(Saved));
+        ShapeName = "";
+    }
+
+    [RelayCommand]
+    private void ApplySaved(SavedCurve curve)
+    {
+        if (_fan is null) return;
+        var label = SensorKeys.Followable.FirstOrDefault(f => f.Key == curve.SensorKey).Label ?? curve.SensorKey;
+        _fan.ApplyCurve(new FollowOption(curve.SensorKey, label), curve.Points);
+        IsOpen = false;
+    }
+
+    [RelayCommand]
+    private void DeleteSaved(SavedCurve curve)
+    {
+        _host.Settings.SavedCurves.Remove(curve);
+        _host.ScheduleSave();
+        OnPropertyChanged(nameof(Saved));
+    }
+}
+
 /// <summary>One fan on the Cooling page and how it's driven.</summary>
 public sealed partial class FanRowViewModel : ObservableObject
 {
@@ -215,13 +318,17 @@ public sealed partial class FanRowViewModel : ObservableObject
     public const string CurveMode = "Custom curve";
 
     private readonly AppHost _host;
+    private readonly Action<FanRowViewModel> _openBuilder;
     private bool _loading;
 
-    public FanRowViewModel(AppHost host, IFanChannel fan, FanSetting? setting, IReadOnlyList<FollowOption> follow)
+    public FanRowViewModel(AppHost host, IFanChannel fan, FanSetting? setting, IReadOnlyList<FollowOption> follow,
+        Action<FanRowViewModel> openBuilder)
     {
         _host = host;
+        _openBuilder = openBuilder;
         Id = fan.Id;
         Name = fan.Name;
+        GuardKey = fan.GuardKey;
         Follow = follow;
         _loading = true;
         Mode = setting?.Mode switch { FanMode.Fixed => FixedMode, FanMode.Curve => CurveMode, _ => AutoMode };
@@ -233,8 +340,10 @@ public sealed partial class FanRowViewModel : ObservableObject
 
     public string Id { get; }
     public string Name { get; }
+    /// <summary>The temperature that protects this fan, and the builder's default follow.</summary>
+    public string GuardKey { get; }
     public IReadOnlyList<string> Modes { get; } = [AutoMode, FixedMode, CurveMode];
-    public IReadOnlyList<FollowOption> Follow { get; }
+    public IReadOnlyList<FollowOption> Follow { get; private set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsFixed), nameof(IsCurve), nameof(IsAuto), nameof(ModeHint))]
@@ -285,6 +394,9 @@ public sealed partial class FanRowViewModel : ObservableObject
         Mode = CurveMode;
     }
 
+    [RelayCommand]
+    private void OpenBuilder() => _openBuilder(this);
+
     private void Save()
     {
         if (_loading) return;
@@ -296,6 +408,19 @@ public sealed partial class FanRowViewModel : ObservableObject
             SensorKey = Sensor?.Key ?? SensorKeys.GpuTemp,
             Points = [.. Points],
         });
+    }
+
+    /// <summary>Switches the fan to a curve in one go: the shape, the sensor it follows, then the mode.</summary>
+    public void ApplyCurve(FollowOption sensor, IReadOnlyList<CurvePoint> points)
+    {
+        _loading = true;
+        var options = Follow.Any(f => f.Key == sensor.Key) ? Follow : [.. Follow, sensor];
+        Follow = options;
+        Points = points;
+        Sensor = options.First(f => f.Key == sensor.Key);
+        Mode = CurveMode;
+        _loading = false;
+        Save();
     }
 
     public void Refresh(IFanChannel fan, double? target)
@@ -316,6 +441,7 @@ public sealed partial class CoolingViewModel : ObservableObject
     public CoolingViewModel(AppHost host)
     {
         _host = host;
+        Builder = new CurveBuilderViewModel(host);
         _gridView = host.Settings.CoolingGrid;
         Temps =
         [
@@ -328,6 +454,7 @@ public sealed partial class CoolingViewModel : ObservableObject
 
     public IReadOnlyList<TempGauge> Temps { get; }
     public ObservableCollection<FanRowViewModel> Fans { get; } = [];
+    public CurveBuilderViewModel Builder { get; }
 
     [ObservableProperty] private bool _hasFans;
     [ObservableProperty] private string _adminStatus = "";
@@ -408,6 +535,7 @@ public sealed partial class CoolingViewModel : ObservableObject
         HelperOutdated = HelperConnected
             && Version.TryParse(_host.SensorHelperVersion ?? "", out var helperVersion)
             && helperVersion < UpdateViewModel.CurrentVersion;
+        Builder.Tick();
         foreach (var t in Temps)
         {
             var v = hub.Get(t.Key);
@@ -430,7 +558,7 @@ public sealed partial class CoolingViewModel : ObservableObject
                 .Select(f => new FollowOption(f.Key, f.Label)).ToList();
             var settings = _host.Settings.Fans.ToDictionary(s => s.FanId, StringComparer.OrdinalIgnoreCase);
             Fans.Clear();
-            foreach (var f in fans) Fans.Add(new FanRowViewModel(_host, f, settings.GetValueOrDefault(f.Id), follow));
+            foreach (var f in fans) Fans.Add(new FanRowViewModel(_host, f, settings.GetValueOrDefault(f.Id), follow, Builder.Open));
             HasFans = Fans.Count > 0;
         }
         var targets = hub.FanTargets;

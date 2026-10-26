@@ -31,6 +31,55 @@ public class SensorTests
     }
 
     [Fact]
+    public void A_generated_curve_holds_its_description()
+    {
+        var points = FanCurve.Generate(40, 80, 0, FanCurve.CurveShape.Linear);
+
+        Assert.Equal(5, points.Count);
+        Assert.Equal(40, points[0].Temp);
+        Assert.Equal(0, points[0].Percent);
+        Assert.Equal(80, points[^1].Temp);
+        Assert.Equal(100, points[^1].Percent);
+        Assert.Equal(50, points[2].Percent); // halfway up, halfway fast
+
+        Assert.Equal(25, FanCurve.Evaluate(points, 40));
+        Assert.Equal(0, FanCurve.Evaluate(points, 30)); // below the start, flat at the minimum
+        Assert.Equal(100, FanCurve.Evaluate(points, 95));
+    }
+
+    [Fact]
+    public void Gentle_and_steep_shapes_bracket_the_line()
+    {
+        var line = FanCurve.Generate(40, 80, 0, FanCurve.CurveShape.Linear);
+        var gentle = FanCurve.Generate(40, 80, 0, FanCurve.CurveShape.Gentle);
+        var steep = FanCurve.Generate(40, 80, 0, FanCurve.CurveShape.Steep);
+
+        // Gentle sits low early; steep gets moving early. Linear is between them.
+        Assert.True(gentle[1].Percent < line[1].Percent && line[1].Percent < steep[1].Percent);
+        Assert.True(gentle[3].Percent < line[3].Percent && line[3].Percent < steep[3].Percent);
+    }
+
+    [Fact]
+    public void The_hub_averages_every_temperature_it_sees()
+    {
+        using var hub = new SensorHub(new TwoTemps());
+        hub.Poll();
+
+        Assert.Equal(47.5, hub.Get(SensorKeys.AvgTemp));
+    }
+
+    private sealed class TwoTemps : ISensorSource
+    {
+        public IReadOnlyList<SensorReading> Read() =>
+        [
+            new("cpu/t", SensorCategory.Cpu, "CPU", "Package", SensorKind.Temperature, 45, SensorKeys.CpuTemp),
+            new("gpu/t", SensorCategory.Gpu, "GPU", "Core", SensorKind.Temperature, 50, SensorKeys.GpuTemp),
+        ];
+        public IReadOnlyList<IFanChannel> Fans => [];
+        public void Dispose() { }
+    }
+
+    [Fact]
     public void Overheating_runs_the_fan_flat_out_whatever_the_setting()
     {
         var fan = new FakeFan("gpu1");

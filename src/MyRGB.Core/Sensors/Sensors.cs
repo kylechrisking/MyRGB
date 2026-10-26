@@ -18,6 +18,7 @@ public static class SensorKeys
     public const string CpuTemp = "cpu.temp";
     public const string CpuClock = "cpu.clock";
     public const string CpuPower = "cpu.power";
+    public const string AvgTemp = "avg.temp";
     public const string GpuTemp = "gpu.temp";
     public const string GpuHotspot = "gpu.hotspot";
     public const string GpuMemoryTemp = "gpu.memtemp";
@@ -35,6 +36,7 @@ public static class SensorKeys
     /// <summary>The sensors a fan curve or the sensor effect can follow, with their names.</summary>
     public static IReadOnlyList<(string Key, string Label)> Followable { get; } =
     [
+        (AvgTemp, "Average of all temperatures"),
         (CpuTemp, "CPU temperature"),
         (GpuTemp, "GPU temperature"),
         (GpuHotspot, "GPU hot spot"),

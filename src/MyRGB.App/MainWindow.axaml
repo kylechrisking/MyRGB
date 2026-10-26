@@ -3,6 +3,7 @@
         xmlns:vm="using:MyRGB.App.ViewModels"
         xmlns:ctl="using:MyRGB.App.Controls"
         xmlns:presets="using:MyRGB.Core.Presets"
+        xmlns:sensors="using:MyRGB.Core.Sensors"
         x:Class="MyRGB.App.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="MyRGB"
@@ -1177,6 +1178,8 @@
                             <Button Classes="ghost" Content="Balanced" Command="{Binding QuickCurveCommand}" CommandParameter="balanced" />
                             <Button Classes="ghost" Content="Performance" Command="{Binding QuickCurveCommand}" CommandParameter="performance" />
                             <Button Classes="ghost" Content="Full speed" Command="{Binding QuickCurveCommand}" CommandParameter="full" />
+                            <Button Classes="ghost" Content="New curve…"
+                                    Command="{Binding OpenBuilderCommand}" />
                           </StackPanel>
 
                           <Grid ColumnDefinitions="*,60" IsVisible="{Binding IsFixed}">
@@ -1198,6 +1201,8 @@
                               <Button Classes="ghost" Content="Balanced" Command="{Binding BalancedCommand}" />
                               <Button Classes="ghost" Content="Performance" Command="{Binding PerformanceCommand}" />
                               <Button Classes="ghost" Content="Full speed" Command="{Binding FullSpeedCommand}" />
+                              <Button Classes="ghost" Content="Builder…"
+                                      Command="{Binding OpenBuilderCommand}" />
                             </StackPanel>
                           </StackPanel>
                         </StackPanel>
@@ -1566,6 +1571,79 @@
           <Button Classes="link" Content="Don't ask again" Command="{Binding SupportNudge.NeverCommand}" HorizontalAlignment="Left" Margin="-6,0,0,0" FontSize="12" />
         </StackPanel>
       </StackPanel>
+    </Border>
+
+    <!-- ===== Curve builder: describe a curve, see it live, apply it or save the shape ===== -->
+    <Border IsVisible="{Binding Cooling.Builder.IsOpen}" Background="{StaticResource OverlayBrush}">
+      <Border Width="580" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1"
+              CornerRadius="18" ClipToBounds="True" BoxShadow="0 24 70 0 #A0000000"
+              DataContext="{Binding Cooling.Builder}" x:DataType="vm:CurveBuilderViewModel">
+        <StackPanel>
+          <Border Height="4" Background="{StaticResource RgbGradient}" />
+          <StackPanel Margin="32,24,32,24" Spacing="14">
+            <StackPanel Spacing="2">
+              <TextBlock Classes="kicker" Text="New curve" />
+              <TextBlock Text="{Binding FanName}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="Follows" VerticalAlignment="Center" />
+              <ComboBox ItemsSource="{Binding Follows}" SelectedItem="{Binding Follow}" MinWidth="250" />
+            </StackPanel>
+            <Grid ColumnDefinitions="150,*,56">
+              <TextBlock Text="Starts ramping at" VerticalAlignment="Center" />
+              <Slider Grid.Column="1" Minimum="25" Maximum="70" Value="{Binding Start}" TickFrequency="1" IsSnapToTickEnabled="True" />
+              <TextBlock Grid.Column="2" Text="{Binding Start, StringFormat='{}{0:0}°'}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                         FontFamily="{StaticResource BrandMono}" />
+            </Grid>
+            <Grid ColumnDefinitions="150,*,56">
+              <TextBlock Text="Full speed at" VerticalAlignment="Center" />
+              <Slider Grid.Column="1" Minimum="45" Maximum="95" Value="{Binding Full}" TickFrequency="1" IsSnapToTickEnabled="True" />
+              <TextBlock Grid.Column="2" Text="{Binding Full, StringFormat='{}{0:0}°'}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                         FontFamily="{StaticResource BrandMono}" />
+            </Grid>
+            <Grid ColumnDefinitions="150,*,56">
+              <TextBlock Text="Minimum speed" VerticalAlignment="Center" />
+              <Slider Grid.Column="1" Minimum="0" Maximum="60" Value="{Binding Min}" TickFrequency="1" IsSnapToTickEnabled="True" />
+              <TextBlock Grid.Column="2" Text="{Binding Min, StringFormat='{}{0:0} %'}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                         FontFamily="{StaticResource BrandMono}" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="Shape" VerticalAlignment="Center" />
+              <ComboBox ItemsSource="{Binding Shapes}" SelectedItem="{Binding Shape}" MinWidth="170" />
+            </StackPanel>
+
+            <ctl:FanCurveChart Points="{Binding Preview}" CurrentTemp="{Binding CurrentTemp}" Height="170" />
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Classes="accent" Content="Apply to this fan" Command="{Binding ApplyCommand}" />
+              <Button Classes="ghost" Content="Close" Command="{Binding CancelCommand}" />
+              <TextBox Watermark="Name this shape…" Text="{Binding ShapeName}" Width="180" VerticalContentAlignment="Center" />
+              <Button Classes="ghost" Content="Save shape" Command="{Binding SaveShapeCommand}" />
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding Saved}" IsVisible="{Binding Saved.Count}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="sensors:SavedCurve">
+                  <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,4,0,4">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name, StringFormat='{}“{0}”'}" FontWeight="SemiBold" />
+                      <TextBlock Classes="muted" Text="{Binding SensorKey}" FontFamily="{StaticResource BrandMono}" FontSize="11" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="ghost" Content="Apply"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).Cooling.Builder.ApplySavedCommand}"
+                            CommandParameter="{Binding}" />
+                    <Button Grid.Column="2" Classes="link" Content="Remove" Foreground="{StaticResource DangerBrush}"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).Cooling.Builder.DeleteSavedCommand}"
+                            CommandParameter="{Binding}" Margin="10,0,0,0" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </Border>
     </Border>
 
     <!-- ===== First-run tour (also opened from "How it works") ===== -->

@@ -114,6 +114,10 @@ vm.Cooling.GridView = true; Shoot("06d-cooling-grid"); vm.Cooling.GridView = fal
 vm.Cooling.Fans[0].Mode = FanRowViewModel.AutoMode;
 vm.Cooling.Fans[1].Mode = FanRowViewModel.AutoMode;
 Shoot("06e-cooling-auto");
+vm.Cooling.Fans[0].Mode = FanRowViewModel.CurveMode;
+vm.Cooling.Builder.Open(vm.Cooling.Fans[0]);
+Shoot("06f-curve-builder");
+vm.Cooling.Builder.CancelCommand.Execute(null);
 vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");
 vm.Vendors.Apps[0].AskUninstallCommand.Execute(null); Shoot("08-vendors-confirm");
 vm.SelectedTab = MainViewModel.SettingsTab; Shoot("09-settings");

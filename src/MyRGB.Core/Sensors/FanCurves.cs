@@ -34,7 +34,46 @@ public static class FanCurve
         }
         return sorted[^1].Percent;
     }
+
+    /// <summary>How a generated curve climbs from its start to full speed.</summary>
+    public enum CurveShape
+    {
+        /// <summary>Stays low for a while, then ramps hard near the top.</summary>
+        Gentle,
+        /// <summary>Straight line.</summary>
+        Linear,
+        /// <summary>Gets moving early, easing off near the top.</summary>
+        Steep,
+    }
+
+    /// <summary>
+    /// Builds a curve from a description: nothing below <paramref name="start"/> but
+    /// <paramref name="min"/>, 100 % at <paramref name="full"/>, and the shape between. Five
+    /// points, enough for smooth interpolation.
+    /// </summary>
+    public static IReadOnlyList<CurvePoint> Generate(double start, double full, double min, CurveShape shape)
+    {
+        min = Math.Clamp(min, 0, 100);
+        if (full <= start) full = start + 1;
+        double Ease(double f) => shape switch
+        {
+            CurveShape.Gentle => f * f,
+            CurveShape.Steep => Math.Sqrt(f),
+            _ => f,
+        };
+        var points = new List<CurvePoint> { new(Math.Round(start), Math.Round(min)) };
+        for (int i = 1; i <= 3; i++)
+        {
+            double f = i / 4.0;
+            points.Add(new CurvePoint(Math.Round(start + (full - start) * f), Math.Round(min + (100 - min) * Ease(f))));
+        }
+        points.Add(new CurvePoint(Math.Round(full), 100));
+        return points;
+    }
 }
+
+/// <summary>A curve shape the user named, so one build can be applied to any fan.</summary>
+public sealed record SavedCurve(string Name, string SensorKey, IReadOnlyList<CurvePoint> Points);
 
 /// <summary>
 /// Drives fans from their settings. The only rules that hold whatever the settings say: flat out
