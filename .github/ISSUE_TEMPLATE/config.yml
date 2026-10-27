@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: The Bench
+    url: https://www.rootlabs.us/blog/forums/forum/the-bench/
+    about: Prefer a forum? Bugs and ideas both work there, no GitHub account needed.
+  - name: Something not lighting?
+    url: https://www.rootlabs.us/apps/myrgb/
+    about: Start with the troubleshooting notes on the app page before filing an issue.

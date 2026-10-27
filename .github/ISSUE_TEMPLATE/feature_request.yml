@@ -1,0 +1,21 @@
+name: Feature request
+description: Ask for a device, an effect, a fan option, or anything else MyRGB should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+      description: The goal, not just the feature. "My case fans sit behind a controller and I want them to react to the GPU" tells us more than "add X".
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: What would it look like?
+      description: A rough idea is fine. If it's a device request, skip to the setup below.
+  - type: textarea
+    id: setup
+    attributes:
+      label: Your setup
+      description: Which devices and roughly what your desk looks like, if it's relevant. For a device request, the exact make and model, and whether OpenRGB sees it.
