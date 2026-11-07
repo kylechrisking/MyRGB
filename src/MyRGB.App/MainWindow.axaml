@@ -1487,6 +1487,49 @@
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
+                  <TextBlock Classes="section" Text="Idle dimming" />
+                  <ToggleSwitch IsChecked="{Binding IdleDimOn}" OnContent="Dim when you step away" OffContent="Dim when you step away" />
+                  <Grid ColumnDefinitions="200,*,60" IsEnabled="{Binding IdleDimOn}">
+                    <TextBlock Text="After (minutes)" VerticalAlignment="Center" />
+                    <Slider Grid.Column="1" Minimum="1" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding IdleDimAfterMinutes}" />
+                    <TextBlock Grid.Column="2" Text="{Binding IdleDimAfterMinutes}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                  </Grid>
+                  <Grid ColumnDefinitions="200,*,60" IsEnabled="{Binding IdleDimOn}">
+                    <TextBlock Text="Dim to (%)" VerticalAlignment="Center" />
+                    <Slider Grid.Column="1" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding IdleDimPercent}" />
+                    <TextBlock Grid.Column="2" Text="{Binding IdleDimPercent}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                  </Grid>
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Lights fade down after you step away from the keyboard and mouse, and come straight back the moment you touch either." />
+                </StackPanel>
+              </Border>
+
+              <Border Classes="panel">
+                <StackPanel Spacing="10">
+                  <TextBlock Classes="section" Text="App profiles" />
+                  <ToggleSwitch IsChecked="{Binding AppProfilesOn}" OnContent="Switch presets by app" OffContent="Switch presets by app" />
+                  <ItemsControl ItemsSource="{Binding AppProfileRows}" IsEnabled="{Binding AppProfilesOn}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:AppProfileRow">
+                        <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="10" Margin="0,0,0,6">
+                          <TextBox Text="{Binding ProcessName}" PlaceholderText="Process name, e.g. cs2" />
+                          <ComboBox Grid.Column="1" ItemsSource="{Binding AvailablePresets}"
+                                    SelectedValueBinding="{Binding Id}" SelectedValue="{Binding PresetId}"
+                                    DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch" />
+                          <Button Grid.Column="2" Classes="ghost" Content="✕" Command="{Binding RemoveCommand}" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsEnabled="{Binding AppProfilesOn}">
+                    <TextBox Text="{Binding NewAppProfileProcess}" PlaceholderText="Process name, e.g. cs2" />
+                    <Button Grid.Column="1" Classes="ghost" Content="Add" Command="{Binding AddAppProfileCommand}" />
+                  </Grid>
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="When one of these programs is in the foreground, MyRGB switches to its preset, and switches back when you leave it." />
+                </StackPanel>
+              </Border>
+
+              <Border Classes="panel">
+                <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Smoothness" />
                   <Grid ColumnDefinitions="200,*,60">
                     <TextBlock Text="Updates per second" VerticalAlignment="Center" />

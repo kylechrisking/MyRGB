@@ -98,6 +98,11 @@ public sealed partial class MainViewModel : ObservableObject
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
         _checkForUpdates = host.Settings.CheckForUpdates;
+        _appProfilesOn = host.Settings.AppProfilesOn;
+        _idleDimOn = host.Settings.IdleDimOn;
+        _idleDimAfterMinutes = host.Settings.IdleDimAfterMinutes;
+        _idleDimPercent = host.Settings.IdleDimPercent;
+        foreach (var p in host.Settings.AppProfiles) AppProfileRows.Add(new AppProfileRow(host, p, this));
         _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
         _openRgbPath = host.Settings.OpenRgb.ExecutablePath ?? "";
@@ -226,6 +231,11 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private int _fps;
     [ObservableProperty] private bool _startMinimized;
     [ObservableProperty] private bool _checkForUpdates;
+    [ObservableProperty] private bool _appProfilesOn;
+    [ObservableProperty] private bool _idleDimOn;
+    [ObservableProperty] private double _idleDimAfterMinutes;
+    [ObservableProperty] private double _idleDimPercent;
+    [ObservableProperty] private string _newAppProfileProcess = "";
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private string _openRgbPath;
     [ObservableProperty] private bool _isScanning;
@@ -364,6 +374,68 @@ public sealed partial class MainViewModel : ObservableObject
         _host.ScheduleSave();
     }
 
+    partial void OnAppProfilesOnChanged(bool value)
+    {
+        _host.Settings.AppProfilesOn = value;
+        _host.ScheduleSave();
+    }
+
+    partial void OnIdleDimOnChanged(bool value)
+    {
+        _host.Settings.IdleDimOn = value;
+        _host.ScheduleSave();
+    }
+
+    partial void OnIdleDimAfterMinutesChanged(double value)
+    {
+        _host.Settings.IdleDimAfterMinutes = Math.Round(value);
+        _host.ScheduleSave();
+    }
+
+    partial void OnIdleDimPercentChanged(double value)
+    {
+        _host.Settings.IdleDimPercent = Math.Round(value);
+        _host.ScheduleSave();
+    }
+
+    public ObservableCollection<AppProfileRow> AppProfileRows { get; } = [];
+
+    [RelayCommand]
+    private void AddAppProfile()
+    {
+        var profile = new AppProfile(NewAppProfileProcess.Trim(), _host.Lights.GetPresets().FirstOrDefault()?.Id ?? "rainbow-wave");
+        if (AppProfileRows.Any(r => r.ProcessName.Equals(profile.ProcessName, StringComparison.OrdinalIgnoreCase))) return;
+        _host.Settings.AppProfiles.Add(profile);
+        AppProfileRows.Add(new AppProfileRow(_host, profile, this));
+        NewAppProfileProcess = "";
+        _host.ScheduleSave();
+    }
+
+    internal void RemoveAppProfile(AppProfileRow row)
+    {
+        _host.Settings.AppProfiles.Remove(row.Profile);
+        AppProfileRows.Remove(row);
+        _host.ScheduleSave();
+    }
+
+    internal void UpdateProfileProcess(AppProfileRow row, string process)
+    {
+        var updated = row.Profile with { ProcessName = process.Trim() };
+        var idx = _host.Settings.AppProfiles.IndexOf(row.Profile);
+        if (idx >= 0) _host.Settings.AppProfiles[idx] = updated;
+        row.Profile = updated;
+        _host.ScheduleSave();
+    }
+
+    internal void UpdateProfilePreset(AppProfileRow row, string presetId)
+    {
+        var updated = row.Profile with { PresetId = presetId };
+        var idx = _host.Settings.AppProfiles.IndexOf(row.Profile);
+        if (idx >= 0) _host.Settings.AppProfiles[idx] = updated;
+        row.Profile = updated;
+        _host.ScheduleSave();
+    }
+
     partial void OnStartWithWindowsChanged(bool value) => StartupRegistration.Set(value);
 
     partial void OnOpenRgbPathChanged(string value)
@@ -498,4 +570,31 @@ internal static class CommandExtensions
     /// <summary>Bind a parameter now, so an alert's button can carry "go to the Vendor apps page".</summary>
     public static IRelayCommand WithParameter(this IRelayCommand<string?> command, string parameter) =>
         new RelayCommand(() => command.Execute(parameter));
+}
+
+/// <summary>One program-to-preset mapping on the Settings page.</summary>
+public sealed partial class AppProfileRow : ObservableObject
+{
+    private readonly MainViewModel _owner;
+
+    public AppProfileRow(AppHost host, AppProfile profile, MainViewModel owner)
+    {
+        _owner = owner;
+        Profile = profile;
+        _processName = profile.ProcessName;
+        _presetId = profile.PresetId;
+    }
+
+    public AppProfile Profile { get; internal set; }
+
+    public ObservableCollection<PresetCardViewModel> AvailablePresets => _owner.Presets;
+
+    [ObservableProperty] private string _processName;
+    [ObservableProperty] private string _presetId;
+
+    partial void OnProcessNameChanged(string value) => _owner.UpdateProfileProcess(this, value);
+    partial void OnPresetIdChanged(string value) => _owner.UpdateProfilePreset(this, value);
+
+    [RelayCommand]
+    private void Remove() => _owner.RemoveAppProfile(this);
 }

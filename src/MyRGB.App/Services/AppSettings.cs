@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using MyRGB.Api;
+using MyRGB.Core;
 using MyRGB.Core.Devices;
 using MyRGB.Core.Layout;
 using MyRGB.Core.Presets;
@@ -50,6 +51,15 @@ public sealed class AppSettings
 
     /// <summary>Curve shapes named and saved from the curve builder, reusable on any fan.</summary>
     public List<SavedCurve> SavedCurves { get; set; } = [];
+
+    /// <summary>Switch presets when a program takes the foreground.</summary>
+    public bool AppProfilesOn { get; set; }
+    public List<AppProfile> AppProfiles { get; set; } = [];
+
+    /// <summary>After so many minutes without input, dim the lights until you're back.</summary>
+    public bool IdleDimOn { get; set; }
+    public double IdleDimAfterMinutes { get; set; } = 10;
+    public double IdleDimPercent { get; set; } = 10;
     public OpenRgbOptions OpenRgb { get; set; } = new();
 }
 

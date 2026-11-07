@@ -46,6 +46,9 @@ public sealed class AppHostOptions
     /// <summary>Replaces the GitHub release feed; returning null turns update checks off (snapshots, tests).</summary>
     public Func<UpdateFeed?>? Updates { get; init; }
 
+    /// <summary>Replaces reading the foreground process's name; null uses the real one (tests, snapshots).</summary>
+    public Func<string?>? ForegroundApp { get; init; }
+
     public bool EnableApi { get; init; } = true;
 }
 
@@ -240,11 +243,56 @@ public sealed class AppHost : IAsyncDisposable
         if (_options.EnableApi) await StartApiAsync();
         else ApiError = "disabled";
 
+        _dimmer = new IdleDimmer(this);
+        _foregroundTimer = new System.Threading.Timer(_ => CheckForeground(), null,
+            TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(2));
+
         _ = Task.Run(async () =>
         {
             try { await Devices.RefreshAsync(); }
             catch (Exception ex) { _log.LogError(ex, "Initial device scan failed"); }
         });
+    }
+
+    private IdleDimmer? _dimmer;
+    private System.Threading.Timer? _foregroundTimer;
+    private string? _lastForeground;
+    private bool _inProfile;
+    private string? _preProfilePreset;
+
+    /// <summary>The brightness to remember while the idle dim holds, so settings keep the user's choice.</summary>
+    public double? HeldBrightness => _dimmer?.HeldBrightness;
+
+    private void CheckForeground()
+    {
+        try
+        {
+            var name = _options.ForegroundApp?.Invoke() ?? WindowsForeground.Name();
+            if (name == _lastForeground) return;
+            _lastForeground = name;
+
+            if (!Settings.AppProfilesOn || string.IsNullOrWhiteSpace(name)) { LeaveProfile(); return; }
+            var profile = Settings.AppProfiles.FirstOrDefault(p => p.Matches(name));
+            var active = Lights.State.ActivePresetId;
+            if (profile is not null)
+            {
+                if (!_inProfile) _preProfilePreset = active;
+                _inProfile = true;
+                if (active is not null && active != profile.PresetId) Lights.ActivatePreset(profile.PresetId);
+            }
+            else LeaveProfile();
+        }
+        catch (Exception ex) { _log.LogWarning(ex, "App profile check failed"); }
+    }
+
+    private void LeaveProfile()
+    {
+        if (!_inProfile) return;
+        _inProfile = false;
+        var active = Lights.State.ActivePresetId;
+        if (_preProfilePreset is { } restore && active is not null && active != restore)
+            Lights.ActivatePreset(restore);
+        _preProfilePreset = null;
     }
 
     private async Task StartApiAsync()
@@ -308,7 +356,7 @@ public sealed class AppHost : IAsyncDisposable
         {
             var active = Engine.ActivePreset;
             if (active is not null && active.Id != DraftPresetId) Settings.ActivePresetId = active.Id;
-            Settings.Brightness = Engine.Brightness;
+            Settings.Brightness = HeldBrightness ?? Engine.Brightness;
             Settings.Enabled = Engine.Enabled;
             Settings.UserPresets = [.. Presets.UserPresets];
             Settings.Layout = [.. Layout.Placements];
@@ -330,6 +378,8 @@ public sealed class AppHost : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _saveDebounce?.Cancel();
+        _foregroundTimer?.Dispose();
+        _dimmer?.Dispose();
         SaveNow();
         Engine.Dispose();
         Sensors.Dispose(); // hands any fans MyRGB was driving back to the hardware
