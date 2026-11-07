@@ -60,6 +60,9 @@ public sealed class AppSettings
     public bool IdleDimOn { get; set; }
     public double IdleDimAfterMinutes { get; set; } = 10;
     public double IdleDimPercent { get; set; } = 10;
+
+    /// <summary>Ctrl+Alt+L turns the lights on or off from anywhere.</summary>
+    public bool GlobalHotkeyOn { get; set; }
     public OpenRgbOptions OpenRgb { get; set; } = new();
 }
 

@@ -41,6 +41,7 @@ var host = new AppHost(new AppHostOptions
 {
     DataDirectory = data,
     EnableApi = false,
+    EnableGlobalHotkey = false,
     Providers = (_, _) => [new FakeProvider()],
     BatteryProviders = () => [new FakeBatteries()],
     DetectVendorApps = () => VendorAppCatalog.Detect(installed, ["iCUE"]),

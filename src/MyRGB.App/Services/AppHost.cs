@@ -50,6 +50,9 @@ public sealed class AppHostOptions
     public Func<string?>? ForegroundApp { get; init; }
 
     public bool EnableApi { get; init; } = true;
+
+    /// <summary>Registers the Ctrl+Alt+L toggle with Windows. Off in snapshots and tests.</summary>
+    public bool EnableGlobalHotkey { get; init; } = true;
 }
 
 /// <summary>Wires the engine, providers, presets, persistence and the local API together for the app's lifetime.</summary>
@@ -247,6 +250,13 @@ public sealed class AppHost : IAsyncDisposable
         _foregroundTimer = new System.Threading.Timer(_ => CheckForeground(), null,
             TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(2));
 
+        if (_options.EnableGlobalHotkey)
+        {
+            _hotkey = new GlobalHotkey();
+            _hotkey.Pressed += () => Lights.SetEnabled(!Lights.State.Enabled);
+            _hotkey.SetEnabled(Settings.GlobalHotkeyOn);
+        }
+
         _ = Task.Run(async () =>
         {
             try { await Devices.RefreshAsync(); }
@@ -255,10 +265,19 @@ public sealed class AppHost : IAsyncDisposable
     }
 
     private IdleDimmer? _dimmer;
+    private GlobalHotkey? _hotkey;
     private System.Threading.Timer? _foregroundTimer;
     private string? _lastForeground;
     private bool _inProfile;
     private string? _preProfilePreset;
+
+    /// <summary>Turns the Ctrl+Alt+L toggle on or off; does nothing if the hotkey was disabled at startup.</summary>
+    public void SetGlobalHotkeyEnabled(bool on)
+    {
+        Settings.GlobalHotkeyOn = on;
+        _hotkey?.SetEnabled(on);
+        ScheduleSave();
+    }
 
     /// <summary>The brightness to remember while the idle dim holds, so settings keep the user's choice.</summary>
     public double? HeldBrightness => _dimmer?.HeldBrightness;
@@ -380,6 +399,7 @@ public sealed class AppHost : IAsyncDisposable
         _saveDebounce?.Cancel();
         _foregroundTimer?.Dispose();
         _dimmer?.Dispose();
+        _hotkey?.Dispose();
         SaveNow();
         Engine.Dispose();
         Sensors.Dispose(); // hands any fans MyRGB was driving back to the hardware

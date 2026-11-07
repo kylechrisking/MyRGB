@@ -104,6 +104,7 @@ public sealed partial class MainViewModel : ObservableObject
         _idleDimOn = host.Settings.IdleDimOn;
         _idleDimAfterMinutes = host.Settings.IdleDimAfterMinutes;
         _idleDimPercent = host.Settings.IdleDimPercent;
+        _globalHotkeyOn = host.Settings.GlobalHotkeyOn;
         foreach (var p in host.Settings.AppProfiles) AppProfileRows.Add(new AppProfileRow(host, p, this));
         _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
@@ -238,6 +239,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private double _idleDimAfterMinutes;
     [ObservableProperty] private double _idleDimPercent;
     [ObservableProperty] private string _newAppProfileProcess = "";
+    [ObservableProperty] private bool _globalHotkeyOn;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private string _openRgbPath;
     [ObservableProperty] private bool _isScanning;
@@ -419,6 +421,8 @@ public sealed partial class MainViewModel : ObservableObject
         _host.Settings.IdleDimOn = value;
         _host.ScheduleSave();
     }
+
+    partial void OnGlobalHotkeyOnChanged(bool value) => _host.SetGlobalHotkeyEnabled(value);
 
     partial void OnIdleDimAfterMinutesChanged(double value)
     {
