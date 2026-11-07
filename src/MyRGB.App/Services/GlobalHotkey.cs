@@ -1,40 +1,50 @@
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 
 namespace MyRGB.App.Services;
 
 /// <summary>
-/// Ctrl+Alt+L toggles the lights from anywhere, without installing a vendor app's whole hotkey
-/// engine. Runs its own message-only window on a dedicated thread, since RegisterHotKey needs a
-/// real Win32 message loop and the app may start with no visible window at all.
+/// Global keyboard shortcuts that work from any app, without installing a vendor app's whole
+/// hotkey engine: Ctrl+Alt+L toggles the lights, Ctrl+Alt+N jumps to the next preset. Runs one
+/// message-only window on a dedicated thread, since RegisterHotKey needs a real Win32 message
+/// loop and the app may start with no visible window at all.
 /// </summary>
-internal sealed class GlobalHotkey : IDisposable
+internal sealed class GlobalHotkeys : IDisposable
 {
+    public const int ToggleLightsId = 1;
+    public const int NextPresetId = 2;
+
     private const uint WM_HOTKEY = 0x0312;
-    private const uint WM_APP_SET_ENABLED = 0x8001;
+    private const uint WM_DESTROY = 0x0002;
+    private const uint WM_APP_SYNC = 0x8001;
     private const uint MOD_CONTROL = 0x0002, MOD_ALT = 0x0001, MOD_NOREPEAT = 0x4000;
-    private const uint VK_L = 0x4C;
-    private const int HotkeyId = 1;
+    private const uint VK_L = 0x4C, VK_N = 0x4E;
     private const int HWND_MESSAGE = -3;
 
-    public event Action? Pressed;
+    public event Action<int>? Pressed;
 
     private readonly WndProcDelegate _wndProc;
     private readonly ManualResetEventSlim _ready = new();
+    private readonly ConcurrentDictionary<int, (uint Modifiers, uint VirtualKey, bool On)> _desired = new();
+    private readonly HashSet<int> _registered = [];
     private IntPtr _hwnd;
-    private bool _registered;
 
-    public GlobalHotkey()
+    public GlobalHotkeys()
     {
         _wndProc = WndProc;
         if (!OperatingSystem.IsWindows()) return;
-        new Thread(Run) { IsBackground = true, Name = "GlobalHotkey" }.Start();
+        new Thread(Run) { IsBackground = true, Name = "GlobalHotkeys" }.Start();
         _ready.Wait(TimeSpan.FromSeconds(2));
     }
 
+    public void SetToggleLights(bool on) => Set(ToggleLightsId, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_L, on);
+    public void SetNextPreset(bool on) => Set(NextPresetId, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_N, on);
+
     /// <summary>Thread-safe; the actual (un)registration happens on the window's own thread.</summary>
-    public void SetEnabled(bool on)
+    private void Set(int id, uint modifiers, uint virtualKey, bool on)
     {
-        if (_hwnd != IntPtr.Zero) PostMessage(_hwnd, WM_APP_SET_ENABLED, on ? 1 : 0, IntPtr.Zero);
+        _desired[id] = (modifiers, virtualKey, on);
+        if (_hwnd != IntPtr.Zero) PostMessage(_hwnd, WM_APP_SYNC, 0, IntPtr.Zero);
     }
 
     public void Dispose()
@@ -44,7 +54,7 @@ internal sealed class GlobalHotkey : IDisposable
 
     private void Run()
     {
-        var className = $"MyRGBHotkey-{Environment.ProcessId}";
+        var className = $"MyRGBHotkeys-{Environment.ProcessId}";
         var wc = new WNDCLASSEX
         {
             cbSize = (uint)Marshal.SizeOf<WNDCLASSEX>(),
@@ -67,16 +77,20 @@ internal sealed class GlobalHotkey : IDisposable
     {
         switch (msg)
         {
-            case WM_HOTKEY when wParam.ToInt32() == HotkeyId:
-                Pressed?.Invoke();
+            case WM_HOTKEY:
+                Pressed?.Invoke(wParam.ToInt32());
                 return IntPtr.Zero;
-            case WM_APP_SET_ENABLED:
-                bool on = wParam != IntPtr.Zero;
-                if (on && !_registered) _registered = RegisterHotKey(hWnd, HotkeyId, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, VK_L);
-                else if (!on && _registered) { UnregisterHotKey(hWnd, HotkeyId); _registered = false; }
+            case WM_APP_SYNC:
+                foreach (var (id, (modifiers, virtualKey, on)) in _desired)
+                {
+                    bool isRegistered = _registered.Contains(id);
+                    if (on && !isRegistered) { if (RegisterHotKey(hWnd, id, modifiers, virtualKey)) _registered.Add(id); }
+                    else if (!on && isRegistered) { UnregisterHotKey(hWnd, id); _registered.Remove(id); }
+                }
                 return IntPtr.Zero;
             case WM_DESTROY:
-                if (_registered) UnregisterHotKey(hWnd, HotkeyId);
+                foreach (var id in _registered) UnregisterHotKey(hWnd, id);
+                _registered.Clear();
                 DestroyWindow(hWnd);
                 PostQuitMessage(0);
                 return IntPtr.Zero;
@@ -84,8 +98,6 @@ internal sealed class GlobalHotkey : IDisposable
                 return DefWindowProc(hWnd, msg, wParam, lParam);
         }
     }
-
-    private const uint WM_DESTROY = 0x0002;
 
     private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 

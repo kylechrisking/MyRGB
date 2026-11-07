@@ -252,9 +252,13 @@ public sealed class AppHost : IAsyncDisposable
 
         if (_options.EnableGlobalHotkey)
         {
-            _hotkey = new GlobalHotkey();
-            _hotkey.Pressed += () => Lights.SetEnabled(!Lights.State.Enabled);
-            _hotkey.SetEnabled(Settings.GlobalHotkeyOn);
+            _hotkeys = new GlobalHotkeys();
+            _hotkeys.Pressed += id =>
+            {
+                if (id == GlobalHotkeys.ToggleLightsId) Lights.SetEnabled(!Lights.State.Enabled);
+                else if (id == GlobalHotkeys.NextPresetId) Lights.StepPreset(1);
+            };
+            ApplyGlobalHotkeySetting();
         }
 
         _ = Task.Run(async () =>
@@ -265,18 +269,24 @@ public sealed class AppHost : IAsyncDisposable
     }
 
     private IdleDimmer? _dimmer;
-    private GlobalHotkey? _hotkey;
+    private GlobalHotkeys? _hotkeys;
     private System.Threading.Timer? _foregroundTimer;
     private string? _lastForeground;
     private bool _inProfile;
     private string? _preProfilePreset;
 
-    /// <summary>Turns the Ctrl+Alt+L toggle on or off; does nothing if the hotkey was disabled at startup.</summary>
+    /// <summary>Turns Ctrl+Alt+L / Ctrl+Alt+N on or off; does nothing if hotkeys were disabled at startup.</summary>
     public void SetGlobalHotkeyEnabled(bool on)
     {
         Settings.GlobalHotkeyOn = on;
-        _hotkey?.SetEnabled(on);
+        ApplyGlobalHotkeySetting();
         ScheduleSave();
+    }
+
+    private void ApplyGlobalHotkeySetting()
+    {
+        _hotkeys?.SetToggleLights(Settings.GlobalHotkeyOn);
+        _hotkeys?.SetNextPreset(Settings.GlobalHotkeyOn);
     }
 
     /// <summary>The brightness to remember while the idle dim holds, so settings keep the user's choice.</summary>
@@ -399,7 +409,7 @@ public sealed class AppHost : IAsyncDisposable
         _saveDebounce?.Cancel();
         _foregroundTimer?.Dispose();
         _dimmer?.Dispose();
-        _hotkey?.Dispose();
+        _hotkeys?.Dispose();
         SaveNow();
         Engine.Dispose();
         Sensors.Dispose(); // hands any fans MyRGB was driving back to the hardware

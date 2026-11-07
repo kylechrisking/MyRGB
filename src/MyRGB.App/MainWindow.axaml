@@ -1535,9 +1535,9 @@
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Global hotkey" />
-                  <ToggleSwitch IsChecked="{Binding GlobalHotkeyOn}" OnContent="Ctrl+Alt+L turns the lights on or off" OffContent="Ctrl+Alt+L turns the lights on or off" />
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Works from any app, no vendor hotkey engine needed." />
+                  <TextBlock Classes="section" Text="Global hotkeys" />
+                  <ToggleSwitch IsChecked="{Binding GlobalHotkeyOn}" OnContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" OffContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Work from any app, no vendor hotkey engine needed." />
                 </StackPanel>
               </Border>
 
