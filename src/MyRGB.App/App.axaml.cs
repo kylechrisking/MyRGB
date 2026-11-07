@@ -15,6 +15,7 @@ public partial class App : Application
     private MainWindow? _window;
     private NativeMenuItem? _powerItem;
     private NativeMenuItem? _pauseItem;
+    private NativeMenuItem? _presetsItem;
 
     public override void Initialize()
     {
@@ -32,6 +33,7 @@ public partial class App : Application
             _window = new MainWindow { DataContext = vm };
             _host.ShowRequested += () => Dispatcher.UIThread.Post(ShowWindow);
             _host.Lights.StateChanged += (_, _) => Dispatcher.UIThread.Post(UpdateTray);
+            _host.Presets.Changed += (_, _) => Dispatcher.UIThread.Post(RebuildPresetsMenu);
 
             CreateTray(desktop);
 
@@ -71,6 +73,8 @@ public partial class App : Application
         _powerItem = new NativeMenuItem("Turn lights off");
         _powerItem.Click += (_, _) => _host!.Lights.SetEnabled(!_host.Lights.State.Enabled);
 
+        _presetsItem = new NativeMenuItem("Presets") { Menu = new NativeMenu() };
+
         var next = new NativeMenuItem("Next preset");
         next.Click += (_, _) => _host!.Lights.StepPreset(1);
 
@@ -88,7 +92,7 @@ public partial class App : Application
         };
 
         var menu = new NativeMenu();
-        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), exit })
+        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), exit })
             menu.Items.Add(item);
 
         var tray = new TrayIcon
@@ -99,6 +103,7 @@ public partial class App : Application
         };
         tray.Clicked += (_, _) => ShowWindow();
         TrayIcon.SetIcons(this, new TrayIcons { tray });
+        RebuildPresetsMenu();
     }
 
     private void UpdateTray()
@@ -107,6 +112,22 @@ public partial class App : Application
             _powerItem.Header = _host.Lights.State.Enabled ? "Turn lights off" : "Turn lights on";
         if (_pauseItem is not null && _host is not null)
             _pauseItem.Header = _host.Lights.State.Paused ? "Resume animation" : "Pause animation";
+        RebuildPresetsMenu();
+    }
+
+    /// <summary>Lets you jump straight to a look from the tray, not just step through them one at a time.</summary>
+    private void RebuildPresetsMenu()
+    {
+        if (_presetsItem is null || _host is null) return;
+        var sub = new NativeMenu();
+        foreach (var preset in _host.Lights.GetPresets().Take(12))
+        {
+            bool active = preset.Id == _host.Lights.State.ActivePresetId;
+            var item = new NativeMenuItem(active ? $"● {preset.Name}" : preset.Name);
+            item.Click += (_, _) => _host.Lights.ActivatePreset(preset.Id);
+            sub.Items.Add(item);
+        }
+        _presetsItem.Menu = sub;
     }
 
     private void ShowWindow()
