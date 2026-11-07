@@ -71,6 +71,42 @@ public class CoreTests
     }
 
     [Fact]
+    public void Preset_file_round_trips_through_export_and_import()
+    {
+        var preset = new Preset
+        {
+            Id = "user-test-abc123",
+            Name = "Test Export",
+            EffectId = "rainbow-wave",
+            Settings = new(StringComparer.OrdinalIgnoreCase) { ["speed"] = "7" },
+            Overrides = [new DeviceOverride { DeviceId = "openrgb:mouse", Off = true }],
+            BuiltIn = true,
+        };
+        var path = Path.Combine(Path.GetTempPath(), $"myrgb-test-{Guid.NewGuid():N}.json");
+        try
+        {
+            PresetFile.Export(preset, path);
+            var imported = PresetFile.Import(path);
+
+            Assert.Equal(preset.Name, imported.Name);
+            Assert.Equal(preset.EffectId, imported.EffectId);
+            Assert.Equal("7", imported.Settings["speed"]);
+            Assert.Single(imported.Overrides);
+            Assert.False(imported.BuiltIn, "export strips the built-in flag so importing never fights a shipped preset");
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void Preset_file_rejects_a_file_that_is_not_a_preset()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"myrgb-test-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, "{\"hello\":\"world\"}");
+        try { Assert.Throws<InvalidDataException>(() => PresetFile.Import(path)); }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public void Merge_prefers_higher_priority_provider_for_same_hardware()
     {
         var openrgb = new FakeProvider("openrgb", 0);

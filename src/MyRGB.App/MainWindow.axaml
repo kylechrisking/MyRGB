@@ -563,13 +563,17 @@
             </StackPanel>
           </TabItem.Header>
           <DockPanel>
-            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8">
               <StackPanel Spacing="4">
                 <TextBlock Classes="h1" Text="Presets" />
-                <TextBlock Classes="muted" Text="Click a preset to light everything with it. Right-click to edit or delete. Editing a built-in makes your own copy." />
+                <TextBlock Classes="muted" Text="Click a preset to light everything with it. Right-click to edit, delete or export. Editing a built-in makes your own copy." />
               </StackPanel>
-              <Button Grid.Column="1" Classes="accent" Content="+ New preset" Command="{Binding NewPresetCommand}" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding ImportPresetPath}" PlaceholderText="Path to a .myrgb-preset.json file" Width="260" VerticalAlignment="Center" Margin="16,0,10,0" />
+              <Button Grid.Column="2" Classes="ghost" Content="Import" Command="{Binding ImportPresetCommand}" VerticalAlignment="Center" Margin="0,0,10,0" />
+              <Button Grid.Column="3" Classes="accent" Content="+ New preset" Command="{Binding NewPresetCommand}" VerticalAlignment="Center" />
             </Grid>
+            <TextBlock DockPanel.Dock="Top" Classes="muted" TextWrapping="Wrap" Margin="0,0,0,16" Text="{Binding PresetIoStatus}"
+                       IsVisible="{Binding PresetIoStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <ScrollViewer>
               <ItemsControl ItemsSource="{Binding Presets}" Margin="0,4,0,0">
                 <ItemsControl.ItemsPanel>
@@ -583,6 +587,7 @@
                           <ContextMenu>
                             <MenuItem Header="Apply" Command="{Binding ActivateCommand}" />
                             <MenuItem Header="Edit in Studio" Command="{Binding EditCommand}" />
+                            <MenuItem Header="Export to file" Command="{Binding ExportCommand}" />
                             <MenuItem Header="Delete" Command="{Binding DeleteCommand}" IsVisible="{Binding !IsBuiltIn}" />
                           </ContextMenu>
                         </Button.ContextMenu>

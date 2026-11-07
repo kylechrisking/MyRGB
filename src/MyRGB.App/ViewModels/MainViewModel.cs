@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -48,6 +49,7 @@ public sealed partial class PresetCardViewModel(PresetSummary summary, MainViewM
     [RelayCommand] private void Activate() => owner.ActivatePreset(Id);
     [RelayCommand] private void Edit() => owner.EditPreset(Id);
     [RelayCommand] private void Delete() => owner.DeletePreset(Id);
+    [RelayCommand] private void Export() => owner.ExportPreset(Id);
 
     private static IBrush MakeBrush(IReadOnlyList<Color> colors)
     {
@@ -259,6 +261,38 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     public void DeletePreset(string id) => _host.Presets.Delete(id);
+
+    [ObservableProperty] private string _importPresetPath = "";
+    [ObservableProperty] private string? _presetIoStatus;
+
+    public void ExportPreset(string id)
+    {
+        if (_host.Presets.Find(id) is not { } preset) return;
+        try
+        {
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "MyRGB Presets");
+            Directory.CreateDirectory(folder);
+            var path = Path.Combine(folder, PresetFile.FileName(preset.Name));
+            PresetFile.Export(preset, path);
+            PresetIoStatus = $"Exported \"{preset.Name}\" to {path}";
+        }
+        catch (Exception ex) { PresetIoStatus = $"Couldn't export \"{preset.Name}\": {ex.Message}"; }
+    }
+
+    [RelayCommand]
+    private void ImportPreset()
+    {
+        var path = ImportPresetPath.Trim().Trim('"');
+        if (path.Length == 0) return;
+        try
+        {
+            var preset = PresetFile.Import(path);
+            var stored = _host.Presets.Save(preset with { Id = PresetLibrary.NewId(preset.Name) });
+            ImportPresetPath = "";
+            PresetIoStatus = $"Imported \"{stored.Name}\".";
+        }
+        catch (Exception ex) { PresetIoStatus = $"Couldn't import that file: {ex.Message}"; }
+    }
 
     /// <summary>Jump to a page by name; used by Home's buttons and the tour.</summary>
     [RelayCommand]
