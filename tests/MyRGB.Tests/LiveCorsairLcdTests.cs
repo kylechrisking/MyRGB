@@ -108,6 +108,87 @@ public class LiveCorsairLcdTests(ITestOutputHelper output)
         await File.WriteAllTextAsync(Path.Combine(dir, "summary.txt"), log.ToString(), ct);
     }
 
+    /// <summary>
+    /// WRITES to the keyboard: puts a test card on the screen (top third red, middle green, bottom blue,
+    /// a white square top-left, so colour order and orientation are both visible). Backs up every file it
+    /// changes to artifacts/lcd-upload/&lt;time&gt;/ first, then reads each written file back to check it.
+    /// Undo with <see cref="Rolls_back_last_upload"/>. MyRGB must be closed.
+    /// </summary>
+    [Fact(Explicit = true)]
+    public async Task Uploads_test_image()
+    {
+        await using var kb = await OpenAsync();
+        var dir = Path.Combine(RepoRoot(), "artifacts", "lcd-upload", DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+        var log = new StringBuilder();
+        void Say(string s) { output.WriteLine(s); log.AppendLine(s); }
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+
+        try
+        {
+            var r = await ScreenUpload.UploadStaticImageAsync(kb, TestCard(), dir, Say, cts.Token);
+            Say($"Done: resource {r.ResourceFile}, config {r.ConfigFile}, screen index {r.ScreenIndex}");
+
+            Say("Read back");
+            foreach (var id in new[] { ScreenFiles.ResourceMapFile, r.ConfigFile, r.ResourceFile })
+            {
+                var f = await kb.ReadFileAsync(id, cts.Token);
+                Say($"  file {id}: {(f is null ? "MISSING" : $"{f.Length} bytes, starts {Convert.ToHexString(f, 0, Math.Min(24, f.Length))}")}");
+                Assert.NotNull(f);
+            }
+            var profile = ScreenFiles.ParseProfile((await kb.ReadFileAsync(r.ProfileFile, cts.Token))!)!;
+            var layout = ScreenFiles.ParseScreenLayout((await kb.ReadFileAsync(profile.ScreenLayoutFile, cts.Token))!);
+            Say($"  layout {profile.ScreenLayoutFile}: rows {string.Join(" | ", layout.Rows.Select(row => string.Join(",", row)))}");
+            Assert.Contains(r.ConfigFile, layout.Rows[0]);
+            var props = ScreenFiles.ParseProperties((await kb.ReadFileAsync(profile.PropertiesFile, cts.Token))!);
+            Say($"  screen index (263): {props[ScreenFiles.PropertyScreenIndex]}");
+            Say($"  free storage now: {await kb.GetPropertyAsync(ScreenFiles.PropertyFreeStorage, cts.Token)}");
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) await File.WriteAllTextAsync(Path.Combine(dir, "summary.txt"), log.ToString(), CancellationToken.None);
+        }
+    }
+
+    /// <summary>WRITES to the keyboard: undoes the newest upload under artifacts/lcd-upload/ that isn't undone yet.</summary>
+    [Fact(Explicit = true)]
+    public async Task Rolls_back_last_upload()
+    {
+        var root = Path.Combine(RepoRoot(), "artifacts", "lcd-upload");
+        var dir = Directory.GetDirectories(root).OrderDescending()
+            .FirstOrDefault(d => File.Exists(Path.Combine(d, "upload.txt")) && !File.Exists(Path.Combine(d, "rolled-back.txt")));
+        Assert.True(dir is not null, "No upload left to roll back.");
+
+        await using var kb = await OpenAsync();
+        var log = new StringBuilder();
+        void Say(string s) { output.WriteLine(s); log.AppendLine(s); }
+        Say($"Rolling back {dir}");
+        var ct = TestContext.Current.CancellationToken;
+        await ScreenUpload.RollBackAsync(kb, dir, Say, ct);
+        await File.WriteAllTextAsync(Path.Combine(dir, "rolled-back.txt"), log.ToString(), ct);
+    }
+
+    private static async Task<CorsairKeyboard> OpenAsync()
+    {
+        var iface = HidDevices.Find("vid_1b1c&pid_2b0e&mi_02").FirstOrDefault(i => i.UsagePage == 0xFF42 && i.OutputReportLength == Bragi.ReportLength);
+        Assert.True(iface is not null, "Vanguard Pro 96 command interface not found. Is it plugged in?");
+        return await CorsairKeyboard.OpenAsync(iface, NullLogger.Instance, CancellationToken.None);
+    }
+
+    /// <summary>Red / green / blue thirds, top to bottom, with a 40×40 white square in the top-left corner.</summary>
+    private static byte[] TestCard()
+    {
+        const int w = ScreenFiles.Width, h = ScreenFiles.Height;
+        var rgb = new byte[w * h * 3];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                int o = (y * w + x) * 3;
+                if (x < 40 && y < 40) { rgb[o] = rgb[o + 1] = rgb[o + 2] = 255; continue; }
+                rgb[o + (y * 3 / h)] = 255; // 0 = R, 1 = G, 2 = B
+            }
+        return rgb;
+    }
+
     private static string RepoRoot()
     {
         for (var d = new DirectoryInfo(AppContext.BaseDirectory); d is not null; d = d.Parent)

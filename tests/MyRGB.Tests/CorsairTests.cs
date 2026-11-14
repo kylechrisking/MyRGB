@@ -253,5 +253,96 @@ public class CorsairTests
     private static byte[] Wire(string hex) => [0, .. Convert.FromHexString(hex)];
 
     /// <summary>Plain bytes, for file contents (no report id).</summary>
+    [Fact]
+    public void Create_and_delete_file_commands()
+    {
+        Assert.Equal(Wire("00010B0B606D"), Bragi.Create(0x0B, 28000)[..7]);
+        Assert.Equal(Wire("00010B0C616D"), Bragi.Delete(0x0B, 28001)[..7]);
+    }
+
+    [Fact]
+    public void Small_file_write_is_one_begin_report()
+    {
+        var reports = Bragi.FileWrite(2, Bragi.FileBuffer, Hex("440001006A6D")).ToList();
+        var r = Assert.Single(reports);
+        Assert.Equal(Wire("0001020600" + "06000000" + "440001006A6D" + "00"), r[..17]);
+        Assert.Equal(Bragi.ReportLength, r.Length);
+    }
+
+    [Fact]
+    public void Large_file_write_splits_into_begin_and_continues()
+    {
+        var data = Enumerable.Range(0, 3000).Select(i => (byte)i).ToArray();
+        var reports = Bragi.FileWrite(2, Bragi.FileBuffer, data).ToList();
+        Assert.Equal(3, reports.Count); // 1015 + 1019 + 966
+        Assert.Equal(Bragi.Write, reports[0][4]);
+        Assert.Equal(3000u, BitConverter.ToUInt32(reports[0], 6));
+        Assert.All(reports.Skip(1), r => Assert.Equal(Bragi.WriteContinue, r[4]));
+        var joined = reports[0][10..].Concat(reports[1][6..]).Concat(reports[2][6..(6 + 966)]).ToArray();
+        Assert.Equal(data, joined);
+    }
+
+    [Fact]
+    public void Static_config_points_at_resource() =>
+        Assert.Equal(Hex("3800616D000000000000000000000000"), ScreenFiles.BuildStaticConfig(28001));
+
+    [Fact]
+    public void Resource_map_gets_new_entry() =>
+        Assert.Equal(Hex("44000100" + "6D6D6D6D00000000"),
+            ScreenFiles.BuildResourceMap(0x44, [.. ScreenFiles.ParseResourceMap(Hex("44000000")).Entries, new(28013, 28013, 0)]));
+
+    [Fact]
+    public void Empty_layout_gets_row_zero()
+    {
+        var l = ScreenFiles.WithConfigInRow0(ScreenFiles.ParseScreenLayout(Hex("370000")), 28014);
+        Assert.Equal(Hex("370001016E6D"), ScreenFiles.BuildScreenLayout(l));
+    }
+
+    [Fact]
+    public void Layout_appends_to_row_zero_and_keeps_other_rows()
+    {
+        var l = ScreenFiles.WithConfigInRow0(ScreenFiles.ParseScreenLayout(Hex("370002" + "01606D" + "01616D")), 28014);
+        Assert.Equal(Hex("370002" + "02606D6E6D" + "01616D"), ScreenFiles.BuildScreenLayout(l));
+    }
+
+    [Fact]
+    public void Static_image_matches_web_hub_layout()
+    {
+        var rgb = new byte[ScreenFiles.Width * ScreenFiles.Height * 3];
+        rgb[0] = 255;                                        // top-left pixel red
+        rgb[^2] = 255;                                       // bottom-right pixel green
+        var f = ScreenFiles.BuildStaticImage(rgb, 0x12345678);
+
+        Assert.Equal(54 + 248 * 2 * 170 + 6, f.Length);      // 84380
+        Assert.Equal(Hex("4800424D"), f[..4]);
+        Assert.Equal((uint)f.Length, BitConverter.ToUInt32(f, 4));
+        Assert.Equal(54u, BitConverter.ToUInt32(f, 12));
+        Assert.Equal(248, BitConverter.ToInt32(f, 20));
+        Assert.Equal(170, BitConverter.ToInt32(f, 24));      // positive, yet rows go top-down
+        Assert.Equal(16, BitConverter.ToUInt16(f, 30));
+        Assert.Equal(3u, BitConverter.ToUInt32(f, 32));
+        Assert.Equal(Hex("00F8"), f[54..56]);                // first row first: red in RGB565 LE
+        int last = 54 + 248 * 2 * 170 - 2;
+        Assert.Equal(Hex("E007"), f[last..(last + 2)]);      // green
+        Assert.Equal(Hex("0000" + "78563412"), f[^6..]);     // two zeros, then the time
+        var bmp = ScreenFiles.ParseBmpResource(f)!;
+        Assert.Equal((248, 170, 16, 3), (bmp.Width, bmp.Height, bmp.BitsPerPixel, bmp.Compression));
+    }
+
+    [Fact]
+    public void Static_image_rejects_wrong_size() =>
+        Assert.Throws<ArgumentException>(() => ScreenFiles.BuildStaticImage(new byte[30], 0));
+
+    [Fact]
+    public void Finds_ids_a_profile_points_at()
+    {
+        // From the real profile 28000: includes 28001..28012 minus the gaps, at even and odd offsets.
+        var f = Hex("1EF1000000000000616D0000626D636D0000646D00000000686D696D0000" + "2100")
+            .Concat("VANGUARD PRO 96 Default Profile 1\0"u8.ToArray()).Concat(Hex("6A6D6B6D6C6D666D")).ToArray();
+        var ids = ScreenFiles.MentionedHostIds(f).ToHashSet();
+        Assert.Superset(new HashSet<ushort> { 28001, 28002, 28003, 28004, 28006, 28008, 28009, 28010, 28011, 28012 }, ids);
+        Assert.DoesNotContain((ushort)28005, ids);
+    }
+
     private static byte[] Hex(string hex) => Convert.FromHexString(hex);
 }

@@ -28,6 +28,15 @@ internal static class Bragi
     public const byte ReadBuffer = 0x08, DescribeBuffer = 0x09;
 
     /// <summary>
+    /// Writing a file: <see cref="Write"/> (0x06) begins it with the total length, <see cref="WriteContinue"/>
+    /// sends the rest. Files are made and removed by id with <see cref="CreateFile"/> / <see cref="DeleteFile"/>.
+    /// </summary>
+    public const byte WriteContinue = 0x07, CreateFile = 0x0B, DeleteFile = 0x0C;
+
+    /// <summary>Data bytes in a write-begin report (after <c>06 &lt;buffer&gt; &lt;u32 length&gt;</c>) and in a continue report.</summary>
+    public const int WriteBeginChunk = ReportLength - 10, WriteContinueChunk = ReportLength - 6;
+
+    /// <summary>
     /// The handle slot used for onboard file I/O, kept apart from <see cref="LightingHandle"/>. CORSAIR
     /// Web Hub uses buffer 0 for files (see docs/LCD-PROTOCOL.txt).
     /// </summary>
@@ -93,6 +102,32 @@ internal static class Bragi
 
     /// <summary><c>08 &lt;buffer&gt;</c>: the next chunk of the file. The chunk fills the rest of the reply.</summary>
     public static byte[] Read(byte target, byte buffer) => Command(target, ReadBuffer, [buffer]);
+
+    /// <summary><c>0B &lt;u16 file id&gt;</c>: make an empty file.</summary>
+    public static byte[] Create(byte target, ushort fileId) => Command(target, CreateFile, [(byte)fileId, (byte)(fileId >> 8)]);
+
+    /// <summary><c>0C &lt;u16 file id&gt;</c>.</summary>
+    public static byte[] Delete(byte target, ushort fileId) => Command(target, DeleteFile, [(byte)fileId, (byte)(fileId >> 8)]);
+
+    /// <summary>
+    /// The reports that write <paramref name="data"/> to the file open on <paramref name="buffer"/>, replacing
+    /// its contents: <c>06 &lt;buffer&gt; &lt;u32 total&gt; data…</c>, then <c>07 &lt;buffer&gt; data…</c> until done.
+    /// Each one is answered before the next is sent.
+    /// </summary>
+    public static IEnumerable<byte[]> FileWrite(byte target, byte buffer, ReadOnlyMemory<byte> data)
+    {
+        var first = data[..Math.Min(WriteBeginChunk, data.Length)];
+        var begin = Command(target, Write, [buffer]);
+        BinaryPrimitives.WriteUInt32LittleEndian(begin.AsSpan(6), (uint)data.Length);
+        first.Span.CopyTo(begin.AsSpan(10));
+        yield return begin;
+        for (int o = first.Length; o < data.Length; o += WriteContinueChunk)
+        {
+            var r = Command(target, WriteContinue, [buffer]);
+            data.Slice(o, Math.Min(WriteContinueChunk, data.Length - o)).Span.CopyTo(r.AsSpan(6));
+            yield return r;
+        }
+    }
 
     /// <summary><c>0D &lt;handle&gt; &lt;u16 resource&gt;</c>.</summary>
     public static byte[] Open(byte target, byte handle, ushort resource) =>

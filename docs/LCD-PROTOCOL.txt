@@ -33,11 +33,11 @@ It's the same Bragi framing `Bragi.cs` already uses: a 4-byte header
 | Get property | `0x02` | `u16 prop LE` | yes (`Get`) |
 | Unbind buffer(s) | `0x05` | `count`, `buffer…` | yes, as `Close` (`05 01 <handle>`) |
 | Write begin | `0x06` | `buffer`, `u32 total length LE`, first data chunk | yes, used for colors (`Write`) |
-| Write continue | `0x07` | `buffer`, next data chunk | **no** |
-| Read buffer | `0x08` | `buffer` | **no** |
-| Describe buffer | `0x09` | `buffer` → reply data `[2..6)` is the file size, u32 LE | **no** |
-| Create file | `0x0B` | `u16 fileId LE` | **no** |
-| Delete file | `0x0C` | `u16 fileId LE` | **no** |
+| Write continue | `0x07` | `buffer`, next data chunk | yes (`FileWrite`) |
+| Read buffer | `0x08` | `buffer` | yes (`Read`) |
+| Describe buffer | `0x09` | `buffer` → reply data `[2..6)` is the file size, u32 LE | yes (`Describe`) |
+| Create file | `0x0B` | `u16 fileId LE` | yes (`Create`) |
+| Delete file | `0x0C` | `u16 fileId LE` | yes (`Delete`) |
 | Open file | `0x0D` | `buffer`, `u16 fileId LE` | yes (`Open`, used with resource `0x22`) |
 | Session | `0x1B` | open `01 <token>` / close `02 00 00 00 00 <s>` | yes |
 
@@ -60,6 +60,10 @@ disturbed.** **(unverified that the two can be open at once)**
    Chunk size = input report size − header (4) − 5. With 1024-byte reports that's 1015 for the
    first chunk and 1019 after. **(unverified: check the report count on the vendor interface)**
 4. Unbind the buffer.
+
+Write-begin is the same command (`0x06`) as a lighting frame, so their replies look alike.
+`CorsairKeyboard.WriteFileAsync` skips lighting frames while a file write is running, so a late
+frame reply can't be read as a write reply.
 
 Put the whole thing between `Set(prop 0x03 mode) = 2` (host controlled) and `= 1` (self operated).
 `Bragi.cs` already does this as `PropertyMode`, `ModeSoftware`, `ModeHardware`.
@@ -91,12 +95,22 @@ Web Hub sets `resourceAddress = resourceId` and `hash = 00 00 00 00` for new ent
 ```
 48 00 | BMP file | u32 unix time LE
 ```
-`0x48` (72) marks a BMP. The BMP is a standard `BM` file with a 40-byte BITMAPINFOHEADER,
-**16 bpp, BI_BITFIELDS (compression 3)**, masks `F800 / 07E0 / 001F` (RGB565), and 2835 px/m. Rows
-are padded to 4 bytes. Web Hub writes a positive height (bottom-up) but fills rows top-down, so
-check the orientation on the real screen. **(unverified)** Pixels are RGB565 little-endian.
-(Web Hub's generic base class has a 24-bit variant, but the Vanguard's own `ScreenService`
-overrides it with this 16-bit one.)
+`0x48` (72) marks a BMP. This is the exact layout from the Vanguard's own `ScreenService`
+(lazy-loaded chunk `Dde8HGGV.js`; the main bundle's 24-bit `convertToBMP` is the generic one and
+not used here). `ScreenFiles.BuildStaticImage` reproduces it byte for byte, quirks included:
+
+- Every header offset counts from the `48`, not from `BM`: `48 00 'B' 'M'`, then at 4 the total
+  file size (prefix and timestamp included), at 12 the pixel offset **54**, at 16 a 40-byte
+  BITMAPINFOHEADER: width 248, height **+170**, 1 plane, **16 bpp, compression 3**, image size,
+  2835 px/m twice.
+- The RGB565 masks `F800 / 07E0 / 001F` are written at 56–67, and then the **pixels are written from
+  54 on top of them**. So the file doesn't really carry masks, and the firmware must just read
+  RGB565 from absolute byte 54.
+- The height is positive, which would mean bottom-up, but **rows are written top-down**.
+- A pixel is `(R>>3)<<11 | (G>>2)<<5 | B>>3`, u16 little-endian. 248 × 2 = 496 bytes per row, which
+  is already a multiple of 4, so there's no padding. (Web Hub's padding loop has a bug, but it
+  never runs at this width.)
+- After the pixels come **two zero bytes**, then the u32 unix time. The total is 84,380 bytes.
 
 ### GIF resource
 ```
@@ -149,9 +163,39 @@ screen index changes only those 4 bytes and leaves the rest exactly as the firmw
 5. Write config file **C** = `38 00 <R> 00…` (16 bytes).
 6. Append **C** to row 0 of the active profile's screen-modes layout file.
 7. Set the screen index (property 263) to **C**'s position in row 0, by rewriting the profile's
-   properties file with that one value changed.
+   properties file with that one value changed. **Web Hub skips this when the position is 0**
+   (`if(!i) return`, and 0 is falsy). The first image lands at 0, and the index is already 0 on
+   this keyboard, so the properties file is left alone.
 8. Write image file **R** = `48 00 + RGB565 BMP 248×170 + timestamp`.
 9. Mode → self operated (in a `finally`).
+
+Web Hub also bumps the profile file's u32 cookie (bytes 2–5) to the current unix time afterwards,
+but only when its own browser database has a cookie for that profile. It looks like a change
+marker for other hosts, so MyRGB skips it and leaves the profile file alone. **(unverified that
+the firmware doesn't need it)**
+
+Two Web Hub bugs MyRGB works around:
+- The layout parser gives a zero-row layout (`37 00 00`, how this keyboard ships) no
+  `rowLayouts[0]`, so Web Hub's step 6 would throw **after** steps 4–5 had already written the map
+  and config. MyRGB creates row 0 instead: `37 00 01 01 <C>`.
+- The map parser reads the count from byte 4 instead of bytes 2–3. It's harmless on an empty map,
+  but MyRGB reads the u16 at 2.
+
+### MyRGB's upload (`ScreenUpload`)
+`ScreenUpload.UploadStaticImageAsync` follows steps 2–8 in Web Hub's order. Before the first write,
+it reads and checks everything, picks the ids, and saves the map, layout and properties files plus
+an `upload.txt` manifest to a backup folder. New ids are the lowest ones from 28000 up (not 28049)
+that **don't exist on the keyboard** (open fails) and that **no profile, profiles-list or layout
+file mentions**: a profile can point at a file that hasn't been made yet. It refuses if the
+keyboard has more than one profile, since MyRGB doesn't read the active one yet.
+`ScreenUpload.RollBackAsync` writes the saved files back and deletes the new ones.
+
+Live tests (close MyRGB first; both WRITE to the keyboard):
+- `MyRGB.Tests.exe -explicit only -method MyRGB.Tests.LiveCorsairLcdTests.Uploads_test_image`
+  puts up a test card: red/green/blue thirds top to bottom, with a white square top-left, so both
+  color order and orientation show. It then reads every written file back. The backup goes to
+  `artifacts/lcd-upload/<time>/`.
+- `…LiveCorsairLcdTests.Rolls_back_last_upload` undoes the newest upload that hasn't been undone.
 
 ## Probe results (2026-11-14)
 

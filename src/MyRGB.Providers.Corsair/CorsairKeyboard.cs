@@ -29,6 +29,7 @@ internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDispo
     private readonly Task _reader;
     private byte _session;
     private bool _lightingOpen;
+    private int _fileWrites;
     private KeyboardControls? _controls;
 
     private CorsairKeyboard(FileStream stream, string serialHint, ILogger log)
@@ -84,7 +85,9 @@ internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDispo
 
     public async ValueTask ApplyAsync(ReadOnlyMemory<Rgb> colors, CancellationToken ct = default)
     {
-        if (Faulted || !_lightingOpen) return;
+        // Lighting frames and file writes are both command 0x06; skip frames while a file is being written
+        // so a late frame reply can't be taken for a write reply.
+        if (Faulted || !_lightingOpen || Volatile.Read(ref _fileWrites) > 0) return;
         var c = colors.Span;
         Array.Clear(_rgb);
         for (int i = 0; i < _slots.Length && i < c.Length; i++)
@@ -125,15 +128,9 @@ internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDispo
     internal async Task<byte[]?> ReadFileAsync(ushort fileId, CancellationToken ct = default)
     {
         const byte buf = Bragi.FileBuffer;
-        var open = Bragi.Open(_session, buf, fileId);
         try
         {
-            if (await TryCommandAsync(open, _session, Bragi.OpenHandle, ct) is null)
-            {
-                // Web Hub retries once after unbinding, for a buffer left bound by an earlier failure.
-                await TryCommandAsync(Bragi.Close(_session, buf), _session, Bragi.CloseHandle, ct);
-                if (await TryCommandAsync(open, _session, Bragi.OpenHandle, ct) is null) return null;
-            }
+            if (!await OpenFileAsync(fileId, ct)) return null;
 
             int size = Bragi.DescribedSize(await CommandAsync(Bragi.Describe(_session, buf), _session, Bragi.DescribeBuffer, ct));
             if (size is < 0 or > 16 * 1024 * 1024) throw new IOException($"File {fileId} reports an implausible size ({size}).");
@@ -151,9 +148,58 @@ internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDispo
         }
         finally
         {
-            await TryCommandAsync(Bragi.Close(_session, buf), _session, Bragi.CloseHandle, CancellationToken.None);
+            await CloseFileAsync();
         }
     }
+
+    /// <summary>True if the file exists. Opens it and closes it again; changes nothing.</summary>
+    internal async Task<bool> FileExistsAsync(ushort fileId, CancellationToken ct = default)
+    {
+        try { return await OpenFileAsync(fileId, ct); }
+        finally { await CloseFileAsync(); }
+    }
+
+    /// <summary>
+    /// Replaces an onboard file's contents with <paramref name="data"/>, creating the file if it doesn't exist
+    /// (Web Hub's <c>writeFile</c>). Lighting frames are skipped while it runs.
+    /// </summary>
+    internal async Task WriteFileAsync(ushort fileId, ReadOnlyMemory<byte> data, CancellationToken ct = default)
+    {
+        Interlocked.Increment(ref _fileWrites);
+        try
+        {
+            if (!await OpenFileAsync(fileId, ct))
+            {
+                await CloseFileAsync();
+                await CommandAsync(Bragi.Create(_session, fileId), _session, Bragi.CreateFile, ct);
+                if (!await OpenFileAsync(fileId, ct)) throw new IOException($"Could not open file {fileId} after creating it.");
+            }
+            foreach (var report in Bragi.FileWrite(_session, Bragi.FileBuffer, data))
+                await CommandAsync(report, _session, report[4], ct);
+        }
+        finally
+        {
+            await CloseFileAsync();
+            Interlocked.Decrement(ref _fileWrites);
+        }
+    }
+
+    /// <summary>Deletes an onboard file. False if the keyboard refused (for example, it didn't exist).</summary>
+    internal async Task<bool> DeleteFileAsync(ushort fileId, CancellationToken ct = default) =>
+        await TryCommandAsync(Bragi.Delete(_session, fileId), _session, Bragi.DeleteFile, ct) is not null;
+
+    /// <summary>Opens a file on <see cref="Bragi.FileBuffer"/>. False if it doesn't exist.</summary>
+    private async Task<bool> OpenFileAsync(ushort fileId, CancellationToken ct)
+    {
+        var open = Bragi.Open(_session, Bragi.FileBuffer, fileId);
+        if (await TryCommandAsync(open, _session, Bragi.OpenHandle, ct) is not null) return true;
+        // Web Hub retries once after unbinding, for a buffer left bound by an earlier failure.
+        await CloseFileAsync();
+        return await TryCommandAsync(open, _session, Bragi.OpenHandle, ct) is not null;
+    }
+
+    private Task<byte[]?> CloseFileAsync() =>
+        TryCommandAsync(Bragi.Close(_session, Bragi.FileBuffer), _session, Bragi.CloseHandle, CancellationToken.None);
 
     private async Task<byte[]> CommandAsync(byte[] report, byte target, byte command, CancellationToken ct) =>
         await TryCommandAsync(report, target, command, ct)
