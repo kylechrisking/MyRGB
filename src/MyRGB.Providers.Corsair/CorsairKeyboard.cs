@@ -59,7 +59,11 @@ internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDispo
 
     public event Action<IRgbDevice, DeviceCommand>? Command;
 
-    public static async Task<CorsairKeyboard> OpenAsync(HidInterface iface, ILogger log, CancellationToken ct)
+    public static Task<CorsairKeyboard> OpenAsync(HidInterface iface, ILogger log, CancellationToken ct) =>
+        OpenAsync(iface, log, Bragi.ModeSoftware, ct);
+
+    /// <summary>Opens the keyboard in the given operating mode (normally <see cref="Bragi.ModeSoftware"/>).</summary>
+    internal static async Task<CorsairKeyboard> OpenAsync(HidInterface iface, ILogger log, uint mode, CancellationToken ct)
     {
         var stream = HidDevices.Open(iface.Path);
         var kb = new CorsairKeyboard(stream, SerialHint(iface.Path), log);
@@ -69,7 +73,7 @@ internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDispo
             kb._session = Bragi.SessionId(reply);
             log.LogDebug("Corsair keyboard session {Session}", kb._session);
 
-            await kb.CommandAsync(Bragi.Set(kb._session, Bragi.PropertyMode, Bragi.ModeSoftware), kb._session, Bragi.SetProperty, ct);
+            await kb.CommandAsync(Bragi.Set(kb._session, Bragi.PropertyMode, mode), kb._session, Bragi.SetProperty, ct);
             await kb.CommandAsync(Bragi.Open(kb._session, Bragi.LightingHandle, Bragi.LightingResource), kb._session, Bragi.OpenHandle, ct);
             kb._lightingOpen = true;
             // Software mode leaves the wheel and some Fn keys to us; pass them on to Windows or MyRGB.

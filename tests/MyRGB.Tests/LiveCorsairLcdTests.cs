@@ -169,6 +169,36 @@ public class LiveCorsairLcdTests(ITestOutputHelper output)
         await File.AppendAllTextAsync(Path.Combine(dir, "summary.txt"), log.ToString(), ct);
     }
 
+    /// <summary>
+    /// Opens the keyboard in mode 6 (LIMITED_HOST_CONTROLLER), paints every key magenta and holds it for
+    /// 30 seconds, so someone at the desk can see whether host lighting works in that mode and whether the
+    /// screen image stays up. Changes no files. MyRGB must be closed.
+    /// </summary>
+    [Fact(Explicit = true)]
+    public async Task Tries_limited_host_mode()
+    {
+        var iface = HidDevices.Find("vid_1b1c&pid_2b0e&mi_02").FirstOrDefault(i => i.UsagePage == 0xFF42 && i.OutputReportLength == Bragi.ReportLength);
+        Assert.True(iface is not null, "Vanguard Pro 96 command interface not found.");
+        var ct = TestContext.Current.CancellationToken;
+
+        CorsairKeyboard kb;
+        try { kb = await CorsairKeyboard.OpenAsync(iface, NullLogger.Instance, Bragi.ModeLimitedHost, ct); }
+        catch (IOException ex) { output.WriteLine($"Mode 6 rejected: {ex.Message}"); throw; }
+
+        await using (kb)
+        {
+            output.WriteLine($"Mode 6 accepted; mode reads back as {await kb.GetPropertyAsync(Bragi.PropertyMode, ct)}");
+            var magenta = Enumerable.Repeat(new MyRGB.Core.Rgb(255, 0, 255), kb.Leds.Count).ToArray();
+            var until = DateTime.UtcNow.AddSeconds(30);
+            while (DateTime.UtcNow < until)
+            {
+                await kb.ApplyAsync(magenta, ct);
+                await Task.Delay(100, ct);
+            }
+            output.WriteLine($"Mode after 30 s: {await kb.GetPropertyAsync(Bragi.PropertyMode, ct)}");
+        }
+    }
+
     private static string LastUploadDir() =>
         Directory.GetDirectories(Path.Combine(RepoRoot(), "artifacts", "lcd-upload")).OrderDescending()
             .FirstOrDefault(d => File.Exists(Path.Combine(d, "upload.txt")) && !File.Exists(Path.Combine(d, "rolled-back.txt")))

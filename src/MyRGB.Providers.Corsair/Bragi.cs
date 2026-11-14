@@ -47,6 +47,12 @@ internal static class Bragi
 
     public const byte PropertyMode = 0x03;
     public const uint ModeHardware = 1, ModeSoftware = 2;
+
+    /// <summary>
+    /// Web Hub's enum also has LIMITED_HOST_CONTROLLER = 6 (it never sets it). Under test as a way to keep
+    /// host lighting while the firmware keeps the screen; see docs/LCD-PROTOCOL.txt.
+    /// </summary>
+    public const uint ModeLimitedHost = 6;
     public const byte PropertyVendorId = 0x11, PropertyProductId = 0x12;
 
     /// <summary>The per-LED color resource, opened on <see cref="LightingHandle"/> like iCUE does.</summary>

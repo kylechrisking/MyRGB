@@ -222,7 +222,21 @@ Live tests (close MyRGB first; both WRITE to the keyboard):
 - **Free storage** dropped 98,304 bytes for an 84,380-byte image, so space goes in 4 KiB blocks.
 - **Nothing showed** until file 62 was written. After that the test card appeared, with correct
   colors and orientation. The image appeared with the keyboard in self-operated mode (MyRGB closed).
-  Whether it stays up while MyRGB has the keyboard in host-controlled mode is still to check.
+- **It goes away once MyRGB takes the keyboard (mode 2, host controlled).** The firmware only shows
+  stored screens in self-operated mode. Web Hub never shows a screen in host mode: it only switches
+  to host mode around file operations and always returns to self-operated in a `finally`.
+- **Mode 6 (`LIMITED_HOST_CONTROLLER` in Web Hub's enum, never used there) is rejected** by
+  Set property on this keyboard (explicit test `Tries_limited_host_mode`). Modes 3–5 and 7 are
+  bootloader, sleep and esports, so they're no help.
+- Properties 230/231/232 (Web Hub's `getSupportModules`) only report which modules exist (230 =
+  screen present, 232 = wireless). 240 = startup animation active, 242/243 = width/height. None
+  hands the screen back to the firmware.
+
+So with MyRGB driving the lights, the screen is the host's. Showing anything on it there means
+streaming frames the way iCUE does in software mode, and Web Hub has no code for that. Finding it
+needs the USB capture in `LCD-CAPTURE.txt` (iCUE plus USBPcap). The fallback is for MyRGB to hand
+the keyboard back to self-operated mode whenever a stored image should show, giving up per-key
+host lighting while it does.
 - The profile cookie wasn't touched, and the firmware didn't need it.
 
 ## Probe results (2026-11-14)
