@@ -111,6 +111,50 @@ internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDispo
         }
     }
 
+    /// <summary>A property's u32 value, or null if the keyboard rejects it.</summary>
+    internal async Task<uint?> GetPropertyAsync(ushort property, CancellationToken ct = default)
+    {
+        var reply = await TryCommandAsync(Bragi.Get(_session, property), _session, Bragi.GetProperty, ct);
+        return reply is null ? null : Bragi.PropertyValue(reply);
+    }
+
+    /// <summary>
+    /// Reads one onboard file on <see cref="Bragi.FileBuffer"/>, or returns null if it doesn't exist.
+    /// Read-only: it never creates or changes a file. The buffer is always unbound afterwards.
+    /// </summary>
+    internal async Task<byte[]?> ReadFileAsync(ushort fileId, CancellationToken ct = default)
+    {
+        const byte buf = Bragi.FileBuffer;
+        var open = Bragi.Open(_session, buf, fileId);
+        try
+        {
+            if (await TryCommandAsync(open, _session, Bragi.OpenHandle, ct) is null)
+            {
+                // Web Hub retries once after unbinding, for a buffer left bound by an earlier failure.
+                await TryCommandAsync(Bragi.Close(_session, buf), _session, Bragi.CloseHandle, ct);
+                if (await TryCommandAsync(open, _session, Bragi.OpenHandle, ct) is null) return null;
+            }
+
+            int size = Bragi.DescribedSize(await CommandAsync(Bragi.Describe(_session, buf), _session, Bragi.DescribeBuffer, ct));
+            if (size is < 0 or > 16 * 1024 * 1024) throw new IOException($"File {fileId} reports an implausible size ({size}).");
+            var data = new byte[size];
+            int got = 0;
+            while (got < size)
+            {
+                var reply = await CommandAsync(Bragi.Read(_session, buf), _session, Bragi.ReadBuffer, ct);
+                int chunk = Math.Min(size - got, reply.Length - Bragi.ReplyDataOffset);
+                if (chunk <= 0) throw new IOException($"Empty read from file {fileId}.");
+                reply.AsSpan(Bragi.ReplyDataOffset, chunk).CopyTo(data.AsSpan(got));
+                got += chunk;
+            }
+            return data;
+        }
+        finally
+        {
+            await TryCommandAsync(Bragi.Close(_session, buf), _session, Bragi.CloseHandle, CancellationToken.None);
+        }
+    }
+
     private async Task<byte[]> CommandAsync(byte[] report, byte target, byte command, CancellationToken ct) =>
         await TryCommandAsync(report, target, command, ct)
         ?? throw new IOException($"Keyboard rejected command 0x{command:X2}.");

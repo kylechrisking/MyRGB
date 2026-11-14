@@ -24,6 +24,18 @@ internal static class Bragi
 
     public const byte SetProperty = 0x01, GetProperty = 0x02, CloseHandle = 0x05, Write = 0x06, OpenHandle = 0x0D, Session = 0x1B;
 
+    /// <summary>Reading a file opened on a buffer: describe gives its size, read returns the next chunk.</summary>
+    public const byte ReadBuffer = 0x08, DescribeBuffer = 0x09;
+
+    /// <summary>
+    /// The handle slot used for onboard file I/O, kept apart from <see cref="LightingHandle"/>. CORSAIR
+    /// Web Hub uses buffer 0 for files (see docs/LCD-PROTOCOL.txt).
+    /// </summary>
+    public const byte FileBuffer = 0x00;
+
+    /// <summary>Where a reply's data starts: after the report id, the 4-byte header and the status.</summary>
+    public const int ReplyDataOffset = 6;
+
     public const byte PropertyMode = 0x03;
     public const uint ModeHardware = 1, ModeSoftware = 2;
     public const byte PropertyVendorId = 0x11, PropertyProductId = 0x12;
@@ -67,7 +79,20 @@ internal static class Bragi
         return Command(target, SetProperty, a);
     }
 
-    public static byte[] Get(byte target, byte property) => Command(target, GetProperty, [property, 0]);
+    /// <summary><c>02 &lt;u16 prop LE&gt;</c>. Property ids go past 255 (the screen index is 263).</summary>
+    public static byte[] Get(byte target, ushort property) => Command(target, GetProperty, [(byte)property, (byte)(property >> 8)]);
+
+    /// <summary>The u32 value from a <see cref="Get"/> reply.</summary>
+    public static uint PropertyValue(ReadOnlySpan<byte> reply) => BinaryPrimitives.ReadUInt32LittleEndian(reply[ReplyDataOffset..]);
+
+    /// <summary><c>09 &lt;buffer&gt;</c>: the size of the file opened on that buffer.</summary>
+    public static byte[] Describe(byte target, byte buffer) => Command(target, DescribeBuffer, [buffer]);
+
+    /// <summary>File size from a <see cref="Describe"/> reply: a u32 two bytes into the data.</summary>
+    public static int DescribedSize(ReadOnlySpan<byte> reply) => (int)BinaryPrimitives.ReadUInt32LittleEndian(reply[(ReplyDataOffset + 2)..]);
+
+    /// <summary><c>08 &lt;buffer&gt;</c>: the next chunk of the file. The chunk fills the rest of the reply.</summary>
+    public static byte[] Read(byte target, byte buffer) => Command(target, ReadBuffer, [buffer]);
 
     /// <summary><c>0D &lt;handle&gt; &lt;u16 resource&gt;</c>.</summary>
     public static byte[] Open(byte target, byte handle, ushort resource) =>

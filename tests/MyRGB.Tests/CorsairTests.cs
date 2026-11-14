@@ -36,6 +36,84 @@ public class CorsairTests
         Assert.Equal(Wire("0001020d01220000"), Bragi.Open(Session, Bragi.LightingHandle, Bragi.LightingResource)[..9]);
 
     [Fact]
+    public void File_read_commands_have_web_hub_layout()
+    {
+        Assert.Equal(Wire("0001020d003d00"), Bragi.Open(Session, Bragi.FileBuffer, ScreenFiles.ResourceMapFile)[..8]);
+        Assert.Equal(Wire("00010209" + "00"), Bragi.Describe(Session, Bragi.FileBuffer)[..6]);
+        Assert.Equal(Wire("00010208" + "00"), Bragi.Read(Session, Bragi.FileBuffer)[..6]);
+        Assert.Equal(Wire("000102020701"), Bragi.Get(Session, ScreenFiles.PropertyScreenIndex)[..7]);
+    }
+
+    [Fact]
+    public void Described_size_and_property_value_from_reply()
+    {
+        // [id] 00 00 <session> 09 <status> d0 d1 <u32 size>
+        Assert.Equal(0x01_4C3A, Bragi.DescribedSize(Wire("000002090000003a4c0100")));
+        Assert.Equal(0x00A0_0000u, Bragi.PropertyValue(Wire("00000202000000a000")));
+    }
+
+    [Fact]
+    public void Parses_profiles_list() =>
+        Assert.Equal(new ushort[] { 0x6D60, 0x6D61 }, ScreenFiles.ParseProfilesList(Hex("13000200606d616d")).ProfileFileIds);
+
+    [Fact]
+    public void Parses_profile_screen_layout_file()
+    {
+        // 30 bytes of fields, name length 3, "abc\0", then four u16s; the fourth is the layout file.
+        var f = new byte[30].Concat(Hex("0300")).Concat("abc\0"u8.ToArray()).Concat(Hex("0100020003003412")).ToArray();
+        var p = ScreenFiles.ParseProfile(f)!;
+        Assert.Equal("abc", p.Name);
+        Assert.Equal(0x1234, p.ScreenLayoutFile);
+    }
+
+    [Fact]
+    public void Profile_too_short_has_no_layout() =>
+        Assert.Equal(0, ScreenFiles.ParseProfile(new byte[40])!.ScreenLayoutFile);
+
+    [Fact]
+    public void Parses_screen_layout_rows()
+    {
+        var l = ScreenFiles.ParseScreenLayout(Hex("370002" + "02606d616d" + "01626d"));
+        Assert.Equal(0x37, l.Header);
+        Assert.Equal(new ushort[] { 0x6D60, 0x6D61 }, l.Rows[0]);
+        Assert.Equal(new ushort[] { 0x6D62 }, l.Rows[1]);
+    }
+
+    [Fact]
+    public void Parses_resource_map_and_skips_empty_slots()
+    {
+        var m = ScreenFiles.ParseResourceMap(Hex("00000300" + "606d606d00000000" + "0000000000000000" + "616d616d01020304"));
+        Assert.Equal(3, m.DeclaredCount);
+        Assert.Equal(new ushort[] { 0x6D60, 0x6D61 }, m.Entries.Select(e => e.ResourceId));
+        Assert.Equal(0x04030201u, m.Entries[1].Hash);
+    }
+
+    [Fact]
+    public void Parses_static_and_animated_configs()
+    {
+        var s = ScreenFiles.ParseScreenConfig(Hex("3800606d000000000000000000000000"))!;
+        Assert.Equal(new ushort[] { 0x6D60 }, s.ResourceIds);
+        var a = ScreenFiles.ParseScreenConfig(Hex("66006400" + "0200" + "606d616d"))!;
+        Assert.Equal(100, a.FrameDelayMs);
+        Assert.Equal(new ushort[] { 0x6D60, 0x6D61 }, a.ResourceIds);
+        Assert.Empty(ScreenFiles.ParseScreenConfig(Hex("01000000"))!.ResourceIds);
+    }
+
+    [Fact]
+    public void Reads_bmp_resource_header()
+    {
+        var f = new byte[2 + 54];
+        f[0] = ScreenFiles.BmpMarker;
+        f[2] = (byte)'B'; f[3] = (byte)'M';
+        BitConverter.TryWriteBytes(f.AsSpan(2 + 18), 248);
+        BitConverter.TryWriteBytes(f.AsSpan(2 + 22), 170);
+        BitConverter.TryWriteBytes(f.AsSpan(2 + 28), (ushort)16);
+        BitConverter.TryWriteBytes(f.AsSpan(2 + 30), 3);
+        Assert.Equal(new ScreenFiles.BmpInfo(248, 170, 16, 3), ScreenFiles.ParseBmpResource(f));
+        Assert.Null(ScreenFiles.ParseBmpResource(new byte[10]));
+    }
+
+    [Fact]
     public void Close_matches_capture() =>
         Assert.Equal(Wire("0001020501020000"), Bragi.Close(Session, 0x02)[..9]);
 
@@ -115,4 +193,7 @@ public class CorsairTests
 
     /// <summary>Captured wire bytes with the report id Windows adds in front.</summary>
     private static byte[] Wire(string hex) => [0, .. Convert.FromHexString(hex)];
+
+    /// <summary>Plain bytes, for file contents (no report id).</summary>
+    private static byte[] Hex(string hex) => Convert.FromHexString(hex);
 }

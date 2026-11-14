@@ -1,6 +1,10 @@
 Capturing the Vanguard Pro 96's LCD protocol
 ============================================
 
+SUPERSEDED 2026-11-14: the protocol came out of CORSAIR Web Hub's own code instead, with no
+capture, and iCUE is no longer installed on Kyle's PC. See docs/LCD-PROTOCOL.txt. Keep this file
+only as a fallback for confirming details on the wire.
+
 The plan for the "MyRGB on your LCD" feature (backlog item 4). The keyboard's 320x170 screen is
 driven by iCUE over USB; we record that traffic once, work out the frame format from it, and
 then implement it in MyRGB.Providers.Corsair. Needs Kyle at the PC for one UAC prompt (the

@@ -1,0 +1,177 @@
+# Vanguard Pro 96 LCD — how images get onto the screen
+
+Worked out on 2026-11-14 by reading CORSAIR Web Hub (`https://www.corsair.com/web-hub/`), the
+browser app Corsair ships for the Vanguard series. It drives the keyboard over WebHID, so its
+JavaScript bundle contains the whole command set. **No USB capture was needed**, and iCUE isn't
+installed on this PC, so `LCD-CAPTURE.txt` is now only a fallback for confirming details on the wire.
+
+The **read** path has been confirmed on the real keyboard (see "Probe results" below). Nothing has
+been **written** to it yet. Items still marked **(unverified)** are inferred from the code.
+
+## What the screen is
+
+- Web Hub's device table gives the Vanguard Pro 96 (`1b1c:2b0e`, "K70 Wired Magnetic-Mechanical")
+  a `ScreenService`. Its screen-properties call returns **248 × 170**, not the 320 × 170 the
+  marketing says. Use 248 × 170 until a live `GetProperty` says otherwise. **(unverified)**
+- The screen is **not streamed**. Web Hub writes image *files* into the keyboard's onboard
+  storage and points the active profile at them; the keyboard firmware then shows them by itself
+  in hardware mode. Live widgets (clock, CPU temp) are an iCUE-only feature and use a protocol that
+  isn't in Web Hub.
+- So the first version of "MyRGB on your LCD" is: **pick an image or GIF, upload it once, and the
+  keyboard shows it** even with MyRGB closed. Anything live would mean rewriting flash every few
+  seconds, which wears it out. Don't build that on this mechanism.
+
+## Packet framing
+
+It's the same Bragi framing `Bragi.cs` already uses: a 4-byte header
+`<subdevice> 01 <session> <command>` and then the arguments. (Web Hub's 4-byte header is our
+`00 01 <target> <command>`, with the report id in front.)
+
+| Command | Value | Args | Already in `Bragi.cs` |
+|---|---|---|---|
+| Set property | `0x01` | `u16 prop LE`, `u32 value LE` | yes (`Set`) |
+| Get property | `0x02` | `u16 prop LE` | yes (`Get`) |
+| Unbind buffer(s) | `0x05` | `count`, `buffer…` | yes, as `Close` (`05 01 <handle>`) |
+| Write begin | `0x06` | `buffer`, `u32 total length LE`, first data chunk | yes, used for colors (`Write`) |
+| Write continue | `0x07` | `buffer`, next data chunk | **no** |
+| Read buffer | `0x08` | `buffer` | **no** |
+| Describe buffer | `0x09` | `buffer` → reply data `[2..6)` is the file size, u32 LE | **no** |
+| Create file | `0x0B` | `u16 fileId LE` | **no** |
+| Delete file | `0x0C` | `u16 fileId LE` | **no** |
+| Open file | `0x0D` | `buffer`, `u16 fileId LE` | yes (`Open`, used with resource `0x22`) |
+| Session | `0x1B` | open `01 <token>` / close `02 00 00 00 00 <s>` | yes |
+
+A "buffer" is the handle slot. Web Hub uses buffer 0 (`Common_File_Index`) for file I/O, and
+`Bragi.cs` uses handle 1 for lighting. **Use buffer 0 for files so the lighting handle is never
+disturbed.** **(unverified that the two can be open at once)**
+
+### Reading a file
+1. `0x0D` open `buffer, fileId`. If status is "invalid state", unbind the buffer and retry once.
+   Any other failure means the file doesn't exist.
+2. `0x09` describe → total size.
+3. `0x08` read, repeating until `size` bytes have arrived. Each reply carries one chunk.
+4. `0x05` unbind the buffer (always, even on failure).
+
+### Writing a file
+1. Open it. If that fails: unbind, `0x0B` create, then open again.
+2. `0x06` write begin: `buffer`, `u32 total`, then as much data as fits.
+3. `0x07` write continue for the rest. A continue chunk carries 4 bytes more than the begin
+   chunk, because it has no length field.
+   Chunk size = input report size − header (4) − 5. With 1024-byte reports that's 1015 for the
+   first chunk and 1019 after. **(unverified: check the report count on the vendor interface)**
+4. Unbind the buffer.
+
+Put the whole thing between `Set(prop 0x03 mode) = 2` (host controlled) and `= 1` (self operated).
+`Bragi.cs` already does this as `PropertyMode`, `ModeSoftware`, `ModeHardware`.
+
+## Properties
+
+| Property | Id | Meaning |
+|---|---|---|
+| Operating mode | `0x03` | 1 = self operated, 2 = host controlled |
+| Free storage | `62` (`0x3E`) | bytes free for files. Web Hub keeps 5 MiB in reserve on this model, so an upload must fit in `free − 5 MiB` |
+| Screen index | `263` (`0x107`) | which entry of the profile's screen layout is shown. Written through the profile's *properties file*, not with a direct Set **(unverified: see "Open questions")** |
+
+## Files
+
+File ids are u16. The ones the host makes come from the range **28000–32767**. Web Hub tracks the
+ids it has used in its own browser database, never asks the device, and skips 28049. **MyRGB
+should read the device's maps instead of guessing**: walk the screen resource map and the
+profile files, then pick an unused id.
+
+### Screen resource map: file `61`
+A registry of every image resource.
+```
+u16 header | u16 count | count × { u16 resourceId, u16 resourceAddress, u8[4] hash }
+```
+Web Hub sets `resourceAddress = resourceId` and `hash = 00 00 00 00` for new entries. A slot whose
+`resourceId` is 0 is empty.
+
+### Image resource (a static image)
+```
+48 00 | BMP file | u32 unix time LE
+```
+`0x48` (72) marks a BMP. The BMP is a standard `BM` file with a 40-byte BITMAPINFOHEADER,
+**16 bpp, BI_BITFIELDS (compression 3)**, masks `F800 / 07E0 / 001F` (RGB565), and 2835 px/m. Rows
+are padded to 4 bytes. Web Hub writes a positive height (bottom-up) but fills rows top-down, so
+check the orientation on the real screen. **(unverified)** Pixels are RGB565 little-endian.
+(Web Hub's generic base class has a 24-bit variant, but the Vanguard's own `ScreenService`
+overrides it with this 16-bit one.)
+
+### GIF resource
+```
+45 00 | raw .gif bytes | u32 unix time LE
+```
+`0x45` (69) marks a GIF. Web Hub's *animated* path doesn't store the GIF, though. It splits it
+into frames, writes each frame as its own BMP resource, and then writes a GIF-config file:
+```
+u16 0x0066 (102) LE | u16 frame delay ms | u16 frameCount | frameCount × u16 resourceId
+```
+All the frame resources go into map file 61.
+
+### Screen config (what a layout entry points at, for a static image)
+16 bytes: `38 00` (56), `u16 resourceId LE`, then zeros.
+
+### Profile → screen layout
+- The profiles-list file holds `u16 header | u16 count | count × u16 profileFileId`.
+- Each profile file has a fixed layout. Its last field, `screenModesLayoutFile`, is a u16 file id
+  that comes right after the variable-length name (offsets: 30–31 = name length *n*, name at
+  32…32+n, then four u16s, and the fourth is the screen layout file).
+  **(unverified: the profiles-list file id is not pinned down yet)**
+- Screen modes layout file:
+  ```
+  u16 header (0x0037 = 55) | u8 rowCount | rowCount × { u8 count, count × u16 configFileId }
+  ```
+  Web Hub only ever uses row 0. Adding an image appends its *config* file id to row 0.
+
+## Web Hub's sequence for one static image
+
+1. Mode → host controlled.
+2. Check that the image fits in free storage (property 62) minus 5 MiB.
+3. Pick two unused ids: **R** for the image resource and **C** for its config.
+4. Read map file 61, append `{R, R, 0}`, and write it back.
+5. Write config file **C** = `38 00 <R> 00…` (16 bytes).
+6. Append **C** to row 0 of the active profile's screen-modes layout file.
+7. Set the screen index (property 263) to **C**'s position in row 0.
+8. Write image file **R** = `48 00 + RGB565 BMP 248×170 + timestamp`.
+9. Mode → self operated (in a `finally`).
+
+## Probe results (2026-11-14)
+
+`MyRGB.Tests.exe -explicit only -method MyRGB.Tests.LiveCorsairLcdTests.Probes_screen_files`
+(close MyRGB first). It is read-only, takes about half a second, and saves every file it reads to
+`artifacts/lcd-probe/<time>/`. The first run's copies are in `artifacts/lcd-probe/20261114-004901/`.
+
+- **The read path works as described.** Open on buffer 0, describe, read, unbind. The session's vid/pid
+  and mode (2, software) came back as expected.
+- **Buffer 0 can be open while lighting handle 1 is open.** The probe runs on the same session MyRGB
+  uses, with lighting open. So file I/O doesn't need its own session, though the lighting loop
+  should still pause during an upload so the two don't interleave.
+- **Free storage (62): 33,243,136 bytes (~31.7 MiB).** After the 5 MiB reserve that leaves ~26 MiB, which
+  is about 300 static 248×170 images.
+- **Profiles list (file 15):** header `0x0013`, one profile: **28000** "VANGUARD PRO 96 Default
+  Profile 1". The profile-file offsets are confirmed: name length, name, then the screen layout
+  file **28006**. The profile's properties file is **28001**, at bytes 8–9.
+- **Screen layout (28006) is `37 00 00`: zero rows.** Web Hub appends to `rowLayouts[0]` without
+  checking, so on this keyboard **the first upload has to create row 0** (`37 00 01 01 <C>`) instead
+  of appending.
+- **Resource map (61) is `44 00 00 00`:** header `0x0044` and no entries. No custom images are stored,
+  so the screen is only showing the firmware's built-in modes.
+- **The screen index (263) can't be read with Get property: the keyboard rejects it.** That matches
+  Web Hub, which writes it into the profile's properties file (28001) instead. Parsing that file
+  is the next thing to work out.
+
+## Open questions before writing anything to the keyboard
+
+1. The properties file format (28001), so screen index 263 can be set in it. Web Hub's
+   `fromBytesToProperties` and `PropertyMapService.updatePropertyProfile` have it. Extend the probe
+   to read and parse 28001 first.
+2. Whether the firmware shows an image when its layout entry is the only one in row 0, with the
+   index left unset. That would make step 7 optional for a first test.
+3. Error cases: a full map file, a full flash, and what the screen does with a malformed BMP.
+   The firmware could reject it or hang, so test with Web Hub's exact byte layout first.
+4. Rolling back: the probe's saved copies of 61, 28006 and 28001 are what an "undo" writes back.
+   A rollback writes those three plus deletes the new files with `0x0C`.
+
+The writes change the keyboard's stored profile. Before the first upload, read the profile's
+layout and map files and **save copies to disk** so they can be written back.
