@@ -21,6 +21,13 @@ internal static class ScreenFiles
     /// <summary>The registry of every image resource on the device.</summary>
     public const ushort ResourceMapFile = 61;
 
+    /// <summary>
+    /// What the screen shows: a copy of the selected layout entry's config file. Web Hub's selectWidget
+    /// writes it; adding an entry to the layout alone doesn't change the screen. (Not to be confused with
+    /// property 62, free storage.)
+    /// </summary>
+    public const ushort CurrentScreenFile = 62;
+
     /// <summary>Bytes free for files. Web Hub keeps 5 MiB of it in reserve on this keyboard.</summary>
     public const ushort PropertyFreeStorage = 62;
 

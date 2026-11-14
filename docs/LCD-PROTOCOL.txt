@@ -5,14 +5,15 @@ browser app Corsair ships for the Vanguard series. It drives the keyboard over W
 JavaScript bundle contains the whole command set. **No USB capture was needed**, and iCUE isn't
 installed on this PC, so `LCD-CAPTURE.txt` is now only a fallback for confirming details on the wire.
 
-The **read** path has been confirmed on the real keyboard (see "Probe results" below). Nothing has
-been **written** to it yet. Items still marked **(unverified)** are inferred from the code.
+Both the **read** and the **write** paths are confirmed on the real keyboard. On 2026-11-14 a 248 × 170
+test card was uploaded and showed correctly: right colors, right way up. See "Probe results" and
+"First upload" below. Items still marked **(unverified)** are inferred from the code.
 
 ## What the screen is
 
 - Web Hub's device table gives the Vanguard Pro 96 (`1b1c:2b0e`, "K70 Wired Magnetic-Mechanical")
   a `ScreenService`. Its screen-properties call returns **248 × 170**, not the 320 × 170 the
-  marketing says. Use 248 × 170 until a live `GetProperty` says otherwise. **(unverified)**
+  marketing says. A 248 × 170 image fills it as expected (confirmed 2026-11-14).
 - The screen is **not streamed**. Web Hub writes image *files* into the keyboard's onboard
   storage and points the active profile at them; the keyboard firmware then shows them by itself
   in hardware mode. Live widgets (clock, CPU temp) are an iCUE-only feature and use a protocol that
@@ -104,9 +105,10 @@ not used here). `ScreenFiles.BuildStaticImage` reproduces it byte for byte, quir
   BITMAPINFOHEADER: width 248, height **+170**, 1 plane, **16 bpp, compression 3**, image size,
   2835 px/m twice.
 - The RGB565 masks `F800 / 07E0 / 001F` are written at 56–67, and then the **pixels are written from
-  54 on top of them**. So the file doesn't really carry masks, and the firmware must just read
-  RGB565 from absolute byte 54.
-- The height is positive, which would mean bottom-up, but **rows are written top-down**.
+  54 on top of them**. So the file doesn't really carry masks, and the firmware just reads RGB565
+  from absolute byte 54.
+- The height is positive, which would mean bottom-up, but **rows are written top-down**, and the
+  firmware shows them top-down. (Confirmed: the test card's white square is top-left, and red is on top.)
 - A pixel is `(R>>3)<<11 | (G>>2)<<5 | B>>3`, u16 little-endian. 248 × 2 = 496 bytes per row, which
   is already a multiple of 4, so there's no padding. (Web Hub's padding loop has a bug, but it
   never runs at this width.)
@@ -125,6 +127,15 @@ All the frame resources go into map file 61.
 
 ### Screen config (what a layout entry points at, for a static image)
 16 bytes: `38 00` (56), `u16 resourceId LE`, then zeros.
+
+### What's showing: file `62`
+**The screen shows whatever config is in file 62.** Web Hub's `selectWidget(C)` reads config file
+**C** and writes its bytes into file 62 (then sets the screen index, skipped at 0). Adding an entry
+to the layout does **not** change the screen; this file does. Web Hub's UI calls it
+(`changeScreenWidget`) right after every successful upload, outside the upload function itself,
+which is why the first upload attempt showed nothing. On this keyboard file 62 was `38 00 00 00`
+beforehand: a static config with resource 0, meaning "no custom image". File 62 is unrelated to
+*property* 62 (free storage).
 
 ### Profile → screen layout
 - The profiles-list file holds `u16 header | u16 count | count × u16 profileFileId`.
@@ -168,11 +179,13 @@ screen index changes only those 4 bytes and leaves the rest exactly as the firmw
    this keyboard, so the properties file is left alone.
 8. Write image file **R** = `48 00 + RGB565 BMP 248×170 + timestamp`.
 9. Mode → self operated (in a `finally`).
+10. **The UI then calls `changeScreenWidget(C)`: copy config C into file 62.** Without this step the
+    image is stored but never shown.
 
 Web Hub also bumps the profile file's u32 cookie (bytes 2–5) to the current unix time afterwards,
 but only when its own browser database has a cookie for that profile. It looks like a change
-marker for other hosts, so MyRGB skips it and leaves the profile file alone. **(unverified that
-the firmware doesn't need it)**
+marker for other hosts, so MyRGB skips it and leaves the profile file alone. The firmware
+doesn't need it: the first upload showed without it.
 
 Two Web Hub bugs MyRGB works around:
 - The layout parser gives a zero-row layout (`37 00 00`, how this keyboard ships) no
@@ -182,9 +195,10 @@ Two Web Hub bugs MyRGB works around:
   but MyRGB reads the u16 at 2.
 
 ### MyRGB's upload (`ScreenUpload`)
-`ScreenUpload.UploadStaticImageAsync` follows steps 2–8 in Web Hub's order. Before the first write,
-it reads and checks everything, picks the ids, and saves the map, layout and properties files plus
-an `upload.txt` manifest to a backup folder. New ids are the lowest ones from 28000 up (not 28049)
+`ScreenUpload.UploadStaticImageAsync` follows steps 2–8 and 10 in Web Hub's order (step 10 is
+`ScreenUpload.ShowAsync`). Before the first write, it reads and checks everything, picks the ids,
+and saves the map, layout and properties files plus an `upload.txt` manifest to a backup folder.
+`ShowAsync` adds file 62's old contents to the same backup. New ids are the lowest ones from 28000 up (not 28049)
 that **don't exist on the keyboard** (open fails) and that **no profile, profiles-list or layout
 file mentions**: a profile can point at a file that hasn't been made yet. It refuses if the
 keyboard has more than one profile, since MyRGB doesn't read the active one yet.
@@ -195,7 +209,21 @@ Live tests (close MyRGB first; both WRITE to the keyboard):
   puts up a test card: red/green/blue thirds top to bottom, with a white square top-left, so both
   color order and orientation show. It then reads every written file back. The backup goes to
   `artifacts/lcd-upload/<time>/`.
-- `…LiveCorsairLcdTests.Rolls_back_last_upload` undoes the newest upload that hasn't been undone.
+- `…LiveCorsairLcdTests.Shows_last_upload` writes file 62 for the newest upload. It's only needed for
+  uploads made before the upload did that itself.
+- `…LiveCorsairLcdTests.Rolls_back_last_upload` undoes the newest upload that hasn't been undone,
+  restoring file 62 as well.
+
+### First upload (2026-11-14, `artifacts/lcd-upload/20261114-103934/`)
+- **Ids:** resource **28013**, config **28014**. Neither existed, and the profile doesn't name them.
+- **Writes:** map 61 became `44 00 01 00 6D 6D 6D 6D 00 00 00 00`, layout 28006 became
+  `37 00 01 01 6E 6D`, the screen index stayed at 0, and the image is 84,380 bytes. Every file read
+  back identical.
+- **Free storage** dropped 98,304 bytes for an 84,380-byte image, so space goes in 4 KiB blocks.
+- **Nothing showed** until file 62 was written. After that the test card appeared, with correct
+  colors and orientation. The image appeared with the keyboard in self-operated mode (MyRGB closed).
+  Whether it stays up while MyRGB has the keyboard in host-controlled mode is still to check.
+- The profile cookie wasn't touched, and the firmware didn't need it.
 
 ## Probe results (2026-11-14)
 
@@ -233,8 +261,8 @@ Live tests (close MyRGB first; both WRITE to the keyboard):
 1. ~~The properties file format (28001).~~ Solved 2026-11-14: see "Profile properties file". Still
    open: whether the firmware cares about entry order (MyRGB keeps the keyboard's order, so it
    doesn't need to find out).
-2. Whether the firmware shows an image when its layout entry is the only one in row 0, with the
-   index left unset. That would make step 7 optional for a first test.
+2. ~~Whether the firmware shows an image as the only row-0 entry with the index left at 0.~~ It
+   does, once file 62 points at its config.
 3. Error cases: a full map file, a full flash, and what the screen does with a malformed BMP.
    The firmware could reject it or hang, so test with Web Hub's exact byte layout first.
 4. Rolling back: the probe's saved copies of 61, 28006 and 28001 are what an "undo" writes back.

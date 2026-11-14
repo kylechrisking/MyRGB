@@ -149,6 +149,31 @@ public class LiveCorsairLcdTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>
+    /// WRITES to the keyboard: shows the newest not-rolled-back upload by copying its config into file 62,
+    /// for uploads made before the upload did that itself. File 62 is backed up into that upload's folder.
+    /// </summary>
+    [Fact(Explicit = true)]
+    public async Task Shows_last_upload()
+    {
+        var dir = LastUploadDir();
+        var created = File.ReadAllLines(Path.Combine(dir, "upload.txt")).First(l => l.StartsWith("created=", StringComparison.Ordinal));
+        ushort config = ushort.Parse(created["created=".Length..].Split(',')[0]);
+
+        await using var kb = await OpenAsync();
+        var ct = TestContext.Current.CancellationToken;
+        var log = new StringBuilder();
+        void Say(string s) { output.WriteLine(s); log.AppendLine(s); }
+        Say($"Showing config {config} from {dir}");
+        await ScreenUpload.ShowAsync(kb, config, dir, Say, ct);
+        await File.AppendAllTextAsync(Path.Combine(dir, "summary.txt"), log.ToString(), ct);
+    }
+
+    private static string LastUploadDir() =>
+        Directory.GetDirectories(Path.Combine(RepoRoot(), "artifacts", "lcd-upload")).OrderDescending()
+            .FirstOrDefault(d => File.Exists(Path.Combine(d, "upload.txt")) && !File.Exists(Path.Combine(d, "rolled-back.txt")))
+        ?? throw new InvalidOperationException("No upload that hasn't been rolled back.");
+
     /// <summary>WRITES to the keyboard: undoes the newest upload under artifacts/lcd-upload/ that isn't undone yet.</summary>
     [Fact(Explicit = true)]
     public async Task Rolls_back_last_upload()

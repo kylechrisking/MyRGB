@@ -75,19 +75,50 @@ internal static class ScreenUpload
         }
         else say($"screen index is already {index}; properties file left alone");
 
-        // 5. The image itself, last, as Web Hub does.
+        // 5. The image itself, last of the upload, as Web Hub does.
         await kb.WriteFileAsync(resource, image, ct);
         say($"image {resource} written ({image.Length} bytes)");
 
+        // 6. Put it on screen. Web Hub's UI does this right after a successful upload (changeScreenWidget).
+        await ShowAsync(kb, config, backupDir, say, ct);
+
         return new(profileId, resource, config, index, wroteProps, backupDir);
+    }
+
+    /// <summary>
+    /// Shows a layout entry now: copies its config file into <see cref="ScreenFiles.CurrentScreenFile"/>
+    /// (Web Hub's <c>selectWidget</c>). The current contents of that file are saved to the backup folder
+    /// first and added to its manifest, so <see cref="RollBackAsync"/> puts back what was showing.
+    /// </summary>
+    public static async Task ShowAsync(CorsairKeyboard kb, ushort configFile, string backupDir, Action<string>? say = null, CancellationToken ct = default)
+    {
+        say ??= _ => { };
+        const ushort current = ScreenFiles.CurrentScreenFile;
+        var config = await Need(kb, configFile, "screen config", ct);
+
+        var manifest = await ReadManifestAsync(backupDir, ct);
+        if (!manifest["restore"].Contains(current) && !manifest["created"].Contains(current))
+        {
+            var before = await kb.ReadFileAsync(current, ct);
+            if (before is null) manifest["created"] = [.. manifest["created"], current];
+            else
+            {
+                await File.WriteAllBytesAsync(Path.Combine(backupDir, $"file-{current}.bin"), before, ct);
+                manifest["restore"] = [current, .. manifest["restore"]];
+            }
+            await WriteManifestAsync(backupDir, manifest, ct);
+            say($"file {current} before: {(before is null ? "did not exist" : Convert.ToHexString(before))}");
+        }
+
+        await kb.WriteFileAsync(current, config, ct);
+        say($"file {current} now: {Convert.ToHexString(config)} (config {configFile})");
     }
 
     /// <summary>Writes the backed-up files back and deletes the ones the upload created.</summary>
     public static async Task RollBackAsync(CorsairKeyboard kb, string backupDir, Action<string>? say = null, CancellationToken ct = default)
     {
         say ??= _ => { };
-        var manifest = (await File.ReadAllLinesAsync(Path.Combine(backupDir, ManifestName), ct))
-            .Select(l => l.Split('=', 2)).Where(p => p.Length == 2).ToDictionary(p => p[0], p => p[1].Split(',').Select(ushort.Parse).ToArray());
+        var manifest = await ReadManifestAsync(backupDir, ct);
 
         foreach (var id in manifest["restore"])
         {
@@ -111,6 +142,15 @@ internal static class ScreenUpload
         if (found.Count < 2) throw new IOException("No free file ids left.");
         return (found[0], found[1]);
     }
+
+    /// <summary><c>restore=&lt;ids&gt;</c> (files saved here, written back on rollback) and <c>created=&lt;ids&gt;</c> (deleted on rollback).</summary>
+    private static async Task<Dictionary<string, ushort[]>> ReadManifestAsync(string backupDir, CancellationToken ct) =>
+        (await File.ReadAllLinesAsync(Path.Combine(backupDir, ManifestName), ct))
+            .Select(l => l.Split('=', 2)).Where(p => p.Length == 2)
+            .ToDictionary(p => p[0], p => p[1].Split(',', StringSplitOptions.RemoveEmptyEntries).Select(ushort.Parse).ToArray());
+
+    private static Task WriteManifestAsync(string backupDir, Dictionary<string, ushort[]> m, CancellationToken ct) =>
+        File.WriteAllTextAsync(Path.Combine(backupDir, ManifestName), string.Concat(m.Select(p => $"{p.Key}={string.Join(",", p.Value)}\n")), ct);
 
     private static async Task<byte[]> Need(CorsairKeyboard kb, ushort id, string what, CancellationToken ct) =>
         await kb.ReadFileAsync(id, ct) ?? throw new IOException($"The keyboard has no {what} file ({id}).");
