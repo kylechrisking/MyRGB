@@ -59,7 +59,15 @@ public class LiveCorsairLcdTests(ITestOutputHelper output)
             var pf = await Read(pid, "profile");
             var profile = pf is null ? null : ScreenFiles.ParseProfile(pf);
             if (profile is null) continue;
-            Say($"  profile {pid} \"{profile.Name}\": screen layout file {profile.ScreenLayoutFile}");
+            Say($"  profile {pid} \"{profile.Name}\": properties file {profile.PropertiesFile}, screen layout file {profile.ScreenLayoutFile}");
+            if (profile.PropertiesFile != 0 && await Read(profile.PropertiesFile, "properties") is { } propFile)
+            {
+                var props = ScreenFiles.ParseProperties(propFile);
+                Say($"    properties header 0x{props.Header:X4}, declared {props.DeclaredCount}, read {props.Entries.Count}: {string.Join(" ", props.Entries.Select(e => $"{e.Id}=0x{e.Value:X}"))}");
+                Say($"    screen index (263): {props[ScreenFiles.PropertyScreenIndex]?.ToString() ?? "not set"}");
+                var rebuilt = ScreenFiles.BuildProperties(props.Entries);
+                Say($"    rebuilds byte-for-byte: {rebuilt.AsSpan().SequenceEqual(propFile)}");
+            }
             if (profile.ScreenLayoutFile == 0) continue;
 
             var lf = await Read(profile.ScreenLayoutFile, "screen layout");

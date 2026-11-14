@@ -67,6 +67,64 @@ public class CorsairTests
     }
 
     [Fact]
+    public void Parses_profile_properties_file()
+    {
+        // The real profile file read off the keyboard on 2026-11-14 (profile 28000).
+        var f = Hex("1EF1000000000000616D0000626D636D0000646D00000000686D696D0000" + "2100")
+            .Concat("VANGUARD PRO 96 Default Profile 1\0"u8.ToArray()).Concat(Hex("6A6D6B6D6C6D666D")).ToArray();
+        var p = ScreenFiles.ParseProfile(f)!;
+        Assert.Equal("VANGUARD PRO 96 Default Profile 1", p.Name);
+        Assert.Equal(28001, p.PropertiesFile);
+        Assert.Equal(28006, p.ScreenLayoutFile);
+    }
+
+    [Fact]
+    public void Parses_properties_file()
+    {
+        var p = ScreenFiles.ParseProperties(Hex("3DD4" + "0200" + "0701" + "02000000" + "4900" + "00000000"));
+        Assert.Equal(0xD43D, p.Header);
+        Assert.Equal(2u, p[263]);
+        Assert.Equal(0u, p[73]);
+        Assert.Null(p[62]);
+    }
+
+    [Fact]
+    public void Properties_file_stops_at_its_end() =>
+        Assert.Single(ScreenFiles.ParseProperties(Hex("3DD4" + "0500" + "070102000000" + "4900")).Entries);
+
+    // The keyboard's own properties file for profile 28000, read on 2026-11-14: not sorted by id.
+    private const string RealProperties =
+        "3DD40F00" + "4900FFFFFF00" + "4A0001000000" + "5D000000FF00" + "5E00FFFFFF00" + "CF00FFFFFF00" + "040000000000" +
+        "D60000000000" + "6C0000000000" + "FB0000000000" + "FC0001000000" + "FD0000BEFF00" + "FE0004000000" + "FF0007000000" +
+        "060100000000" + "070100000000";
+
+    [Fact]
+    public void Real_properties_file_round_trips_unchanged()
+    {
+        var bytes = Hex(RealProperties);
+        var p = ScreenFiles.ParseProperties(bytes);
+        Assert.Equal(15, p.Entries.Count);
+        Assert.Equal(0u, p[ScreenFiles.PropertyScreenIndex]);
+        Assert.Equal(bytes, ScreenFiles.BuildProperties(p.Entries));
+    }
+
+    [Fact]
+    public void Setting_screen_index_changes_only_its_value()
+    {
+        var bytes = Hex(RealProperties);
+        var after = ScreenFiles.BuildProperties(ScreenFiles.WithProperty(ScreenFiles.ParseProperties(bytes).Entries, ScreenFiles.PropertyScreenIndex, 2));
+        Assert.Equal(bytes.Length, after.Length);
+        var changed = Enumerable.Range(0, bytes.Length).Where(i => bytes[i] != after[i]).ToArray();
+        Assert.Equal(new[] { bytes.Length - 4 }, changed);
+        Assert.Equal(2, after[^4]);
+    }
+
+    [Fact]
+    public void Setting_a_missing_property_appends_it() =>
+        Assert.Equal(Hex("3DD4" + "0200" + "4900" + "00000000" + "0701" + "03000000"),
+            ScreenFiles.BuildProperties(ScreenFiles.WithProperty([new(73, 0)], 263, 3)));
+
+    [Fact]
     public void Profile_too_short_has_no_layout() =>
         Assert.Equal(0, ScreenFiles.ParseProfile(new byte[40])!.ScreenLayoutFile);
 

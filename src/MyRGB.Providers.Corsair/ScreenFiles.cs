@@ -41,11 +41,12 @@ internal static class ScreenFiles
         return new(BinaryPrimitives.ReadUInt16LittleEndian(f), ids);
     }
 
-    public sealed record Profile(string Name, ushort ScreenLayoutFile);
+    public sealed record Profile(string Name, ushort PropertiesFile, ushort ScreenLayoutFile);
 
     /// <summary>
-    /// A profile file: fixed u16 fields up to a name length at 30, the name from 32 (with a trailing
-    /// zero), then four u16s, and the fourth is the screen layout file. Null if the file is too short.
+    /// A profile file: <c>u16 profile | u32 cookie | u16 assignments | u16 properties | …</c> fixed u16
+    /// fields up to a name length at 30, the name from 32 (with a trailing zero), then four u16s, and
+    /// the fourth is the screen layout file. Null if the file is too short.
     /// </summary>
     public static Profile? ParseProfile(ReadOnlySpan<byte> f)
     {
@@ -54,7 +55,61 @@ internal static class ScreenFiles
         int after = 33 + nameLength; // Web Hub: name spans 32 .. 33+n (the name plus its terminator)
         string name = System.Text.Encoding.UTF8.GetString(f.Slice(32, Math.Min(nameLength, f.Length - 32))).TrimEnd('\0');
         ushort layout = after + 8 <= f.Length ? BinaryPrimitives.ReadUInt16LittleEndian(f[(after + 6)..]) : (ushort)0;
-        return new(name, layout);
+        return new(name, BinaryPrimitives.ReadUInt16LittleEndian(f[8..]), layout);
+    }
+
+    /// <summary>The header Web Hub writes at the top of a profile's properties file.</summary>
+    public const ushort PropertiesFileHeader = 0xD43D;
+
+    public sealed record PropertyEntry(ushort Id, uint Value);
+
+    public sealed record PropertiesFile(ushort Header, int DeclaredCount, IReadOnlyList<PropertyEntry> Entries)
+    {
+        /// <summary>The value of a property, or null if the file doesn't have it.</summary>
+        public uint? this[ushort id] => Entries.FirstOrDefault(e => e.Id == id)?.Value;
+    }
+
+    /// <summary>
+    /// A profile's properties file: <c>u16 header (0xD43D) | u16 count | count × { u16 id, u32 value }</c>,
+    /// all little-endian. Holds per-profile settings the keyboard won't take through Set property, the
+    /// screen index (263) among them. Entries are kept in file order, which the firmware doesn't sort.
+    /// </summary>
+    public static PropertiesFile ParseProperties(ReadOnlySpan<byte> f)
+    {
+        if (f.Length < 4) return new(0, 0, []);
+        int count = BinaryPrimitives.ReadUInt16LittleEndian(f[2..]);
+        var entries = new List<PropertyEntry>();
+        for (int i = 0, o = 4; i < count && o + 6 <= f.Length; i++, o += 6)
+            entries.Add(new(BinaryPrimitives.ReadUInt16LittleEndian(f[o..]), BinaryPrimitives.ReadUInt32LittleEndian(f[(o + 2)..])));
+        return new(BinaryPrimitives.ReadUInt16LittleEndian(f), count, entries);
+    }
+
+    /// <summary>
+    /// Sets one property: replaced where it already is, or appended at the end, so every other byte of
+    /// the file stays as the keyboard wrote it. (Web Hub instead rewrites the whole file sorted by id.)
+    /// </summary>
+    public static IReadOnlyList<PropertyEntry> WithProperty(IEnumerable<PropertyEntry> entries, ushort id, uint value)
+    {
+        var list = entries.ToList();
+        int at = list.FindIndex(e => e.Id == id);
+        if (at >= 0) list[at] = new(id, value); else list.Add(new(id, value));
+        return list;
+    }
+
+    /// <summary>The bytes of a properties file, entries in the order given. Nothing writes this to the keyboard yet.</summary>
+    public static byte[] BuildProperties(IReadOnlyCollection<PropertyEntry> entries)
+    {
+        var f = new byte[4 + entries.Count * 6];
+        BinaryPrimitives.WriteUInt16LittleEndian(f, PropertiesFileHeader);
+        BinaryPrimitives.WriteUInt16LittleEndian(f.AsSpan(2), (ushort)entries.Count);
+        int o = 4;
+        foreach (var e in entries)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(f.AsSpan(o), e.Id);
+            BinaryPrimitives.WriteUInt32LittleEndian(f.AsSpan(o + 2), e.Value);
+            o += 6;
+        }
+        return f;
     }
 
     public sealed record ScreenLayout(ushort Header, IReadOnlyList<IReadOnlyList<ushort>> Rows);

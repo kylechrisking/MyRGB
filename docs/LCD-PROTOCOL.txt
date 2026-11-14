@@ -69,8 +69,8 @@ Put the whole thing between `Set(prop 0x03 mode) = 2` (host controlled) and `= 1
 | Property | Id | Meaning |
 |---|---|---|
 | Operating mode | `0x03` | 1 = self operated, 2 = host controlled |
-| Free storage | `62` (`0x3E`) | bytes free for files. Web Hub keeps 5 MiB in reserve on this model, so an upload must fit in `free − 5 MiB` |
-| Screen index | `263` (`0x107`) | which entry of the profile's screen layout is shown. Written through the profile's *properties file*, not with a direct Set **(unverified: see "Open questions")** |
+| Free storage | `62` (`0x3E`) | bytes free for files. Web Hub keeps 5 MiB in reserve on every model except product ids 11012, 11034 and 11099 (the Vanguard is 11022), so an upload must fit in `free − 5 MiB` |
+| Screen index | `263` (`0x107`) | which entry of row 0 of the profile's screen layout is shown. **Get property rejects it**; it lives in the profile's *properties file* (below) and is changed by rewriting that file |
 
 ## Files
 
@@ -124,6 +124,22 @@ All the frame resources go into map file 61.
   ```
   Web Hub only ever uses row 0. Adding an image appends its *config* file id to row 0.
 
+### Profile properties file
+The profile file's fixed fields start `u16 profile | u32 cookie | u16 assignmentsFile |
+u16 propertiesFile | …`, so the properties file id is at **bytes 8–9** (Web Hub's
+`setDefaultProfileFile` field order; on this keyboard it is 28001).
+```
+u16 header (0xD43D = 54333) | u16 count | count × { u16 propertyId, u32 value }   (all LE)
+```
+(Web Hub: `convertBytesToPropertyPair` / `convertPropertyMapToBytes`, used by
+`PropertyMapService.updatePropertyProfile`.) Web Hub reads the whole file into an id → value map,
+changes the entries it wants, and writes the whole file back with `writeFile` (open, or create and
+open, then write-begin with the full length). Colors are stored as `B G R 00`.
+
+Web Hub rewrites the entries **sorted by id**, but the keyboard's own file is not sorted (see the
+probe results below). `ScreenFiles.WithProperty` replaces a value in place instead, so setting the
+screen index changes only those 4 bytes and leaves the rest exactly as the firmware wrote it.
+
 ## Web Hub's sequence for one static image
 
 1. Mode → host controlled.
@@ -132,7 +148,8 @@ All the frame resources go into map file 61.
 4. Read map file 61, append `{R, R, 0}`, and write it back.
 5. Write config file **C** = `38 00 <R> 00…` (16 bytes).
 6. Append **C** to row 0 of the active profile's screen-modes layout file.
-7. Set the screen index (property 263) to **C**'s position in row 0.
+7. Set the screen index (property 263) to **C**'s position in row 0, by rewriting the profile's
+   properties file with that one value changed.
 8. Write image file **R** = `48 00 + RGB565 BMP 248×170 + timestamp`.
 9. Mode → self operated (in a `finally`).
 
@@ -158,14 +175,20 @@ All the frame resources go into map file 61.
 - **Resource map (61) is `44 00 00 00`:** header `0x0044` and no entries. No custom images are stored,
   so the screen is only showing the firmware's built-in modes.
 - **The screen index (263) can't be read with Get property: the keyboard rejects it.** That matches
-  Web Hub, which writes it into the profile's properties file (28001) instead. Parsing that file
-  is the next thing to work out.
+  Web Hub, which writes it into the profile's properties file (28001) instead.
+- **Properties file (28001), second run (`artifacts/lcd-probe/20261114-102936/`):** 94 bytes,
+  header `0xD43D`, 15 entries, every one parsed. **263 is already present with value 0**, and 262
+  is next to it (also 0), so setting the index is a value change, not an insert. Entries in file
+  order: 73=`FFFFFF00`, 74=1, 93=`0000FF00`, 94=`FFFFFF00`, 207=`FFFFFF00`, 4=0, 214=0, 108=0,
+  251=0, 252=1, 253=`00BEFF00`, 254=4, 255=7, 262=0, 263=0. They are **not sorted by id**, so a
+  Web Hub-style rewrite would reorder them. A parse-then-rebuild in file order reproduces the file
+  byte for byte (unit test `Real_properties_file_round_trips_unchanged` holds the real bytes).
 
 ## Open questions before writing anything to the keyboard
 
-1. The properties file format (28001), so screen index 263 can be set in it. Web Hub's
-   `fromBytesToProperties` and `PropertyMapService.updatePropertyProfile` have it. Extend the probe
-   to read and parse 28001 first.
+1. ~~The properties file format (28001).~~ Solved 2026-11-14: see "Profile properties file". Still
+   open: whether the firmware cares about entry order (MyRGB keeps the keyboard's order, so it
+   doesn't need to find out).
 2. Whether the firmware shows an image when its layout entry is the only one in row 0, with the
    index left unset. That would make step 7 optional for a first test.
 3. Error cases: a full map file, a full flash, and what the screen does with a malformed BMP.
