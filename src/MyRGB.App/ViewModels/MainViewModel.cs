@@ -525,7 +525,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var d in devices.OrderBy(d => d.Leds.Count == 0).ThenBy(d => DisplayOrder(d.Type)).ThenBy(d => names[d.Id]))
             Devices.Add(new DeviceRowViewModel(d, names[d.Id], !excluded.Contains(d.Id),
                 (id, inc) => { _host.SetExcluded(id, !inc); RefreshAlerts(); }, _host.SetZoneSizeAsync,
-                id => _host.Lights.Flash(id)));
+                id => _host.Lights.Flash(id), d is IScreenDevice s ? new ScreenViewModel(s, _host) : null));
         Studio.SetDevices(devices.Select(d => (d.Id, names[d.Id])));
 
         int controlled = Devices.Count(d => d.Included && !d.NeedsSetup);

@@ -907,6 +907,32 @@
                                 </DataTemplate>
                               </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <Panel Margin="0,8,0,0" IsVisible="{Binding HasScreen}"><Grid ColumnDefinitions="Auto,*" DataContext="{Binding Screen}"
+                                  x:DataType="vm:ScreenViewModel">
+                              <Border Width="124" Height="85" CornerRadius="6" ClipToBounds="True" Background="Black" VerticalAlignment="Top"
+                                      BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1">
+                                <Panel>
+                                  <Image Source="{Binding Preview}" Stretch="UniformToFill" />
+                                  <TextBlock Classes="muted" Text="{Binding PlaceholderText}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                             IsVisible="{Binding Preview, Converter={x:Static ObjectConverters.IsNull}}" />
+                                </Panel>
+                              </Border>
+                              <StackPanel Grid.Column="1" Spacing="6" Margin="14,0,0,0">
+                                <TextBlock Text="{Binding SizeText}" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                  <Button Classes="accent" Content="Choose picture…" Command="{Binding ChooseImageCommand}"
+                                          ToolTip.Tip="Store a picture on the keyboard. It's cropped to fill the screen." />
+                                  <Button Classes="ghost" Content="Remove" Command="{Binding RemoveImageCommand}" IsVisible="{Binding HasImage}"
+                                          ToolTip.Tip="Take MyRGB's picture off and put the screen back as it was" />
+                                </StackPanel>
+                                <ToggleSwitch IsChecked="{Binding ScreenFirst}" OnContent="Show the screen" OffContent="Show the screen"
+                                              ToolTip.Tip="{Binding ScreenFirstHint}" />
+                                <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"
+                                           Text="{Binding ScreenFirstHint}" />
+                                <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Text="{Binding Status}"
+                                           IsVisible="{Binding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                              </StackPanel>
+                            </Grid></Panel>
                           </StackPanel>
                           <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Right">
                             <ToggleSwitch IsChecked="{Binding Included}" OnContent="MyRGB controls it" OffContent="Left alone" />

@@ -222,6 +222,30 @@ public class LiveCorsairLcdTests(ITestOutputHelper output)
         await File.WriteAllTextAsync(Path.Combine(dir, "rolled-back.txt"), log.ToString(), ct);
     }
 
+    /// <summary>
+    /// The app's "Show the screen" switch: hand the keyboard back (mode 1, lighting handle closed), then
+    /// take it again and light it. Changes nothing stored on the keyboard. Close MyRGB first.
+    /// </summary>
+    [Fact(Explicit = true)]
+    public async Task Screen_first_round_trip()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        // Every step waits for the keyboard to accept the command. (Reading the mode back isn't used: on
+        // 2026-11-15 a Get of property 3 got no reply, though that run shared the keyboard with MyRGB.)
+        await using var kb = await OpenAsync();
+        await kb.SetScreenFirstAsync(true, ct);
+        Assert.True(kb.ScreenFirst);
+        output.WriteLine("Handed back; the stored picture should show for 5 s.");
+        await Task.Delay(5000, ct);
+
+        await kb.SetScreenFirstAsync(false, ct);
+        Assert.False(kb.ScreenFirst);
+        output.WriteLine("Taken back; the keys should go cyan for 2 s.");
+        var cyan = Enumerable.Repeat(new MyRGB.Core.Rgb(0, 200, 255), kb.Leds.Count).ToArray();
+        for (int i = 0; i < 20; i++) { await kb.ApplyAsync(cyan, ct); await Task.Delay(100, ct); }
+        Assert.False(kb.Faulted);
+    }
+
     private static async Task<CorsairKeyboard> OpenAsync()
     {
         var iface = HidDevices.Find("vid_1b1c&pid_2b0e&mi_02").FirstOrDefault(i => i.UsagePage == 0xFF42 && i.OutputReportLength == Bragi.ReportLength);

@@ -46,6 +46,9 @@ public sealed class AppSettings
     public List<string> ExcludedDevices { get; set; } = [];
     public List<ZoneSize> ZoneSizes { get; set; } = [];
 
+    /// <summary>Devices whose screen should show (they run their own lighting meanwhile); see <see cref="IScreenDevice.ScreenFirst"/>.</summary>
+    public List<string> ScreenFirstDevices { get; set; } = [];
+
     /// <summary>Fans the user set to a fixed speed or a curve. Fans not listed are left to the hardware.</summary>
     public List<FanSetting> Fans { get; set; } = [];
 

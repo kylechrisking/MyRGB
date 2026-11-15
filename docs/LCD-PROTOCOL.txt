@@ -239,6 +239,28 @@ the keyboard back to self-operated mode whenever a stored image should show, giv
 host lighting while it does.
 - The profile cookie wasn't touched, and the firmware didn't need it.
 
+## In the app (2026-11-15): the fallback, as an opt-in switch
+
+The Devices page has a screen panel on the keyboard's row (`IScreenDevice` in MyRGB.Core,
+implemented by `CorsairKeyboard`, view model `ScreenViewModel`):
+- **Choose picture…** fits the picture to 248×170 (centered crop, never stretched; `ScreenFit.Cover`,
+  transparency comes out black), then uploads it with `ScreenUpload`. **One MyRGB picture at a time:**
+  if one is already stored, it is rolled back first, then the new one goes up. If an upload fails part
+  way, what it wrote is rolled back.
+- The backup of the upload now on the keyboard lives in
+  `%APPDATA%\MyRGB\screens\corsair-keyboard\current\` (same layout as `artifacts/lcd-upload/<time>/`).
+  It existing is what "a picture is stored" means to the app. **Remove** rolls it back and deletes it.
+  A preview PNG sits next to it in `screens\`.
+- **Show the screen** (off by default, saved in `ScreenFirstDevices`, re-applied when the keyboard is
+  found again) closes the lighting handle and sets mode 1, so the stored picture shows and the
+  keyboard runs its own effect. Off: mode 2 and the lighting handle again. While it's on, uploads and
+  rollbacks switch to mode 2 around the file writes and back afterwards, as Web Hub does.
+- Not yet run on the keyboard: explicit test `Screen_first_round_trip` covers the switch (close MyRGB
+  first). The first attempt (2026-11-15, 01:00) ran while an elevated MyRGB still held the keyboard,
+  which the test can't stop, so it proved nothing. In that run a Get of property 3 got no reply.
+- The test card from 2026-11-14 predates the app; its backup was copied into the app's `current\`
+  folder, so **Remove** (or the next picture) puts the keyboard back to how it was before it.
+
 ## Probe results (2026-11-14)
 
 `MyRGB.Tests.exe -explicit only -method MyRGB.Tests.LiveCorsairLcdTests.Probes_screen_files`

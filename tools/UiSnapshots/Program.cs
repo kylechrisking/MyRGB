@@ -69,7 +69,7 @@ void Shoot(string name)
         Thread.Sleep(40);
     }
     var frame = window.CaptureRenderedFrame();
-    using (var file = File.Create(Path.Combine(outDir, $"{name}.png"))) frame?.Save(file);
+    using (var file = File.Create(Path.Combine(outDir, $"{name}.png"))) frame?.Save(file, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
     Console.WriteLine($"{name}: {(frame is null ? "no frame" : "ok")}");
 }
 
@@ -101,6 +101,26 @@ vm.EditPreset("visualizer"); Shoot("04c-visualizer");
 AudioFeed.Publish(AudioFrame.Silent);
 vm.SelectedTab = MainViewModel.LayoutTab; Shoot("05-layout");
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
+{
+    // A picture for the keyboard's screen: wider than the screen, so the crop shows.
+    var card = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(400, 200), new Avalonia.Vector(96, 96));
+    using (var ctx = card.CreateDrawingContext())
+    {
+        ctx.FillRectangle(Avalonia.Media.Brushes.Crimson, new Avalonia.Rect(0, 0, 133, 200));
+        ctx.FillRectangle(Avalonia.Media.Brushes.SeaGreen, new Avalonia.Rect(133, 0, 134, 200));
+        ctx.FillRectangle(Avalonia.Media.Brushes.RoyalBlue, new Avalonia.Rect(267, 0, 133, 200));
+        ctx.FillRectangle(Avalonia.Media.Brushes.White, new Avalonia.Rect(180, 80, 40, 40));
+    }
+    var cardPath = Path.Combine(data, "screen-card.png");
+    card.Save(cardPath, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
+    var screen = vm.Devices.First(d => d.HasScreen).Screen!;
+    var upload = screen.UseImageAsync(cardPath);
+    while (!upload.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(10); }
+    upload.GetAwaiter().GetResult();
+    Console.WriteLine($"screen: {screen.Status} has={screen.HasImage} bytes={FakeScreenKeyboard.Last?.Length}");
+    screen.ScreenFirst = true;
+    Shoot("06g-devices-screen");
+}
 vm.Supported.Query = "razer basilisk"; Console.WriteLine($"supported search: {vm.Supported.Summary} first={vm.Supported.Results.FirstOrDefault()?.Name}");
 host.SetFan(new FanSetting { FanId = "fake/gpu/fan1", Mode = FanMode.Curve, SensorKey = SensorKeys.GpuTemp });
 vm.SelectedTab = MainViewModel.MonitoringTab; Shoot("06b-monitoring");
@@ -140,7 +160,7 @@ sealed class FakeProvider : IDeviceProvider
 
     public Task<IReadOnlyList<IRgbDevice>> DiscoverAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<IRgbDevice>>(
     [
-        new FakeDevice("Corsair Vanguard Pro 96", "Corsair", DeviceType.Keyboard, Grid(20, 6), [new("Keys", 0, 120)], provider: "corsair"),
+        new FakeScreenKeyboard(Grid(20, 6)),
         new FakeDevice("Razer Basilisk V3 Pro (Wireless)", "Razer", DeviceType.Mouse,
             [new("Scroll", 0.5f, 0.15f), new("Logo", 0.5f, 0.7f), .. Enumerable.Range(0, 11).Select(i => new LedInfo($"Strip {i}", i < 6 ? 0f : 1f, 0.2f + (i % 6) * 0.15f))],
             [new("Scroll Wheel", 0, 1), new("Logo", 1, 1), new("LED Strip", 2, 11)], hardwareKey: "usb:1532:00ab"),
@@ -295,4 +315,31 @@ sealed class FakeSensors : ISensorSource
         public void Set(double percent) => _set = percent;
         public void Reset() => _set = null;
     }
+}
+
+/// <summary>The Vanguard Pro 96 with its 248×170 screen; keeps the last picture in memory.</summary>
+sealed class FakeScreenKeyboard(IReadOnlyList<LedInfo> leds) : IScreenDevice
+{
+    public static byte[]? Last;
+    public string Id => "fake:Corsair Vanguard Pro 96";
+    public string Name => "Corsair Vanguard Pro 96";
+    public string Vendor => "Corsair";
+    public DeviceType Type => DeviceType.Keyboard;
+    public string ProviderId => "corsair";
+    public string? HardwareKey => null;
+    public IReadOnlyList<LedInfo> Leds => leds;
+    public IReadOnlyList<ZoneInfo> Zones { get; } = [new("Keys", 0, leds.Count)];
+    public int ScreenWidth => 248;
+    public int ScreenHeight => 170;
+    public bool HasScreenImage => Last is not null;
+    public bool ScreenFirst { get; private set; }
+    public Task SetScreenImageAsync(ReadOnlyMemory<byte> rgb, CancellationToken ct = default)
+    {
+        if (rgb.Length != ScreenWidth * ScreenHeight * 3) throw new ArgumentException("Wrong size.");
+        Last = rgb.ToArray();
+        return Task.CompletedTask;
+    }
+    public Task ClearScreenImageAsync(CancellationToken ct = default) { Last = null; return Task.CompletedTask; }
+    public Task SetScreenFirstAsync(bool on, CancellationToken ct = default) { ScreenFirst = on; return Task.CompletedTask; }
+    public ValueTask ApplyAsync(ReadOnlyMemory<Rgb> colors, CancellationToken ct = default) => ValueTask.CompletedTask;
 }

@@ -13,7 +13,7 @@ internal static class ScreenUpload
 
     public sealed record Result(ushort ProfileFile, ushort ResourceFile, ushort ConfigFile, int ScreenIndex, bool WroteProperties, string BackupDir);
 
-    private const string ManifestName = "upload.txt";
+    internal const string ManifestName = "upload.txt";
 
     public static async Task<Result> UploadStaticImageAsync(CorsairKeyboard kb, ReadOnlyMemory<byte> rgb, string backupDir, Action<string>? say = null, CancellationToken ct = default)
     {

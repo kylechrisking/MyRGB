@@ -79,7 +79,7 @@ public sealed class AppHost : IAsyncDisposable
         Devices = new DeviceManager(Logs.CreateLogger<DeviceManager>());
         var providers = _options.Providers?.Invoke(Settings, Logs) ??
         [
-            new CorsairProvider(Logs.CreateLogger<CorsairProvider>()),
+            new CorsairProvider(Logs.CreateLogger<CorsairProvider>(), Path.Combine(_options.DataDirectory, "screens", "corsair-keyboard")),
             new OpenRgbProvider(Settings.OpenRgb, Logs.CreateLogger<OpenRgbProvider>(), () => Settings.ZoneSizes),
             // More native providers (Razer, Logitech, ...) register here as they're written.
         ];
@@ -111,7 +111,7 @@ public sealed class AppHost : IAsyncDisposable
         SensorFeed.Use(Sensors.Get);
         if (_options.ListenToAudio) Audio = new AudioListener(Logs.CreateLogger<AudioListener>());
 
-        Devices.DevicesChanged += (_, _) => WatchDeviceCommands();
+        Devices.DevicesChanged += (_, _) => { WatchDeviceCommands(); ApplyScreenFirst(); };
         Lights.StateChanged += (_, _) => ScheduleSave();
         Presets.Changed += (_, _) => { ScheduleSave(); ScheduleSync(); };
         Layout.Changed += (_, _) => ScheduleSave();
@@ -172,6 +172,48 @@ public sealed class AppHost : IAsyncDisposable
             case DeviceCommand.DialControlsBrightness: Lights.Flash([device.Id], new Rgb(255, 170, 30), TimeSpan.FromSeconds(0.8)); break;
             case DeviceCommand.DialControlsVolume: Lights.Flash([device.Id], new Rgb(40, 140, 255), TimeSpan.FromSeconds(0.8)); break;
         }
+    }
+
+    // ---- Device screens ----
+
+    /// <summary>The saved copy of what MyRGB last put on a device's screen, for the Devices page.</summary>
+    public string ScreenPreviewPath(IScreenDevice device) =>
+        Path.Combine(_options.DataDirectory, "screens", string.Concat(device.Id.Select(c => char.IsLetterOrDigit(c) ? c : '-')) + ".png");
+
+    /// <summary>Puts a picture on the device's screen and keeps <paramref name="previewPng"/> to show it by.</summary>
+    public async Task SetScreenImageAsync(IScreenDevice device, byte[] rgb, byte[] previewPng)
+    {
+        await device.SetScreenImageAsync(rgb);
+        var preview = ScreenPreviewPath(device);
+        Directory.CreateDirectory(Path.GetDirectoryName(preview)!);
+        await File.WriteAllBytesAsync(preview, previewPng);
+    }
+
+    public async Task ClearScreenImageAsync(IScreenDevice device)
+    {
+        await device.ClearScreenImageAsync();
+        File.Delete(ScreenPreviewPath(device));
+    }
+
+    public async Task SetScreenFirstAsync(IScreenDevice device, bool on)
+    {
+        await device.SetScreenFirstAsync(on);
+        var set = Settings.ScreenFirstDevices.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (on) set.Add(device.Id); else set.Remove(device.Id);
+        Settings.ScreenFirstDevices = [.. set];
+        ScheduleSave();
+    }
+
+    /// <summary>Re-applies the saved screen choice to devices found again (a re-plug opens the keyboard afresh).</summary>
+    private void ApplyScreenFirst()
+    {
+        var wanted = Settings.ScreenFirstDevices.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var d in Devices.Devices.OfType<IScreenDevice>().Where(d => !d.ScreenFirst && wanted.Contains(d.Id)))
+            _ = Task.Run(async () =>
+            {
+                try { await d.SetScreenFirstAsync(true); }
+                catch (Exception ex) { _log.LogWarning(ex, "Giving {Device} its screen back failed", d.Name); }
+            });
     }
 
     /// <summary>Change how one fan is driven; takes effect within a second and is saved.</summary>

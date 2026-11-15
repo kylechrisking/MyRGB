@@ -21,7 +21,14 @@ public sealed class CorsairProvider : IDeviceProvider
     private readonly SemaphoreSlim _gate = new(1, 1);
     private CorsairKeyboard? _keyboard;
 
-    public CorsairProvider(ILogger<CorsairProvider>? log = null) => _log = log ?? NullLogger<CorsairProvider>.Instance;
+    private readonly string? _screenDataDirectory;
+
+    /// <param name="screenDataDirectory">Where the keyboard keeps the backup of what its screen had before MyRGB's picture; null turns screen uploads off.</param>
+    public CorsairProvider(ILogger<CorsairProvider>? log = null, string? screenDataDirectory = null)
+    {
+        _log = log ?? NullLogger<CorsairProvider>.Instance;
+        _screenDataDirectory = screenDataDirectory;
+    }
 
     public string Id => ProviderId;
     public string DisplayName => "Corsair";
@@ -53,6 +60,7 @@ public sealed class CorsairProvider : IDeviceProvider
                 try
                 {
                     _keyboard = await CorsairKeyboard.OpenAsync(iface, _log, ct);
+                    _keyboard.ScreenDataDirectory = _screenDataDirectory;
                     _keyboard.Lost += () => DevicesChanged?.Invoke(this, EventArgs.Empty);
                     _log.LogInformation("Opened {Device} natively", _keyboard.Name);
                 }

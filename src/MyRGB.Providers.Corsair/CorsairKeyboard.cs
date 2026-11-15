@@ -11,7 +11,7 @@ namespace MyRGB.Providers.Corsair;
 /// switches to software mode; each <see cref="ApplyAsync"/> writes one full frame; disposing hands the
 /// lighting back to the keyboard and closes the session, as iCUE does when it quits.
 /// </summary>
-internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDisposable
+internal sealed class CorsairKeyboard : IScreenDevice, IDeviceCommands, IAsyncDisposable
 {
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromSeconds(1);
 
@@ -116,6 +116,152 @@ internal sealed class CorsairKeyboard : IRgbDevice, IDeviceCommands, IAsyncDispo
         {
             _io.Release();
         }
+    }
+
+    // ---- The screen (docs/LCD-PROTOCOL.txt) ----
+
+    private readonly SemaphoreSlim _screenGate = new(1, 1);
+
+    public int ScreenWidth => ScreenFiles.Width;
+    public int ScreenHeight => ScreenFiles.Height;
+
+    /// <summary>
+    /// Where the backup of the upload now on the keyboard lives (in <c>current\</c>). Set by the provider;
+    /// null turns uploads off.
+    /// </summary>
+    internal string? ScreenDataDirectory { get; set; }
+
+    private string? CurrentUploadDir => ScreenDataDirectory is { } d ? Path.Combine(d, "current") : null;
+
+    public bool HasScreenImage => CurrentUploadDir is { } d && File.Exists(Path.Combine(d, ScreenUpload.ManifestName));
+
+    public bool ScreenFirst { get; private set; }
+
+    public async Task SetScreenImageAsync(ReadOnlyMemory<byte> rgb, CancellationToken ct = default)
+    {
+        var dir = CurrentUploadDir ?? throw new InvalidOperationException("Screen uploads are off: there is no folder for the backup.");
+        await _screenGate.WaitAsync(ct);
+        try
+        {
+            await InHostModeAsync(async () =>
+            {
+                // One MyRGB picture at a time: put the keyboard back as it was, then upload the new one.
+                if (HasScreenImage) await UndoUploadAsync(dir, ct);
+                try
+                {
+                    await ScreenUpload.UploadStaticImageAsync(this, rgb, dir, s => _log.LogDebug("Screen upload: {Step}", s), ct);
+                    _log.LogInformation("Put a picture on the keyboard's screen");
+                }
+                catch (Exception ex) when (File.Exists(Path.Combine(dir, ScreenUpload.ManifestName)))
+                {
+                    // Something was written; take it back off rather than leave half an upload.
+                    _log.LogWarning(ex, "Screen upload failed part way; undoing it");
+                    try { await UndoUploadAsync(dir, CancellationToken.None); }
+                    catch (Exception undo) { _log.LogError(undo, "Undoing the failed screen upload failed too; the backup stays in {Dir}", dir); }
+                    throw;
+                }
+            }, ct);
+        }
+        finally
+        {
+            _screenGate.Release();
+        }
+    }
+
+    public async Task ClearScreenImageAsync(CancellationToken ct = default)
+    {
+        if (CurrentUploadDir is not { } dir || !HasScreenImage) return;
+        await _screenGate.WaitAsync(ct);
+        try
+        {
+            await InHostModeAsync(() => UndoUploadAsync(dir, ct), ct);
+            _log.LogInformation("Took MyRGB's picture off the keyboard's screen");
+        }
+        finally
+        {
+            _screenGate.Release();
+        }
+    }
+
+    /// <summary>Restores what the upload in <paramref name="dir"/> changed, then removes its backup.</summary>
+    private async Task UndoUploadAsync(string dir, CancellationToken ct)
+    {
+        await ScreenUpload.RollBackAsync(this, dir, s => _log.LogDebug("Screen rollback: {Step}", s), ct);
+        Directory.Delete(dir, recursive: true);
+    }
+
+    /// <summary>
+    /// The picture only shows while the keyboard runs itself (mode 1); host mode, which per-key lighting
+    /// needs, hides it. On: close the lighting handle and give the keyboard its mode back. Off: take it again.
+    /// </summary>
+    public async Task SetScreenFirstAsync(bool on, CancellationToken ct = default)
+    {
+        await _screenGate.WaitAsync(ct);
+        try
+        {
+            if (on == ScreenFirst || Faulted) return;
+            if (on)
+            {
+                ScreenFirst = true;
+                try
+                {
+                    await CloseLightingAsync(ct);
+                    await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeHardware), _session, Bragi.SetProperty, ct);
+                }
+                catch
+                {
+                    // Don't leave the keys frozen on the last frame: take the lighting back.
+                    try { await TakeLightingAsync(CancellationToken.None); } catch (Exception ex) { _log.LogDebug(ex, "Taking the lighting back failed"); }
+                    ScreenFirst = false;
+                    throw;
+                }
+            }
+            else
+            {
+                await TakeLightingAsync(ct);
+                ScreenFirst = false;
+            }
+        }
+        finally
+        {
+            _screenGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Web Hub switches to host mode for every file operation and back afterwards; do the same while the
+    /// keyboard has its own mode. The lighting handle stays closed, so no frames get through meanwhile.
+    /// </summary>
+    private async Task InHostModeAsync(Func<Task> work, CancellationToken ct)
+    {
+        if (!ScreenFirst)
+        {
+            await work();
+            return;
+        }
+        await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeSoftware), _session, Bragi.SetProperty, ct);
+        try { await work(); }
+        finally
+        {
+            await TryCommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeHardware), _session, Bragi.SetProperty, CancellationToken.None);
+        }
+    }
+
+    private async Task TakeLightingAsync(CancellationToken ct)
+    {
+        await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeSoftware), _session, Bragi.SetProperty, ct);
+        if (!_lightingOpen)
+        {
+            await CommandAsync(Bragi.Open(_session, Bragi.LightingHandle, Bragi.LightingResource), _session, Bragi.OpenHandle, ct);
+            _lightingOpen = true;
+        }
+    }
+
+    private async Task CloseLightingAsync(CancellationToken ct)
+    {
+        if (!_lightingOpen) return;
+        _lightingOpen = false; // frames stop here, before the handle goes
+        await TryCommandAsync(Bragi.Close(_session, Bragi.LightingHandle), _session, Bragi.CloseHandle, ct);
     }
 
     /// <summary>A property's u32 value, or null if the keyboard rejects it.</summary>

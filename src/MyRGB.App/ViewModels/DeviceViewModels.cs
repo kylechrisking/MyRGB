@@ -1,7 +1,12 @@
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyRGB.App.Controls;
+using MyRGB.App.Services;
 using MyRGB.Core.Devices;
 
 namespace MyRGB.App.ViewModels;
@@ -13,8 +18,13 @@ public sealed partial class DeviceRowViewModel(
     bool included,
     Action<string, bool> setIncluded,
     Func<string, string, int, Task> setZoneSize,
-    Action<string>? flash = null) : ObservableObject
+    Action<string>? flash = null,
+    ScreenViewModel? screen = null) : ObservableObject
 {
+    /// <summary>Set for devices with a screen MyRGB can put a picture on.</summary>
+    public ScreenViewModel? Screen => screen;
+    public bool HasScreen => screen is not null;
+
     /// <summary>Only devices MyRGB is driving can be flashed.</summary>
     public bool CanFlash => flash is not null && Included && !NeedsSetup;
 
@@ -111,4 +121,132 @@ public sealed record BatteryOnlyViewModel(string Name, BatteryStatus? Status)
     public int Percent => Status?.Percent ?? 0;
     public bool Charging => Status?.Charging ?? false;
     public string Text => Status is { } s ? $"{s.Percent}%{(s.Charging ? " · charging" : "")}" : "asleep";
+}
+
+/// <summary>A device's screen on the Devices page: the picture on it, and whether it shows.</summary>
+public sealed partial class ScreenViewModel(IScreenDevice device, AppHost host) : ObservableObject
+{
+    private bool _reverting;
+
+    public string SizeText => $"Screen · {device.ScreenWidth} × {device.ScreenHeight}";
+    public bool HasImage => device.HasScreenImage;
+
+    /// <summary>Shown in place of the preview; a picture stored without one (put there before this app version) still says so.</summary>
+    public string PlaceholderText => HasImage ? "Picture stored" : "No picture";
+
+    [ObservableProperty]
+    private Bitmap? _preview = LoadPreview(host.ScreenPreviewPath(device));
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ChooseImageCommand), nameof(RemoveImageCommand))]
+    private bool _busy;
+
+    [ObservableProperty]
+    private string _status = "";
+
+    /// <summary>On: the keyboard runs its own lighting so its screen shows. Saved, and applied again on every re-plug.</summary>
+    [ObservableProperty]
+    private bool _screenFirst = host.Settings.ScreenFirstDevices.Contains(device.Id, StringComparer.OrdinalIgnoreCase);
+
+    public string ScreenFirstHint => "The screen only shows while the keyboard runs its own lighting, so while this is on MyRGB's colors don't reach it. Switch it off to have them back.";
+
+    private bool NotBusy() => !Busy;
+
+    [RelayCommand(CanExecute = nameof(NotBusy))]
+    private async Task ChooseImage()
+    {
+        if (await PickImageAsync() is { } path) await UseImageAsync(path);
+    }
+
+    /// <summary>Fits the picture to the screen and puts it there. Call on the UI thread.</summary>
+    public async Task UseImageAsync(string path)
+    {
+        Busy = true;
+        Status = "Putting it on the screen…";
+        try
+        {
+            byte[] rgb, png;
+            using (var fitted = ScreenImage.Render(path, device.ScreenWidth, device.ScreenHeight))
+            {
+                rgb = ScreenImage.ToRgb(fitted);
+                png = ScreenImage.ToPng(fitted);
+            }
+            await Task.Run(() => host.SetScreenImageAsync(device, rgb, png));
+            Preview = new Bitmap(new MemoryStream(png));
+            Status = ScreenFirst ? "It's on the screen." : "Stored on the keyboard. It shows while “Show the screen” is on, or whenever MyRGB is closed.";
+        }
+        catch (Exception ex)
+        {
+            Status = $"Couldn't put it on the screen: {ex.Message}";
+        }
+        finally
+        {
+            Busy = false;
+            OnPropertyChanged(nameof(HasImage));
+            OnPropertyChanged(nameof(PlaceholderText));
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(NotBusy))]
+    private async Task RemoveImage()
+    {
+        Busy = true;
+        Status = "Taking it off…";
+        try
+        {
+            await Task.Run(() => host.ClearScreenImageAsync(device));
+            Preview = null;
+            Status = "Removed; the screen is back as it was.";
+        }
+        catch (Exception ex)
+        {
+            Status = $"Couldn't take it off: {ex.Message}";
+        }
+        finally
+        {
+            Busy = false;
+            OnPropertyChanged(nameof(HasImage));
+            OnPropertyChanged(nameof(PlaceholderText));
+        }
+    }
+
+    partial void OnScreenFirstChanged(bool value)
+    {
+        if (_reverting) return;
+        _ = ApplyScreenFirstAsync(value);
+    }
+
+    private async Task ApplyScreenFirstAsync(bool on)
+    {
+        try
+        {
+            await Task.Run(() => host.SetScreenFirstAsync(device, on));
+            Status = on ? "The keyboard is running its own lighting, so the screen shows." : "MyRGB is lighting the keyboard again.";
+        }
+        catch (Exception ex)
+        {
+            Status = $"Couldn't switch: {ex.Message}";
+            _reverting = true;
+            ScreenFirst = !on;
+            _reverting = false;
+        }
+    }
+
+    private static Bitmap? LoadPreview(string path)
+    {
+        try { return File.Exists(path) ? new Bitmap(path) : null; }
+        catch (Exception) { return null; }
+    }
+
+    private static async Task<string?> PickImageAsync()
+    {
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } window }) return null;
+        var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose a picture for the keyboard's screen",
+            AllowMultiple = false,
+            FileTypeFilter = [FilePickerFileTypes.ImageAll],
+        });
+        return files.FirstOrDefault()?.TryGetLocalPath();
+    }
 }
