@@ -262,8 +262,10 @@ implemented by `CorsairKeyboard`, view model `ScreenViewModel`):
   11-14, and on 11-16 MyRGB lost the keyboard from 07:51 to 16:18 and the test card was up all that
   time. Explicit test `Which_step_shows_the_screen` pins it down: 8 s with the session open in mode
   1, then 8 s with the session closed. It needs someone watching; nobody watched its one run.
-- Not yet confirmed on the keyboard that the session-closing version shows the picture: run
-  `Screen_first_round_trip` with MyRGB closed and watch for 5 s.
+- **Confirmed 2026-11-16 (Kyle watching `Screen_first_round_trip`):** with the session closed, the
+  screen shows the Corsair logo first, then the stored picture, inside the 5 s. Taking the keyboard
+  back turns the keys cyan. Each release (the test's own dispose too) starts with the logo again,
+  so the firmware treats a session close like a hand-back and replays its splash.
 - The test card from 2026-11-14 predates the app; its backup was copied into the app's `current\`
   folder, so **Remove** (or the next picture) puts the keyboard back to how it was before it.
 
