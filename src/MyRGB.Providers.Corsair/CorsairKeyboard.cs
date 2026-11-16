@@ -191,8 +191,10 @@ internal sealed class CorsairKeyboard : IScreenDevice, IDeviceCommands, IAsyncDi
     }
 
     /// <summary>
-    /// The picture only shows while the keyboard runs itself (mode 1); host mode, which per-key lighting
-    /// needs, hides it. On: close the lighting handle and give the keyboard its mode back. Off: take it again.
+    /// The picture only shows while the keyboard runs itself, and in practice only once the host has let go
+    /// of it completely: on 2026-11-15 mode 1 with MyRGB's session still open showed nothing, while every
+    /// full release (MyRGB closed, the keyboard dropped) showed it. So On does what quitting does: mode 1,
+    /// lighting handle closed, session closed. Off opens a new session and takes the lighting again.
     /// </summary>
     public async Task SetScreenFirstAsync(bool on, CancellationToken ct = default)
     {
@@ -205,8 +207,7 @@ internal sealed class CorsairKeyboard : IScreenDevice, IDeviceCommands, IAsyncDi
                 ScreenFirst = true;
                 try
                 {
-                    await CloseLightingAsync(ct);
-                    await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeHardware), _session, Bragi.SetProperty, ct);
+                    await ReleaseAsync(ct);
                 }
                 catch
                 {
@@ -229,8 +230,8 @@ internal sealed class CorsairKeyboard : IScreenDevice, IDeviceCommands, IAsyncDi
     }
 
     /// <summary>
-    /// Web Hub switches to host mode for every file operation and back afterwards; do the same while the
-    /// keyboard has its own mode. The lighting handle stays closed, so no frames get through meanwhile.
+    /// Web Hub switches to host mode for every file operation and back afterwards. While the keyboard is
+    /// released, open a session in host mode for the work and release it again after.
     /// </summary>
     private async Task InHostModeAsync(Func<Task> work, CancellationToken ct)
     {
@@ -239,17 +240,20 @@ internal sealed class CorsairKeyboard : IScreenDevice, IDeviceCommands, IAsyncDi
             await work();
             return;
         }
-        await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeSoftware), _session, Bragi.SetProperty, ct);
+        await OpenSessionAsync(Bragi.ModeSoftware, ct);
         try { await work(); }
         finally
         {
-            await TryCommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeHardware), _session, Bragi.SetProperty, CancellationToken.None);
+            try { await ReleaseAsync(CancellationToken.None); }
+            catch (Exception ex) { _log.LogDebug(ex, "Releasing the keyboard after a file operation failed"); }
         }
     }
 
+    /// <summary>Host mode with the lighting handle open, opening a session first if there is none.</summary>
     private async Task TakeLightingAsync(CancellationToken ct)
     {
-        await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeSoftware), _session, Bragi.SetProperty, ct);
+        if (_session == 0) await OpenSessionAsync(Bragi.ModeSoftware, ct);
+        else await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeSoftware), _session, Bragi.SetProperty, ct);
         if (!_lightingOpen)
         {
             await CommandAsync(Bragi.Open(_session, Bragi.LightingHandle, Bragi.LightingResource), _session, Bragi.OpenHandle, ct);
@@ -257,11 +261,23 @@ internal sealed class CorsairKeyboard : IScreenDevice, IDeviceCommands, IAsyncDi
         }
     }
 
-    private async Task CloseLightingAsync(CancellationToken ct)
+    private async Task OpenSessionAsync(uint mode, CancellationToken ct)
     {
-        if (!_lightingOpen) return;
+        var reply = await CommandAsync(Bragi.OpenSession(SessionToken), Bragi.SessionTarget, Bragi.Session, ct);
+        _session = Bragi.SessionId(reply);
+        _log.LogDebug("Corsair keyboard session {Session}", _session);
+        await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, mode), _session, Bragi.SetProperty, ct);
+    }
+
+    /// <summary>What quitting does, minus closing the device: mode 1, lighting handle closed, session closed.</summary>
+    private async Task ReleaseAsync(CancellationToken ct)
+    {
+        if (_session == 0) return;
         _lightingOpen = false; // frames stop here, before the handle goes
+        await CommandAsync(Bragi.Set(_session, Bragi.PropertyMode, Bragi.ModeHardware), _session, Bragi.SetProperty, ct);
         await TryCommandAsync(Bragi.Close(_session, Bragi.LightingHandle), _session, Bragi.CloseHandle, ct);
+        await TryCommandAsync(Bragi.CloseSession(_session), _session, Bragi.Session, ct);
+        _session = 0;
     }
 
     /// <summary>A property's u32 value, or null if the keyboard rejects it.</summary>

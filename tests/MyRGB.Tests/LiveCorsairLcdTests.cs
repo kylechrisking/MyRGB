@@ -246,6 +246,36 @@ public class LiveCorsairLcdTests(ITestOutputHelper output)
         Assert.False(kb.Faulted);
     }
 
+    /// <summary>
+    /// Finds which step of handing the keyboard back makes the stored picture appear. Reads file 62 first
+    /// (no writes), then: stage A (8 s) = lighting closed + mode 1 with the session still open, the app's
+    /// switch; stage B (8 s) = session closed too, which is what showed it on 2026-11-14. Someone at the
+    /// desk says which stage showed it. Close MyRGB first.
+    /// </summary>
+    [Fact(Explicit = true)]
+    public async Task Which_step_shows_the_screen()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var kb = await OpenAsync();
+        try
+        {
+            var current = await kb.ReadFileAsync(ScreenFiles.CurrentScreenFile, ct);
+            output.WriteLine($"file 62: {(current is null ? "MISSING" : $"{current.Length} bytes, {Convert.ToHexString(current, 0, Math.Min(32, current.Length))}")}");
+            output.WriteLine($"{DateTime.Now:T} stage A: lighting closed, mode 1, session open");
+            await kb.SetScreenFirstAsync(true, ct);
+            await Task.Delay(1000, ct);
+            output.WriteLine($"  mode reads {(await kb.GetPropertyAsync(Bragi.PropertyMode, ct))?.ToString() ?? "(no reply)"}");
+            await Task.Delay(7000, ct);
+        }
+        finally
+        {
+            output.WriteLine($"{DateTime.Now:T} stage B: session closed");
+            await kb.DisposeAsync();
+        }
+        await Task.Delay(8000, ct);
+        output.WriteLine($"{DateTime.Now:T} done");
+    }
+
     private static async Task<CorsairKeyboard> OpenAsync()
     {
         var iface = HidDevices.Find("vid_1b1c&pid_2b0e&mi_02").FirstOrDefault(i => i.UsagePage == 0xFF42 && i.OutputReportLength == Bragi.ReportLength);
