@@ -29,6 +29,9 @@ public sealed class PresetSync
 
     public DateTimeOffset? LastSynced { get; private set; }
 
+    /// <summary>Why the last sync failed, for the log; null after a good one.</summary>
+    public Exception? LastFailure { get; private set; }
+
     /// <summary>Raised after a sync finishes (successfully or not). Any thread.</summary>
     public event EventHandler<string?>? Synced;
 
@@ -50,10 +53,12 @@ public sealed class PresetSync
 
             SaveState(user.Id, plan.NewState);
             LastSynced = DateTimeOffset.UtcNow;
+            LastFailure = null;
         }
         catch (Exception ex) when (ex is CloudException or HttpRequestException or TaskCanceledException)
         {
-            error = ex is CloudException ? ex.Message : "Couldn't reach the MyRGB service. Your presets will sync next time.";
+            LastFailure = ex;
+            error = ex is CloudException ? ex.Message : CloudErrors.Unreachable(ex, "Your presets are safe here and will sync next time.");
         }
         finally
         {

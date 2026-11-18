@@ -73,7 +73,7 @@ public sealed partial class AccountViewModel : ObservableObject
         }
         catch (OperationCanceledException) { Status = ""; }
         catch (CloudException ex) { Status = ex.Message; }
-        catch (HttpRequestException) { Status = "Couldn't reach the MyRGB service. Check your internet connection."; }
+        catch (HttpRequestException ex) { Status = CloudErrors.Unreachable(ex); }
         finally { IsBusy = false; }
     }
 
@@ -113,7 +113,7 @@ public sealed partial class AccountViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is CloudException or HttpRequestException)
         {
-            Status = ex is CloudException ? ex.Message : "Couldn't reach the MyRGB service. Please try again.";
+            Status = ex is CloudException ? ex.Message : CloudErrors.Unreachable(ex);
         }
     }
 
@@ -242,7 +242,7 @@ public sealed partial class CommunityViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is CloudException or HttpRequestException or TaskCanceledException)
         {
-            Status = ex is CloudException ? ex.Message : "Couldn't reach the MyRGB service. Check your internet connection.";
+            Status = ex is CloudException ? ex.Message : CloudErrors.Unreachable(ex, "Shared presets will show up once it's back.");
         }
         finally
         {
@@ -307,7 +307,7 @@ public sealed partial class CommunityViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is CloudException or HttpRequestException)
         {
-            ShareStatus = ex is CloudException ? ex.Message : "Couldn't reach the MyRGB service.";
+            ShareStatus = ex is CloudException ? ex.Message : CloudErrors.Unreachable(ex);
         }
     }
 

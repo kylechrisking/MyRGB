@@ -131,7 +131,8 @@ public sealed class AppHost : IAsyncDisposable
         _ = Task.Delay(delay ?? TimeSpan.FromSeconds(5), cts.Token).ContinueWith(async t =>
         {
             if (t.IsCanceled) return;
-            if (await Sync.SyncAsync() is { } error) _log.LogWarning("Preset sync: {Error}", error);
+            if (await Sync.SyncAsync() is { } error)
+                _log.LogWarning("Preset sync: {Error}{Reason}", error, Sync.LastFailure is { } f && f is not MyRGB.Cloud.CloudException ? $" ({MyRGB.Cloud.CloudErrors.Reason(f)})" : "");
         }, TaskScheduler.Default);
     }
 
@@ -284,6 +285,8 @@ public sealed class AppHost : IAsyncDisposable
         Sensors.Start();
 
         ScheduleSync(TimeSpan.FromSeconds(3)); // pick up edits made on other PCs since last time
+        // MyRGB runs for days; check in now and then too, so edits from other PCs arrive without a restart.
+        _syncTimer = new System.Threading.Timer(_ => ScheduleSync(TimeSpan.Zero), null, SyncEvery, SyncEvery);
 
         if (_options.EnableApi) await StartApiAsync();
         else ApiError = "disabled";
@@ -313,6 +316,8 @@ public sealed class AppHost : IAsyncDisposable
     private IdleDimmer? _dimmer;
     private GlobalHotkeys? _hotkeys;
     private System.Threading.Timer? _foregroundTimer;
+    private System.Threading.Timer? _syncTimer;
+    private static readonly TimeSpan SyncEvery = TimeSpan.FromHours(6);
     private string? _lastForeground;
     private bool _inProfile;
     private string? _preProfilePreset;
@@ -450,6 +455,7 @@ public sealed class AppHost : IAsyncDisposable
     {
         _saveDebounce?.Cancel();
         _foregroundTimer?.Dispose();
+        _syncTimer?.Dispose();
         _dimmer?.Dispose();
         _hotkeys?.Dispose();
         SaveNow();
