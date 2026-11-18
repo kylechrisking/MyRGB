@@ -1,0 +1,50 @@
+<!-- Bench's shape beyond its colors: outlined buttons in Consolas, copper primary actions, no shadows. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Border.dialog">
+    <Setter Property="BoxShadow" Value="0 0 0 1 #3A413C" />
+  </Style>
+  <Style Selector="TextBlock.h1, TextBlock.section, TextBlock.wordmark">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.ghost, Button.accent">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandMono}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Padding" Value="12,6" />
+  </Style>
+  <Style Selector="Button.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <!-- Primary actions: copper outline, copper text. -->
+  <Style Selector="Button.accent">
+    <Setter Property="BorderBrush" Value="{DynamicResource LinkBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource LinkBrush}" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#1F1810" />
+    <Setter Property="BorderBrush" Value="#E0A868" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Button.link">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandMono}" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandMono}" />
+  </Style>
+  <Style Selector="Border.badge > TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandMono}" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="MinHeight" Value="38" />
+  </Style>
+</Styles>
