@@ -1,0 +1,37 @@
+<!-- Phosphor's shape: green text everywhere (Fluent's inputs included), a soft glow on headings, outlined buttons. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="TextBox, ComboBox, NumericUpDown">
+    <Setter Property="Foreground" Value="#39FF7A" />
+    <Setter Property="Background" Value="#07100A" />
+    <Setter Property="BorderBrush" Value="#1A7A3B" />
+  </Style>
+  <Style Selector="TextBlock.h1">
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Effect">
+      <DropShadowEffect BlurRadius="12" OffsetX="0" OffsetY="0" Color="#8039FF7A" />
+    </Setter>
+  </Style>
+  <Style Selector="TextBlock.wordmark">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="#39FF7A" />
+    <Setter Property="Foreground" Value="#39FF7A" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#39FF7A" />
+    <Setter Property="Foreground" Value="#031007" />
+    <Setter Property="BorderBrush" Value="#39FF7A" />
+  </Style>
+  <Style Selector="Border.dialog">
+    <Setter Property="BorderBrush" Value="#39FF7A" />
+    <Setter Property="BoxShadow" Value="0 0 24 0 #4039FF7A" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="12,0" />
+  </Style>
+</Styles>

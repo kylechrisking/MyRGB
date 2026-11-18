@@ -1,0 +1,124 @@
+<!-- Phosphor: a green-screen terminal. Black glass with scanlines, phosphor green, Consolas everywhere, inverse video for what's selected. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceInclude Source="avares://MyRGB/Themes/Defaults.axaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <!-- Scanlines: one dark line every 3 px. -->
+  <DrawingBrush x:Key="PageBrush" TileMode="Tile" DestinationRect="0,0,8,3" Stretch="None">
+    <DrawingBrush.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="#060C07" Geometry="M0,0 H8 V3 H0 Z" />
+        <GeometryDrawing Brush="#030603" Geometry="M0,2 H8 V3 H0 Z" />
+      </DrawingGroup>
+    </DrawingBrush.Drawing>
+  </DrawingBrush>
+
+  <SolidColorBrush x:Key="BaseBrush" Color="#060C07" />
+  <SolidColorBrush x:Key="ChromeBrush" Color="#040805" />
+  <SolidColorBrush x:Key="TopBarBrush" Color="#040805" />
+  <SolidColorBrush x:Key="ChromeEdgeBrush" Color="#1F9E4B" />
+  <SolidColorBrush x:Key="NavBrush" Color="#040805" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="#07100A" />
+  <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#0A160D" />
+  <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#0F2214" />
+  <SolidColorBrush x:Key="HairlineBrush" Color="#1A7A3B" />
+  <SolidColorBrush x:Key="HairlineStrongBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="OverlayBrush" Color="#C0000000" />
+
+  <SolidColorBrush x:Key="InkBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="InkSecondaryBrush" Color="#2FD866" />
+  <SolidColorBrush x:Key="MutedBrush" Color="#22AE55" />
+  <SolidColorBrush x:Key="SubtleBrush" Color="#167A3A" />
+  <SolidColorBrush x:Key="HandBrush" Color="#22AE55" />
+
+  <SolidColorBrush x:Key="AccentBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="#8AFFB0" />
+  <SolidColorBrush x:Key="OnAccentBrush" Color="#031007" />
+  <SolidColorBrush x:Key="AccentWashBrush" Color="#0F2A17" />
+  <SolidColorBrush x:Key="LinkBrush" Color="#39FF7A" />
+
+  <SolidColorBrush x:Key="LedRedBrush" Color="#FF5050" />
+  <SolidColorBrush x:Key="LedGreenBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="LedBlueBrush" Color="#5AE0FF" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="WarningBrush" Color="#FFB000" />
+  <SolidColorBrush x:Key="DangerBrush" Color="#FF5050" />
+  <SolidColorBrush x:Key="InfoBrush" Color="#5AE0FF" />
+  <SolidColorBrush x:Key="InfoWashBrush" Color="#0A2026" />
+  <SolidColorBrush x:Key="DangerWashBrush" Color="#2A0A0A" />
+
+  <LinearGradientBrush x:Key="RgbGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+    <GradientStop Offset="0" Color="#FF5050" />
+    <GradientStop Offset="0.5" Color="#39FF7A" />
+    <GradientStop Offset="1" Color="#5AE0FF" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="RgbGradientVertical" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#FF5050" />
+    <GradientStop Offset="0.5" Color="#39FF7A" />
+    <GradientStop Offset="1" Color="#5AE0FF" />
+  </LinearGradientBrush>
+
+  <!-- Inverse video for the selected page. -->
+  <SolidColorBrush x:Key="NavSelectedBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="NavSelectedEdgeBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="NavSelectedInkBrush" Color="#031007" />
+  <SolidColorBrush x:Key="NavPipeBrush" Color="Transparent" />
+  <Thickness x:Key="NavItemMargin">6,1</Thickness>
+
+  <SolidColorBrush x:Key="PlayBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="PlayHoverBrush" Color="#8AFFB0" />
+  <SolidColorBrush x:Key="OnPlayBrush" Color="#031007" />
+  <SolidColorBrush x:Key="PlayBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="PrimaryBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="OnPrimaryBrush" Color="#031007" />
+
+  <SolidColorBrush x:Key="ScreenWellBrush" Color="#000000" />
+  <SolidColorBrush x:Key="BadgeBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="BadgeBorderBrush" Color="#1A7A3B" />
+  <Thickness x:Key="BadgeBorder">1</Thickness>
+  <SolidColorBrush x:Key="IconBoxBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="IconBoxBorderBrush" Color="#1A7A3B" />
+  <Thickness x:Key="IconBoxBorder">1</Thickness>
+  <SolidColorBrush x:Key="IconBoxInkBrush" Color="#39FF7A" />
+  <SolidColorBrush x:Key="MeterTrackBrush" Color="#0F2214" />
+  <SolidColorBrush x:Key="SupporterWashBrush" Color="#0F2A17" />
+  <SolidColorBrush x:Key="SupporterBrush" Color="#39FF7A" />
+
+  <Color x:Key="SystemAccentColor">#39FF7A</Color>
+  <Color x:Key="SystemAccentColorLight1">#5CFF92</Color>
+  <Color x:Key="SystemAccentColorLight2">#8AFFB0</Color>
+  <Color x:Key="SystemAccentColorLight3">#B4FFCC</Color>
+  <Color x:Key="SystemAccentColorDark1">#2FD866</Color>
+  <Color x:Key="SystemAccentColorDark2">#26B054</Color>
+  <Color x:Key="SystemAccentColorDark3">#1C8840</Color>
+
+  <CornerRadius x:Key="RadiusPanel">0</CornerRadius>
+  <CornerRadius x:Key="RadiusTile">0</CornerRadius>
+  <CornerRadius x:Key="RadiusControl">0</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">0</CornerRadius>
+  <CornerRadius x:Key="RadiusBadge">0</CornerRadius>
+  <CornerRadius x:Key="RadiusIconBox">0</CornerRadius>
+  <CornerRadius x:Key="RadiusNav">0</CornerRadius>
+  <CornerRadius x:Key="RadiusMeter">0</CornerRadius>
+  <CornerRadius x:Key="RadiusPlay">0</CornerRadius>
+  <CornerRadius x:Key="RadiusAvatar">0</CornerRadius>
+  <CornerRadius x:Key="RadiusDialog">0</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">0</CornerRadius>
+  <sys:Double x:Key="RadiusPreview">0</sys:Double>
+  <sys:Double x:Key="DialogStripe">0</sys:Double>
+
+  <FontFamily x:Key="BrandSans">Consolas</FontFamily>
+  <FontFamily x:Key="BrandDisplay">Consolas</FontFamily>
+  <FontFamily x:Key="BrandMono">Consolas</FontFamily>
+  <FontFamily x:Key="KickerFont">Consolas</FontFamily>
+  <FontFamily x:Key="NumberFont">Consolas</FontFamily>
+  <sys:Double x:Key="H1Size">26</sys:Double>
+  <sys:Double x:Key="SectionSize">15</sys:Double>
+  <sys:Double x:Key="WordmarkSize">18</sys:Double>
+  <sys:Double x:Key="KickerSize">12</sys:Double>
+  <sys:Double x:Key="KickerSpacing">0</sys:Double>
+  <sys:Boolean x:Key="NavIconsVisible">False</sys:Boolean>
+</ResourceDictionary>

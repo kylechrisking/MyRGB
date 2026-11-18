@@ -1,0 +1,125 @@
+<!-- Blueprint: an engineering drawing. Prussian blue with a fine grid, white linework, technical lettering. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceInclude Source="avares://MyRGB/Themes/Defaults.axaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <!-- A 20 px grid with a heavier line every 100 px. -->
+  <DrawingBrush x:Key="PageBrush" TileMode="Tile" DestinationRect="0,0,100,100" Stretch="None">
+    <DrawingBrush.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="#1C3B6B" Geometry="M0,0 H100 V100 H0 Z" />
+        <GeometryDrawing Brush="#23467A" Geometry="M19,0 H20 V100 H19 Z M39,0 H40 V100 H39 Z M59,0 H60 V100 H59 Z M79,0 H80 V100 H79 Z M0,19 H100 V20 H0 Z M0,39 H100 V40 H0 Z M0,59 H100 V60 H0 Z M0,79 H100 V80 H0 Z" />
+        <GeometryDrawing Brush="#2C5490" Geometry="M99,0 H100 V100 H99 Z M0,99 H100 V100 H0 Z" />
+      </DrawingGroup>
+    </DrawingBrush.Drawing>
+  </DrawingBrush>
+
+  <SolidColorBrush x:Key="BaseBrush" Color="#1C3B6B" />
+  <SolidColorBrush x:Key="ChromeBrush" Color="#163259" />
+  <SolidColorBrush x:Key="TopBarBrush" Color="#163259" />
+  <SolidColorBrush x:Key="ChromeEdgeBrush" Color="#CFE0F7" />
+  <SolidColorBrush x:Key="NavBrush" Color="#163259" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="#1E4074" />
+  <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#21477F" />
+  <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#275292" />
+  <SolidColorBrush x:Key="HairlineBrush" Color="#9DB9E0" />
+  <SolidColorBrush x:Key="HairlineStrongBrush" Color="#F2F6FF" />
+  <SolidColorBrush x:Key="OverlayBrush" Color="#B00C1A30" />
+
+  <SolidColorBrush x:Key="InkBrush" Color="#F2F6FF" />
+  <SolidColorBrush x:Key="InkSecondaryBrush" Color="#D3DFF2" />
+  <SolidColorBrush x:Key="MutedBrush" Color="#A9BEDF" />
+  <SolidColorBrush x:Key="SubtleBrush" Color="#7590BB" />
+  <SolidColorBrush x:Key="HandBrush" Color="#FFD27A" />
+
+  <SolidColorBrush x:Key="AccentBrush" Color="#9FD3FF" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="#C4E4FF" />
+  <SolidColorBrush x:Key="OnAccentBrush" Color="#10284D" />
+  <SolidColorBrush x:Key="AccentWashBrush" Color="#24508F" />
+  <SolidColorBrush x:Key="LinkBrush" Color="#FFFFFF" />
+
+  <SolidColorBrush x:Key="LedRedBrush" Color="#FF8A8A" />
+  <SolidColorBrush x:Key="LedGreenBrush" Color="#8AF0B0" />
+  <SolidColorBrush x:Key="LedBlueBrush" Color="#8AC8FF" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="#8AF0B0" />
+  <SolidColorBrush x:Key="WarningBrush" Color="#FFD27A" />
+  <SolidColorBrush x:Key="DangerBrush" Color="#FF8A8A" />
+  <SolidColorBrush x:Key="InfoBrush" Color="#8AC8FF" />
+  <SolidColorBrush x:Key="InfoWashBrush" Color="#24508F" />
+  <SolidColorBrush x:Key="DangerWashBrush" Color="#4A2F55" />
+
+  <LinearGradientBrush x:Key="RgbGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+    <GradientStop Offset="0" Color="#FF8A8A" />
+    <GradientStop Offset="0.5" Color="#8AF0B0" />
+    <GradientStop Offset="1" Color="#8AC8FF" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="RgbGradientVertical" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#FF8A8A" />
+    <GradientStop Offset="0.5" Color="#8AF0B0" />
+    <GradientStop Offset="1" Color="#8AC8FF" />
+  </LinearGradientBrush>
+
+  <SolidColorBrush x:Key="NavSelectedBrush" Color="#24508F" />
+  <SolidColorBrush x:Key="NavSelectedEdgeBrush" Color="#F2F6FF" />
+  <SolidColorBrush x:Key="NavSelectedInkBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="NavPipeBrush" Color="#FFFFFF" />
+  <Thickness x:Key="NavSelectedEdge">0,1,0,1</Thickness>
+  <Thickness x:Key="NavItemMargin">0,1</Thickness>
+
+  <SolidColorBrush x:Key="PlayBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="PlayHoverBrush" Color="#24508F" />
+  <SolidColorBrush x:Key="OnPlayBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="PlayBorderBrush" Color="#F2F6FF" />
+  <Thickness x:Key="PlayBorderThickness">1.5</Thickness>
+  <SolidColorBrush x:Key="PrimaryBrush" Color="#F2F6FF" />
+  <SolidColorBrush x:Key="OnPrimaryBrush" Color="#10284D" />
+
+  <SolidColorBrush x:Key="ScreenWellBrush" Color="#0E1F3A" />
+  <SolidColorBrush x:Key="BadgeBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="BadgeBorderBrush" Color="#9DB9E0" />
+  <Thickness x:Key="BadgeBorder">1</Thickness>
+  <SolidColorBrush x:Key="IconBoxBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="IconBoxBorderBrush" Color="#CFE0F7" />
+  <Thickness x:Key="IconBoxBorder">1</Thickness>
+  <SolidColorBrush x:Key="IconBoxInkBrush" Color="#F2F6FF" />
+  <SolidColorBrush x:Key="MeterTrackBrush" Color="#2A4E85" />
+  <SolidColorBrush x:Key="SupporterWashBrush" Color="#4A2F55" />
+  <SolidColorBrush x:Key="SupporterBrush" Color="#FFB0D8" />
+
+  <Color x:Key="SystemAccentColor">#9FD3FF</Color>
+  <Color x:Key="SystemAccentColorLight1">#B2DCFF</Color>
+  <Color x:Key="SystemAccentColorLight2">#C4E4FF</Color>
+  <Color x:Key="SystemAccentColorLight3">#DDEFFF</Color>
+  <Color x:Key="SystemAccentColorDark1">#86BDEB</Color>
+  <Color x:Key="SystemAccentColorDark2">#6CA6D6</Color>
+  <Color x:Key="SystemAccentColorDark3">#548EBF</Color>
+
+  <CornerRadius x:Key="RadiusPanel">0</CornerRadius>
+  <CornerRadius x:Key="RadiusTile">0</CornerRadius>
+  <CornerRadius x:Key="RadiusControl">0</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">0</CornerRadius>
+  <CornerRadius x:Key="RadiusBadge">0</CornerRadius>
+  <CornerRadius x:Key="RadiusIconBox">19</CornerRadius>
+  <CornerRadius x:Key="RadiusNav">0</CornerRadius>
+  <CornerRadius x:Key="RadiusMeter">0</CornerRadius>
+  <CornerRadius x:Key="RadiusAvatar">0</CornerRadius>
+  <CornerRadius x:Key="RadiusDialog">0</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">0</CornerRadius>
+  <sys:Double x:Key="RadiusPreview">0</sys:Double>
+  <sys:Double x:Key="DialogStripe">0</sys:Double>
+
+  <FontFamily x:Key="BrandSans">Segoe UI</FontFamily>
+  <FontFamily x:Key="BrandDisplay">Bahnschrift</FontFamily>
+  <FontFamily x:Key="BrandMono">Consolas</FontFamily>
+  <FontFamily x:Key="KickerFont">Consolas</FontFamily>
+  <FontFamily x:Key="NumberFont">Bahnschrift</FontFamily>
+  <sys:Double x:Key="H1Size">28</sys:Double>
+  <sys:Double x:Key="SectionSize">16</sys:Double>
+  <sys:Double x:Key="WordmarkSize">19</sys:Double>
+  <sys:Double x:Key="KickerSize">11</sys:Double>
+  <sys:Double x:Key="KickerSpacing">1</sys:Double>
+  <sys:Boolean x:Key="NavIconsVisible">True</sys:Boolean>
+</ResourceDictionary>

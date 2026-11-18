@@ -1,0 +1,29 @@
+<!-- Blueprint's shape: white linework, outlined buttons, mono annotations, no shadows. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="TextBlock.h1, TextBlock.section, TextBlock.wordmark">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandMono}" />
+  </Style>
+  <Style Selector="Button.ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="#CFE0F7" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#24508F" />
+    <Setter Property="BorderBrush" Value="#FFFFFF" />
+  </Style>
+  <Style Selector="Button.link">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandMono}" />
+  </Style>
+  <Style Selector="Border.dialog">
+    <Setter Property="BorderBrush" Value="#F2F6FF" />
+    <Setter Property="BoxShadow" Value="6 6 0 0 #600C1A30" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="MinHeight" Value="38" />
+  </Style>
+</Styles>
