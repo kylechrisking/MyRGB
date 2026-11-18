@@ -18,6 +18,7 @@
   <CornerRadius x:Key="RadiusPlay">21</CornerRadius>
   <CornerRadius x:Key="RadiusAvatar">12</CornerRadius>
   <CornerRadius x:Key="RadiusDialog">18</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">18</CornerRadius>
 
   <!-- Edges -->
   <Thickness x:Key="TopBarEdge">0,0,0,1</Thickness>

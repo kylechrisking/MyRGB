@@ -1,0 +1,117 @@
+<!-- Classic: grey 3D buttons, navy selection, Tahoma. Desktop software the way it used to look. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceInclude Source="avares://MyRGB/Themes/Defaults.axaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <SolidColorBrush x:Key="PageBrush" Color="#C3C3C3" />
+  <SolidColorBrush x:Key="BaseBrush" Color="#C3C3C3" />
+  <SolidColorBrush x:Key="ChromeBrush" Color="#C3C3C3" />
+  <SolidColorBrush x:Key="TopBarBrush" Color="#C3C3C3" />
+  <SolidColorBrush x:Key="ChromeEdgeBrush" Color="#808080" />
+  <!-- The page list is a white tree view well. -->
+  <SolidColorBrush x:Key="NavBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="#C3C3C3" />
+  <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#C3C3C3" />
+  <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#D2D2D2" />
+  <SolidColorBrush x:Key="HairlineBrush" Color="#808080" />
+  <SolidColorBrush x:Key="HairlineStrongBrush" Color="#404040" />
+  <SolidColorBrush x:Key="OverlayBrush" Color="#60000000" />
+
+  <SolidColorBrush x:Key="InkBrush" Color="#000000" />
+  <SolidColorBrush x:Key="InkSecondaryBrush" Color="#1A1A1A" />
+  <SolidColorBrush x:Key="MutedBrush" Color="#404040" />
+  <SolidColorBrush x:Key="SubtleBrush" Color="#808080" />
+  <SolidColorBrush x:Key="HandBrush" Color="#404040" />
+
+  <SolidColorBrush x:Key="AccentBrush" Color="#0B2A8A" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="#1C47C0" />
+  <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="AccentWashBrush" Color="#D4DCF2" />
+  <SolidColorBrush x:Key="LinkBrush" Color="#0000CC" />
+
+  <SolidColorBrush x:Key="LedRedBrush" Color="#E00000" />
+  <SolidColorBrush x:Key="LedGreenBrush" Color="#008000" />
+  <SolidColorBrush x:Key="LedBlueBrush" Color="#0000E0" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="#008000" />
+  <SolidColorBrush x:Key="WarningBrush" Color="#A06000" />
+  <SolidColorBrush x:Key="DangerBrush" Color="#C00000" />
+  <SolidColorBrush x:Key="InfoBrush" Color="#0000C0" />
+  <!-- Tooltip yellow for tips. -->
+  <SolidColorBrush x:Key="InfoWashBrush" Color="#FFFFE1" />
+  <SolidColorBrush x:Key="DangerWashBrush" Color="#FFE0E0" />
+
+  <LinearGradientBrush x:Key="RgbGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+    <GradientStop Offset="0" Color="#FF0000" />
+    <GradientStop Offset="0.33" Color="#FFFF00" />
+    <GradientStop Offset="0.5" Color="#00FF00" />
+    <GradientStop Offset="0.75" Color="#00FFFF" />
+    <GradientStop Offset="1" Color="#0000FF" />
+  </LinearGradientBrush>
+  <!-- Title bar blue, for the dialogs' top stripe. -->
+  <LinearGradientBrush x:Key="RgbGradientVertical" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#0B2A8A" />
+    <GradientStop Offset="1" Color="#2A8AD8" />
+  </LinearGradientBrush>
+
+  <!-- The selected page: a navy highlight with white text, like a tree view. -->
+  <SolidColorBrush x:Key="NavSelectedBrush" Color="#0B2A8A" />
+  <SolidColorBrush x:Key="NavSelectedEdgeBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="NavSelectedInkBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="NavPipeBrush" Color="Transparent" />
+  <Thickness x:Key="NavItemMargin">4,1</Thickness>
+
+  <SolidColorBrush x:Key="PlayBrush" Color="#C3C3C3" />
+  <SolidColorBrush x:Key="PlayHoverBrush" Color="#D2D2D2" />
+  <SolidColorBrush x:Key="OnPlayBrush" Color="#000000" />
+  <SolidColorBrush x:Key="PlayBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="PrimaryBrush" Color="#C3C3C3" />
+  <SolidColorBrush x:Key="OnPrimaryBrush" Color="#000000" />
+
+  <SolidColorBrush x:Key="ScreenWellBrush" Color="#000000" />
+  <SolidColorBrush x:Key="BadgeBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="BadgeBorderBrush" Color="#808080" />
+  <Thickness x:Key="BadgeBorder">1</Thickness>
+  <SolidColorBrush x:Key="IconBoxBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="IconBoxBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="IconBoxInkBrush" Color="#000000" />
+  <SolidColorBrush x:Key="MeterTrackBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="SupporterWashBrush" Color="#FFE0F0" />
+  <SolidColorBrush x:Key="SupporterBrush" Color="#A0005A" />
+
+  <Color x:Key="SystemAccentColor">#0B2A8A</Color>
+  <Color x:Key="SystemAccentColorLight1">#1C3FA8</Color>
+  <Color x:Key="SystemAccentColorLight2">#3A5CC0</Color>
+  <Color x:Key="SystemAccentColorLight3">#6A86D4</Color>
+  <Color x:Key="SystemAccentColorDark1">#0A2478</Color>
+  <Color x:Key="SystemAccentColorDark2">#081E64</Color>
+  <Color x:Key="SystemAccentColorDark3">#061850</Color>
+
+  <CornerRadius x:Key="RadiusPanel">0</CornerRadius>
+  <CornerRadius x:Key="RadiusTile">0</CornerRadius>
+  <CornerRadius x:Key="RadiusControl">0</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">0</CornerRadius>
+  <CornerRadius x:Key="RadiusBadge">0</CornerRadius>
+  <CornerRadius x:Key="RadiusIconBox">0</CornerRadius>
+  <CornerRadius x:Key="RadiusNav">0</CornerRadius>
+  <CornerRadius x:Key="RadiusMeter">0</CornerRadius>
+  <CornerRadius x:Key="RadiusPlay">0</CornerRadius>
+  <CornerRadius x:Key="RadiusAvatar">0</CornerRadius>
+  <CornerRadius x:Key="RadiusDialog">0</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">0</CornerRadius>
+  <sys:Double x:Key="RadiusPreview">0</sys:Double>
+  <sys:Double x:Key="DialogStripe">20</sys:Double>
+
+  <FontFamily x:Key="BrandSans">Tahoma</FontFamily>
+  <FontFamily x:Key="BrandDisplay">Tahoma</FontFamily>
+  <FontFamily x:Key="BrandMono">Consolas</FontFamily>
+  <FontFamily x:Key="KickerFont">Tahoma</FontFamily>
+  <FontFamily x:Key="NumberFont">Consolas</FontFamily>
+  <sys:Double x:Key="H1Size">20</sys:Double>
+  <sys:Double x:Key="SectionSize">13</sys:Double>
+  <sys:Double x:Key="WordmarkSize">15</sys:Double>
+  <sys:Double x:Key="KickerSize">11</sys:Double>
+  <sys:Double x:Key="KickerSpacing">0</sys:Double>
+</ResourceDictionary>

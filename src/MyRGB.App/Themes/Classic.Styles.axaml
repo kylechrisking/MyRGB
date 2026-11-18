@@ -1,0 +1,125 @@
+<!--
+  Classic's shape: raised 3D buttons (white top-left edge, dark bottom-right), pressed ones sunk,
+  etched group boxes, sunken wells, a title-bar stripe on dialogs. All drawn with inset shadows.
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Raised -->
+  <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BoxShadow" Value="inset -1 -1 0 0 #0A0A0A, inset 1 1 0 0 #FFFFFF, inset -2 -2 0 0 #808080, inset 2 2 0 0 #DFDFDF" />
+  </Style>
+  <Style Selector="Button">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="#C3C3C3" />
+    <Setter Property="Foreground" Value="#000000" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Padding" Value="14,5" />
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#CDCDCD" />
+    <Setter Property="Foreground" Value="#000000" />
+  </Style>
+  <!-- Pressed: sunk in -->
+  <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BoxShadow" Value="inset 1 1 0 0 #0A0A0A, inset -1 -1 0 0 #FFFFFF, inset 2 2 0 0 #808080" />
+    <Setter Property="Background" Value="#C3C3C3" />
+  </Style>
+  <Style Selector="Button.ghost">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="#C3C3C3" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#CDCDCD" />
+  </Style>
+  <!-- The default button: a black ring round the bevel, bold text. -->
+  <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BoxShadow" Value="inset 0 0 0 1 #000000, inset -2 -2 0 0 #0A0A0A, inset 2 2 0 0 #FFFFFF, inset -3 -3 0 0 #808080" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#CDCDCD" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <!-- Flat buttons stay flat. -->
+  <Style Selector="Button.link /template/ ContentPresenter#PART_ContentPresenter, Button.icon /template/ ContentPresenter#PART_ContentPresenter, Button.themecard /template/ ContentPresenter#PART_ContentPresenter, Button.card /template/ ContentPresenter#PART_ContentPresenter, Button.chip /template/ ContentPresenter#PART_ContentPresenter, Button.swatch /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+  </Style>
+  <Style Selector="Button.link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource LinkBrush}" />
+  </Style>
+  <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="#0000FF" />
+  </Style>
+  <Style Selector="Button.icon">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="#000000" />
+  </Style>
+  <Style Selector="Button.card, Button.chip, Button.themecard">
+    <Setter Property="Background" Value="#C3C3C3" />
+  </Style>
+  <Style Selector="Button.themecard">
+    <Setter Property="BorderBrush" Value="#808080" />
+  </Style>
+  <Style Selector="Button.themecard.picked">
+    <Setter Property="BorderBrush" Value="#0B2A8A" />
+  </Style>
+
+  <!-- Etched group boxes -->
+  <Style Selector="Border.panel, Border.tile, Border.alert">
+    <Setter Property="BorderBrush" Value="#808080" />
+    <Setter Property="BoxShadow" Value="inset 1 1 0 0 #FFFFFF, 1 1 0 0 #FFFFFF" />
+  </Style>
+  <!-- Sunken wells -->
+  <Style Selector="Border.badge, Border.well">
+    <Setter Property="BoxShadow" Value="inset 1 1 0 0 #404040" />
+  </Style>
+  <Style Selector="TextBox, ComboBox, NumericUpDown">
+    <Setter Property="Background" Value="#FFFFFF" />
+    <Setter Property="BorderBrush" Value="#808080" />
+  </Style>
+
+  <!-- Dialogs: a raised window with a title-bar stripe. -->
+  <Style Selector="Border.dialog">
+    <Setter Property="BorderBrush" Value="#0A0A0A" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BoxShadow" Value="inset 1 1 0 0 #FFFFFF, inset -1 -1 0 0 #808080, 4 4 0 0 #50000000" />
+  </Style>
+  <Style Selector="Border.dialogstripe">
+    <Setter Property="Background">
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Offset="0" Color="#0B2A8A" />
+        <GradientStop Offset="1" Color="#2A8AD8" />
+      </LinearGradientBrush>
+    </Setter>
+    <Setter Property="Margin" Value="3,3,3,0" />
+  </Style>
+
+  <Style Selector="TextBlock.h1, TextBlock.section, TextBlock.wordmark">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.kicker">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+
+  <!-- The page list: a sunken white well with a raised frame around the whole window. -->
+  <Style Selector="TabControl.nav > TabItem">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Padding" Value="6,0,10,0" />
+    <Setter Property="Foreground" Value="#000000" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem PathIcon">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem:pointerover /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="#E8E8E8" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="#0B2A8A" />
+  </Style>
+</Styles>

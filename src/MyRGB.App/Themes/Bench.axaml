@@ -109,6 +109,7 @@
   <CornerRadius x:Key="RadiusPlay">0</CornerRadius>
   <CornerRadius x:Key="RadiusAvatar">0</CornerRadius>
   <CornerRadius x:Key="RadiusDialog">0</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">0</CornerRadius>
   <sys:Double x:Key="RadiusPreview">0</sys:Double>
   <sys:Double x:Key="DialogStripe">2</sys:Double>
 
