@@ -16,6 +16,8 @@ public partial class App : Application
     private NativeMenuItem? _powerItem;
     private NativeMenuItem? _pauseItem;
     private NativeMenuItem? _presetsItem;
+    private NativeMenuItem? _themesItem;
+    private MainViewModel? _vm;
 
     public override void Initialize()
     {
@@ -30,7 +32,7 @@ public partial class App : Application
 
             _host = new AppHost();
             ThemeManager.Apply(this, _host.Settings.Theme);
-            var vm = new MainViewModel(_host);
+            var vm = _vm = new MainViewModel(_host);
             _window = new MainWindow { DataContext = vm };
             _host.ShowRequested += () => Dispatcher.UIThread.Post(ShowWindow);
             _host.Lights.StateChanged += (_, _) => Dispatcher.UIThread.Post(UpdateTray);
@@ -75,6 +77,8 @@ public partial class App : Application
         _powerItem.Click += (_, _) => _host!.Lights.SetEnabled(!_host.Lights.State.Enabled);
 
         _presetsItem = new NativeMenuItem("Presets") { Menu = new NativeMenu() };
+        _themesItem = new NativeMenuItem("Appearance") { Menu = new NativeMenu() };
+        ThemeManager.Changed += RebuildThemesMenu;
 
         var next = new NativeMenuItem("Next preset");
         next.Click += (_, _) => _host!.Lights.StepPreset(1);
@@ -93,7 +97,7 @@ public partial class App : Application
         };
 
         var menu = new NativeMenu();
-        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), exit })
+        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), _themesItem, new NativeMenuItemSeparator(), exit })
             menu.Items.Add(item);
 
         var tray = new TrayIcon
@@ -105,6 +109,24 @@ public partial class App : Application
         tray.Clicked += (_, _) => ShowWindow();
         TrayIcon.SetIcons(this, new TrayIcons { tray });
         RebuildPresetsMenu();
+        RebuildThemesMenu();
+    }
+
+    /// <summary>Every look, with the one in use marked; picking one saves it, the same as Settings > Appearance.</summary>
+    private void RebuildThemesMenu()
+    {
+        if (_themesItem is null || _vm is null) return;
+        var sub = new NativeMenu();
+        void Add(string id, string name)
+        {
+            var item = new NativeMenuItem(id == ThemeManager.RequestedId ? $"● {name}" : name);
+            item.Click += (_, _) => _vm.PickTheme(id);
+            sub.Items.Add(item);
+        }
+        Add(ThemeManager.AutoId, "Match Windows");
+        sub.Items.Add(new NativeMenuItemSeparator());
+        foreach (var t in ThemeManager.All) Add(t.Id, t.Name);
+        _themesItem.Menu = sub;
     }
 
     private void UpdateTray()
