@@ -1,0 +1,46 @@
+<!-- The look MyRGB shipped with up to 0.5.1: dark slate, Root green, Manrope. Its palette is the brand kit's. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceInclude Source="avares://MyRGB/Themes/Defaults.axaml" />
+    <ResourceInclude Source="avares://MyRGB/Theme.axaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <SolidColorBrush x:Key="PageBrush" Color="#071117" />
+  <SolidColorBrush x:Key="TopBarBrush" Color="#040E13" />
+  <SolidColorBrush x:Key="ChromeEdgeBrush" Color="#223039" />
+  <SolidColorBrush x:Key="NavBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="NavSelectedBrush" Color="#0F3620" />
+  <SolidColorBrush x:Key="NavSelectedEdgeBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="NavSelectedInkBrush" Color="#FFFFFF" />
+  <LinearGradientBrush x:Key="NavPipeBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#FF5D6E" />
+    <GradientStop Offset="0.25" Color="#FFA746" />
+    <GradientStop Offset="0.5" Color="#56DB8F" />
+    <GradientStop Offset="0.75" Color="#28D6DF" />
+    <GradientStop Offset="1" Color="#42A3FD" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="PlayBrush" Color="#E2EAE5" />
+  <SolidColorBrush x:Key="PlayHoverBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="OnPlayBrush" Color="#051B0E" />
+  <SolidColorBrush x:Key="PlayBorderBrush" Color="Transparent" />
+  <LinearGradientBrush x:Key="PrimaryBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+    <GradientStop Offset="0" Color="#FF5D6E" />
+    <GradientStop Offset="0.25" Color="#FFA746" />
+    <GradientStop Offset="0.5" Color="#56DB8F" />
+    <GradientStop Offset="0.75" Color="#28D6DF" />
+    <GradientStop Offset="1" Color="#42A3FD" />
+  </LinearGradientBrush>
+  <SolidColorBrush x:Key="OnPrimaryBrush" Color="#051B0E" />
+  <SolidColorBrush x:Key="LinkBrush" Color="#56DB8F" />
+  <SolidColorBrush x:Key="HandBrush" Color="#829298" />
+  <SolidColorBrush x:Key="ScreenWellBrush" Color="#000000" />
+  <SolidColorBrush x:Key="BadgeBrush" Color="#1C2830" />
+  <SolidColorBrush x:Key="BadgeBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="IconBoxBrush" Color="#0F3620" />
+  <SolidColorBrush x:Key="IconBoxBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="IconBoxInkBrush" Color="#56DB8F" />
+  <SolidColorBrush x:Key="MeterTrackBrush" Color="#162127" />
+  <SolidColorBrush x:Key="SupporterWashBrush" Color="#3A1426" />
+  <SolidColorBrush x:Key="SupporterBrush" Color="#FF7EB6" />
+</ResourceDictionary>

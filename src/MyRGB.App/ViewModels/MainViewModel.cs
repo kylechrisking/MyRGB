@@ -70,7 +70,7 @@ public sealed partial class PresetCardViewModel(PresetSummary summary, MainViewM
 public sealed record AlertViewModel(bool Warning, string Text, string? ActionLabel = null, IRelayCommand? Action = null)
 {
     public Geometry Icon => Warning ? NavIcons.Warning : NavIcons.Info;
-    public IBrush Accent => new SolidColorBrush(Warning ? Color.FromRgb(252, 180, 66) : Color.FromRgb(74, 186, 244));
+    public IBrush Accent => new SolidColorBrush(Warning ? ThemeManager.Palette.Warning : ThemeManager.Palette.Info);
     public bool HasAction => ActionLabel is not null;
 }
 
@@ -109,6 +109,7 @@ public sealed partial class MainViewModel : ObservableObject
         _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
         _openRgbPath = host.Settings.OpenRgb.ExecutablePath ?? "";
+        foreach (var t in ThemeManager.All) Themes.Add(new ThemeOptionViewModel(t, PickTheme) { IsSelected = t.Id == ThemeManager.Current.Id });
 
         host.Lights.StateChanged += (_, _) => Dispatcher.UIThread.Post(SyncState);
         host.Presets.Changed += (_, _) => Dispatcher.UIThread.Post(RefreshPresets);
@@ -210,6 +211,21 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private bool _showHomeGuide;
 
+    /// <summary>Settings' Appearance picker.</summary>
+    public ObservableCollection<ThemeOptionViewModel> Themes { get; } = [];
+
+    /// <summary>Switch the look live, remember it, and repaint what C# draws itself.</summary>
+    public void PickTheme(string id)
+    {
+        if (Avalonia.Application.Current is not { } app) return;
+        ThemeManager.Apply(app, id);
+        _host.Settings.Theme = ThemeManager.Current.Id;
+        _host.ScheduleSave();
+        foreach (var t in Themes) t.IsSelected = t.Id == ThemeManager.Current.Id;
+        RefreshAlerts();
+        RefreshDevices();
+    }
+
     [RelayCommand]
     private void HideHomeGuide()
     {
@@ -227,7 +243,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public Geometry PauseIcon => Paused ? NavIcons.Play : NavIcons.Pause;
     public string PauseTip => Paused ? "Resume the animation" : "Freeze the animation where it is";
-    public string PlayingLabel => Paused ? "PAUSED" : "NOW PLAYING";
+    public string PlayingLabel => Paused ? "Paused" : "Now playing";
     [ObservableProperty] private IBrush? _activeSwatch;
     [ObservableProperty] private string _providerStatus = "Looking for your devices…";
     [ObservableProperty] private string _homeSummary = "Looking for your devices…";

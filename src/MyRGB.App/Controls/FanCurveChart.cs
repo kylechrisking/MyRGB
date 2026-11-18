@@ -1,4 +1,5 @@
 using System.Globalization;
+using MyRGB.App.Services;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
@@ -23,7 +24,7 @@ public sealed class FanCurveChart : Control
 
     private const double MinTemp = 20, MaxTemp = 100, PadLeft = 34, PadBottom = 20, PadTop = 8, PadRight = 10, Hit = 12;
 
-    private static readonly IBrush Background = new ImmutableSolidColorBrush(Color.FromRgb(4, 14, 19));
+    private static IBrush Background => new ImmutableSolidColorBrush(ThemeManager.Palette.Stage);
     private static readonly IPen GridPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromArgb(28, 255, 255, 255)), 1);
     private static readonly IPen EmergencyPen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromArgb(150, 247, 93, 89)), 1, new ImmutableDashStyle([4, 4], 0));
     private static readonly IPen LinePen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromRgb(86, 219, 143)), 2.2, lineJoin: PenLineJoin.Round);
@@ -52,7 +53,7 @@ public sealed class FanCurveChart : Control
     public override void Render(DrawingContext ctx)
     {
         var plot = Plot;
-        ctx.DrawRectangle(Background, null, new Rect(Bounds.Size), 10, 10);
+        ctx.DrawRectangle(Background, null, new Rect(Bounds.Size), ThemeManager.Current.StageRadius, ThemeManager.Current.StageRadius);
 
         for (int p = 0; p <= 100; p += 25)
         {

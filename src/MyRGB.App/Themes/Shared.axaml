@@ -1,0 +1,450 @@
+<!--
+  Styles every theme shares. They read the theme's tokens (colors, fonts, corner radii) through
+  DynamicResource, so switching themes restyles the window live. A theme that wants a different
+  shape, not just different colors, adds its own Styles file after this one (see ThemeManager).
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Style Selector=":is(TopLevel)">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandSans}" />
+  </Style>
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource PageBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Controls: corners from the theme. -->
+  <Style Selector="Button">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+    <Setter Property="Padding" Value="14,7" />
+  </Style>
+  <Style Selector="TextBox, ComboBox, NumericUpDown">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+  </Style>
+
+  <!-- Quiet secondary button: surface fill, hairline border. -->
+  <Style Selector="Button.ghost">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Bare glyph button: no fill until hovered. -->
+  <Style Selector="Button.icon">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="7" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="Button.icon PathIcon">
+    <Setter Property="Width" Value="15" />
+    <Setter Property="Height" Value="15" />
+  </Style>
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- The player bar's big round play/pause. -->
+  <Style Selector="Button.play">
+    <Setter Property="Width" Value="42" />
+    <Setter Property="Height" Value="42" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPlay}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="6,0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource PlayBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPlayBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PlayBorderBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource PlayBorderThickness}" />
+  </Style>
+  <Style Selector="Button.play PathIcon">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+  </Style>
+  <Style Selector="Button.play:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PlayHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPlayBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PlayBorderBrush}" />
+  </Style>
+
+  <!-- Primary action. -->
+  <Style Selector="Button.accent">
+    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}" />
+    <Setter Property="Opacity" Value="0.88" />
+  </Style>
+  <Style Selector="Button.accent:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+
+  <!-- Type -->
+  <Style Selector="TextBlock.wordmark">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandDisplay}" />
+    <Setter Property="FontSize" Value="{DynamicResource WordmarkSize}" />
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="LetterSpacing" Value="-0.4" />
+  </Style>
+  <Style Selector="TextBlock.h1">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandDisplay}" />
+    <Setter Property="FontSize" Value="{DynamicResource H1Size}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="TextBlock.body">
+    <Setter Property="Foreground" Value="{DynamicResource InkSecondaryBrush}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="LineHeight" Value="19" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandDisplay}" />
+    <Setter Property="FontSize" Value="{DynamicResource SectionSize}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.kicker">
+    <Setter Property="FontFamily" Value="{DynamicResource KickerFont}" />
+    <Setter Property="FontSize" Value="{DynamicResource KickerSize}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="{DynamicResource KickerSpacing}" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <!-- A handwritten aside. Only themes with a hand font show these (see HandVisible). -->
+  <Style Selector="TextBlock.hand">
+    <Setter Property="FontFamily" Value="{DynamicResource BrandHand}" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource HandBrush}" />
+    <Setter Property="IsVisible" Value="{DynamicResource HandVisible}" />
+  </Style>
+  <Style Selector="TextBlock.number">
+    <Setter Property="FontFamily" Value="{DynamicResource NumberFont}" />
+  </Style>
+
+  <!-- Chrome: the bars around the pages. -->
+  <Style Selector="Border.topbar">
+    <Setter Property="Background" Value="{DynamicResource TopBarBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ChromeEdgeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource TopBarEdge}" />
+    <Setter Property="Padding" Value="20,12" />
+  </Style>
+  <Style Selector="Border.playerbar">
+    <Setter Property="Background" Value="{DynamicResource ChromeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ChromeEdgeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource PlayerBarEdge}" />
+    <Setter Property="Padding" Value="20,10" />
+  </Style>
+  <Style Selector="Border.updatestrip">
+    <Setter Property="Background" Value="{DynamicResource AccentWashBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Padding" Value="20,9" />
+  </Style>
+  <Style Selector="Border.swatch">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+  </Style>
+  <Style Selector="Border.avatar">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusAvatar}" />
+    <Setter Property="Background" Value="{DynamicResource RgbGradient}" />
+  </Style>
+  <Style Selector="Border.well">
+    <Setter Property="Background" Value="{DynamicResource ScreenWellBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+  </Style>
+  <Style Selector="Border.dialog">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusDialog}" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="BoxShadow" Value="0 24 70 0 #A0000000" />
+  </Style>
+  <Style Selector="Border.dialogstripe">
+    <Setter Property="Background" Value="{DynamicResource RgbGradient}" />
+    <Setter Property="Height" Value="{DynamicResource DialogStripe}" />
+  </Style>
+  <Style Selector="Border.callout">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.tip">
+    <Setter Property="Background" Value="{DynamicResource InfoWashBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Padding" Value="12,9" />
+  </Style>
+  <Style Selector="Expander.panel">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPanel}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+  </Style>
+
+  <!-- Surfaces -->
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPanel}" />
+    <Setter Property="Padding" Value="18,16" />
+  </Style>
+  <Style Selector="Border.badge">
+    <Setter Property="Background" Value="{DynamicResource BadgeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BadgeBorderBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BadgeBorder}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusBadge}" />
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.badge > TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource InkSecondaryBrush}" />
+  </Style>
+  <Style Selector="Border.iconbox">
+    <Setter Property="Width" Value="38" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusIconBox}" />
+    <Setter Property="Background" Value="{DynamicResource IconBoxBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource IconBoxBorderBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource IconBoxBorder}" />
+  </Style>
+  <Style Selector="Border.iconbox > PathIcon">
+    <Setter Property="Width" Value="20" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="Foreground" Value="{DynamicResource IconBoxInkBrush}" />
+  </Style>
+  <!-- Tour check step: round color swatches, the picked one ringed. -->
+  <Style Selector="Button.swatch">
+    <Setter Property="Width" Value="34" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="CornerRadius" Value="17" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.swatch /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{Binding $parent[Button].Background}" />
+  </Style>
+  <Style Selector="Button.swatch.picked">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.swatch.picked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <!-- Thin meters for loads and drive space. -->
+  <Style Selector="ProgressBar.meter">
+    <Setter Property="Background" Value="{DynamicResource MeterTrackBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusMeter}" />
+    <Setter Property="MinHeight" Value="4" />
+  </Style>
+  <Style Selector="ProgressBar.meter[Orientation=Vertical]">
+    <Setter Property="MinWidth" Value="4" />
+    <Setter Property="Foreground" Value="{DynamicResource LedBlueBrush}" />
+  </Style>
+
+  <!-- The supporter badge: a small pink pill. -->
+  <Style Selector="Border.supporter">
+    <Setter Property="Background" Value="{DynamicResource SupporterWashBrush}" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="7,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.supporter > TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource SupporterBrush}" />
+  </Style>
+
+  <Style Selector="Border.note">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Padding" Value="14,12" />
+  </Style>
+
+  <Style Selector="Button.link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource LinkBrush}" />
+    <Setter Property="Padding" Value="6,4" />
+  </Style>
+  <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentWashBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource LinkBrush}" />
+  </Style>
+
+  <!-- Preset cards: the active one is outlined in its own colors and glows. -->
+  <Style Selector="Border.cardglow">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusTile}" />
+    <Setter Property="Margin" Value="0,0,16,16" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.card">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Width" Value="212" />
+    <Setter Property="Height" Value="146" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusTile}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+  </Style>
+  <Style Selector="Button.card:not(.active):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}" />
+  </Style>
+  <Style Selector="Button.card.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{Binding $parent[Button].BorderBrush}" />
+  </Style>
+  <Style Selector="Button.chip">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Width" Value="168" />
+    <Setter Property="Height" Value="96" />
+    <Setter Property="Margin" Value="0,0,12,12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPanel}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.chip TextBlock, Button.card TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- Home device tiles -->
+  <Style Selector="Border.tile">
+    <Setter Property="Width" Value="248" />
+    <Setter Property="Height" Value="146" />
+    <Setter Property="Margin" Value="0,0,14,14" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusTile}" />
+    <Setter Property="Padding" Value="16,14" />
+  </Style>
+
+  <!-- Alerts on Home -->
+  <Style Selector="Border.alert">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Padding" Value="14,10" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+
+  <!-- Sidebar navigation: icon + label, the selected tab marked by the theme. -->
+  <!-- The strip of tabs takes the control's background; the page area paints over it with the page. -->
+  <Style Selector="TabControl.nav">
+    <Setter Property="Background" Value="{DynamicResource NavBrush}" />
+  </Style>
+  <Style Selector="TabControl.nav /template/ ContentPresenter#PART_SelectedContentHost">
+    <Setter Property="Background" Value="{DynamicResource PageBrush}" />
+    <Setter Property="Padding" Value="20,22,24,20" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="MinHeight" Value="42" />
+    <Setter Property="Margin" Value="{DynamicResource NavItemMargin}" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem /template/ Border#PART_LayoutRoot">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusNav}" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem:pointerover /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource NavSelectedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource NavSelectedEdgeBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource NavSelectedEdge}" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource NavSelectedInkBrush}" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem:selected /template/ Border#PART_SelectedPipe">
+    <Setter Property="Background" Value="{DynamicResource NavPipeBrush}" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem PathIcon">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+  </Style>
+  <!-- Only the tab labels' own icons; the pages inside the tabs keep theirs. -->
+  <Style Selector="TabControl.nav > TabItem > StackPanel > PathIcon">
+    <Setter Property="IsVisible" Value="{DynamicResource NavIconsVisible}" />
+  </Style>
+
+  <!-- Studio effect chips: raised tiles, the picked one tinted with an accent edge. -->
+  <Style Selector="ListBox.chips">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBox.chips ListBoxItem">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Margin" Value="0,0,8,8" />
+    <Setter Property="Padding" Value="7,7,7,8" />
+  </Style>
+  <Style Selector="ListBox.chips ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ListBox.chips ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineStrongBrush}" />
+  </Style>
+  <Style Selector="ListBox.chips ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentWashBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="ListBox.chips:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+
+  <!-- Settings: the theme picker's cards. -->
+  <Style Selector="Button.themecard">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Width" Value="168" />
+    <Setter Property="Margin" Value="0,0,12,12" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.themecard.picked">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Button.themecard.picked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Button.themecard:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+  </Style>
+</Styles>

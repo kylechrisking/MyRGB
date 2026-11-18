@@ -1,0 +1,50 @@
+<!--
+  Shape and type tokens every theme starts from (these are the original MyRGB look). A theme file
+  merges this first and then overrides what it changes. Colors are not here: each theme defines its
+  whole palette, so a missing color shows up as a build-time gap, not a wrong color.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+  <!-- Corners -->
+  <CornerRadius x:Key="RadiusPanel">12</CornerRadius>
+  <CornerRadius x:Key="RadiusTile">14</CornerRadius>
+  <CornerRadius x:Key="RadiusControl">8</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">10</CornerRadius>
+  <CornerRadius x:Key="RadiusBadge">6</CornerRadius>
+  <CornerRadius x:Key="RadiusIconBox">10</CornerRadius>
+  <CornerRadius x:Key="RadiusNav">10</CornerRadius>
+  <CornerRadius x:Key="RadiusMeter">3</CornerRadius>
+  <CornerRadius x:Key="RadiusPlay">21</CornerRadius>
+  <CornerRadius x:Key="RadiusAvatar">12</CornerRadius>
+  <CornerRadius x:Key="RadiusDialog">18</CornerRadius>
+
+  <!-- Edges -->
+  <Thickness x:Key="TopBarEdge">0,0,0,1</Thickness>
+  <Thickness x:Key="PlayerBarEdge">0,1,0,0</Thickness>
+  <Thickness x:Key="NavSelectedEdge">0</Thickness>
+  <Thickness x:Key="NavItemMargin">10,2</Thickness>
+  <Thickness x:Key="BadgeBorder">0</Thickness>
+  <Thickness x:Key="IconBoxBorder">0</Thickness>
+  <Thickness x:Key="PlayBorderThickness">0</Thickness>
+  <sys:Double x:Key="DialogStripe">4</sys:Double>
+  <sys:Double x:Key="RadiusPreview">8</sys:Double>
+
+  <!-- Type -->
+  <FontFamily x:Key="BrandSans">avares://MyRGB/Assets/Fonts#Manrope</FontFamily>
+  <FontFamily x:Key="BrandDisplay">avares://MyRGB/Assets/Fonts#Manrope</FontFamily>
+  <FontFamily x:Key="BrandMono">avares://MyRGB/Assets/Fonts#JetBrains Mono</FontFamily>
+  <FontFamily x:Key="BrandHand">Ink Free, Segoe Print</FontFamily>
+  <FontFamily x:Key="KickerFont">avares://MyRGB/Assets/Fonts#Manrope</FontFamily>
+  <FontFamily x:Key="NumberFont">avares://MyRGB/Assets/Fonts#Manrope</FontFamily>
+  <sys:Double x:Key="H1Size">24</sys:Double>
+  <sys:Double x:Key="SectionSize">15</sys:Double>
+  <sys:Double x:Key="WordmarkSize">18</sys:Double>
+  <sys:Double x:Key="KickerSize">10</sys:Double>
+  <sys:Double x:Key="KickerSpacing">1.2</sys:Double>
+
+  <!-- Bits a theme can switch on or off -->
+  <sys:Boolean x:Key="HandVisible">False</sys:Boolean>
+  <sys:Boolean x:Key="NavIconsVisible">True</sys:Boolean>
+  <sys:Boolean x:Key="MarkVisible">True</sys:Boolean>
+</ResourceDictionary>

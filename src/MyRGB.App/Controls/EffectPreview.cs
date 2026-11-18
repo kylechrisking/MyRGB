@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using MyRGB.App.Services;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -35,7 +36,7 @@ public sealed class EffectPreview : Control
     /// <summary>Size of one sampled cell, in pixels.</summary>
     private const double CellSize = 7;
 
-    private static readonly IBrush Background = new ImmutableSolidColorBrush(Color.FromRgb(4, 14, 19));
+    private static IBrush Background => new ImmutableSolidColorBrush(ThemeManager.Palette.Stage);
 
     private readonly DispatcherTimer _timer;
     private readonly Stopwatch _clock = new();

@@ -22,7 +22,7 @@ public sealed class DeviceColorsBar : Control
     public static readonly StyledProperty<string?> DeviceIdProperty = AvaloniaProperty.Register<DeviceColorsBar, string?>(nameof(DeviceId));
 
     private const int Samples = 32;
-    private static readonly IBrush Empty = new ImmutableSolidColorBrush(Color.FromRgb(22, 33, 39));
+    private static IBrush Empty => new ImmutableSolidColorBrush(ThemeManager.Palette.Empty);
 
     private readonly DispatcherTimer _timer;
     private readonly int[] _pixels = new int[Samples];

@@ -2,12 +2,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MyRGB.App.App"
              Name="MyRGB"
-             RequestedThemeVariant="Dark">
+             RequestedThemeVariant="Light">
     <Application.Resources>
         <ResourceDictionary>
-            <!-- Brand tokens and brushes: branding/Theme.axaml (see branding/BRAND.txt). -->
+            <!-- The theme's tokens. ThemeManager swaps this for the theme picked in Settings;
+                 Notebook is here so the designer and the first frame have something. -->
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://MyRGB/Theme.axaml" />
+                <ResourceInclude Source="avares://MyRGB/Themes/Notebook.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
@@ -16,89 +17,11 @@
         <FluentTheme>
             <FluentTheme.Palettes>
                 <ColorPaletteResources x:Key="Dark" Accent="#56DB8F" RegionColor="#071117" />
+                <ColorPaletteResources x:Key="Light" Accent="#2F5FC4" RegionColor="#F1EBDD" />
             </FluentTheme.Palettes>
         </FluentTheme>
         <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
-
-        <!-- Manrope everywhere, popups included. -->
-        <Style Selector=":is(TopLevel)">
-            <Setter Property="FontFamily" Value="{StaticResource BrandSans}" />
-        </Style>
-
-        <!-- Rounder, softer controls everywhere. -->
-        <Style Selector="Button">
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="14,7" />
-        </Style>
-        <Style Selector="TextBox, ComboBox, NumericUpDown">
-            <Setter Property="CornerRadius" Value="8" />
-        </Style>
-
-        <!-- Quiet secondary button: dark fill, hairline border. -->
-        <Style Selector="Button.ghost">
-            <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource HairlineBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
-        <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
-        </Style>
-
-        <!-- Bare glyph button: no fill until hovered. -->
-        <Style Selector="Button.icon">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="7" />
-            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
-        </Style>
-        <Style Selector="Button.icon PathIcon">
-            <Setter Property="Width" Value="15" />
-            <Setter Property="Height" Value="15" />
-        </Style>
-        <Style Selector="Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
-        </Style>
-
-        <!-- The player bar's big round play/pause. -->
-        <Style Selector="Button.play">
-            <Setter Property="Width" Value="42" />
-            <Setter Property="Height" Value="42" />
-            <Setter Property="CornerRadius" Value="21" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="6,0" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Background" Value="{StaticResource InkBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
-        </Style>
-        <Style Selector="Button.play PathIcon">
-            <Setter Property="Width" Value="16" />
-            <Setter Property="Height" Value="16" />
-        </Style>
-        <Style Selector="Button.play:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="White" />
-            <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
-        </Style>
-
-        <!-- Primary action: the RGB gradient, dark text. -->
-        <Style Selector="Button.accent">
-            <Setter Property="Background" Value="{StaticResource RgbGradient}" />
-            <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-        </Style>
-        <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource RgbGradient}" />
-            <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
-        </Style>
-        <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource RgbGradient}" />
-            <Setter Property="Foreground" Value="{StaticResource OnAccentBrush}" />
-            <Setter Property="Opacity" Value="0.9" />
-        </Style>
-        <Style Selector="Button.accent:disabled /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Opacity" Value="0.4" />
-        </Style>
+        <!-- Every theme's base styles; a theme's own Styles file is added after this by ThemeManager. -->
+        <StyleInclude Source="avares://MyRGB/Themes/Shared.axaml" />
     </Application.Styles>
 </Application>

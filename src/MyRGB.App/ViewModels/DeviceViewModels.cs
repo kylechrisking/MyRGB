@@ -64,8 +64,8 @@ public sealed partial class DeviceRowViewModel(
 
     public string StatusText => NeedsSetup ? "Needs setup" : Included ? "Controlled by MyRGB" : "Left to other software";
 
-    public IBrush StatusBrush => new SolidColorBrush(NeedsSetup ? Color.FromRgb(252, 180, 66)
-        : Included ? Color.FromRgb(86, 219, 143) : Color.FromRgb(130, 146, 152));
+    public IBrush StatusBrush => new SolidColorBrush(NeedsSetup ? ThemeManager.Palette.Warning
+        : Included ? ThemeManager.Palette.Success : ThemeManager.Palette.Muted);
 
     // ---- Battery (wireless devices only) ----
 
@@ -82,6 +82,10 @@ public sealed partial class DeviceRowViewModel(
     public bool BatteryCharging => Battery?.Charging ?? false;
     public string BatteryText => Battery is { } b ? $"{b.Percent}%" : BatteryAsleep ? "asleep" : "";
 
+    /// <summary>A scribbled reminder next to a nearly flat battery (themes with handwriting only).</summary>
+    public string BatteryNote => Battery is { Charging: false, Percent: < 20 } ? "charge me!" : "";
+    public bool HasBatteryNote => BatteryNote.Length > 0;
+
     public string BatteryTip => Battery is { } b
         ? $"Battery {b.Percent}%{(b.Charging ? ", charging" : "")}{(b.Estimated ? " (estimated from voltage)" : "")}"
         : "The device is off or asleep, so its battery can't be read right now.";
@@ -92,6 +96,8 @@ public sealed partial class DeviceRowViewModel(
         BatteryAsleep = reading is { Status: null };
         OnPropertyChanged(nameof(BatteryPercent));
         OnPropertyChanged(nameof(BatteryCharging));
+        OnPropertyChanged(nameof(BatteryNote));
+        OnPropertyChanged(nameof(HasBatteryNote));
     }
 }
 

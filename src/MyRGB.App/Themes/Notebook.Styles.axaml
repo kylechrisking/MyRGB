@@ -1,0 +1,38 @@
+<!-- Notebook's shape beyond its colors: soft paper shadows, ink-ruled buttons, index-card panels. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Border.panel, Border.tile, Border.alert">
+    <Setter Property="BoxShadow" Value="0 5 12 -8 #50503A1A" />
+  </Style>
+  <Style Selector="Border.dialog">
+    <Setter Property="BoxShadow" Value="0 18 40 -10 #70302010" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+  <Style Selector="TextBlock.h1">
+    <Setter Property="LetterSpacing" Value="-0.4" />
+  </Style>
+  <Style Selector="TextBlock.wordmark">
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.ghost">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="1.5" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+  </Style>
+  <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
+    <Setter Property="Background" Value="#FFFFFF" />
+  </Style>
+  <Style Selector="Button.link">
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.link /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="TextElement.FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="TabControl.nav > TabItem">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Padding" Value="26,0,14,0" />
+    <Setter Property="MinHeight" Value="38" />
+  </Style>
+</Styles>

@@ -1,4 +1,5 @@
 using Avalonia;
+using MyRGB.App.Services;
 using Avalonia.Controls;
 using Avalonia.Media;
 
@@ -41,7 +42,7 @@ public sealed class BatteryGauge : Control
         var b = Bounds.Size;
         double nub = 2.5, w = b.Width - nub, h = b.Height;
         var color = LevelColor(Percent, Charging);
-        var outline = new Pen(new SolidColorBrush(Color.FromArgb(200, 188, 199, 199)), 1.2);
+        var outline = new Pen(new SolidColorBrush(ThemeManager.Palette.Muted), 1.2);
 
         ctx.DrawRectangle(null, outline, new Rect(0.6, 0.6, w - 1.2, h - 1.2), 3, 3);
         ctx.DrawRectangle(outline.Brush, null, new Rect(w, h * 0.32, nub, h * 0.36), 1, 1);

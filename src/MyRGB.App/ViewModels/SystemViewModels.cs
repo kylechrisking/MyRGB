@@ -560,9 +560,9 @@ public sealed partial class CoolingViewModel : ObservableObject
             t.Percent = v is { } p ? Math.Clamp(p, 0, 100) : 0;
             t.Brush = new SolidColorBrush(v switch
             {
-                >= 80 => Color.FromRgb(247, 93, 89),
-                >= 65 => Color.FromRgb(252, 180, 66),
-                _ => Color.FromRgb(86, 219, 143),
+                >= 80 => ThemeManager.Palette.Danger,
+                >= 65 => ThemeManager.Palette.Warning,
+                _ => ThemeManager.Palette.Success,
             });
         }
 

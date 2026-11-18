@@ -122,9 +122,9 @@ public sealed partial class VendorAppViewModel : ObservableObject
 
     public IBrush VerdictBrush => new SolidColorBrush(Readiness switch
     {
-        Readiness.Ready => Color.FromRgb(86, 219, 143),
-        Readiness.Caution => Color.FromRgb(252, 180, 66),
-        _ => Color.FromRgb(130, 146, 152),
+        Readiness.Ready => ThemeManager.Palette.Success,
+        Readiness.Caution => ThemeManager.Palette.Warning,
+        _ => ThemeManager.Palette.Muted,
     });
 
     public string RunningText => Running

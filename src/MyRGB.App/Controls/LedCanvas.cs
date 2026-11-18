@@ -31,7 +31,7 @@ public sealed class LedCanvas : Control
     private const double HandleSize = 10;
 
     // Brand colors (branding/Theme.axaml): chrome for the stage, surface for device bodies.
-    private static readonly IBrush Background = new ImmutableSolidColorBrush(Color.FromRgb(4, 14, 19));
+    private static IBrush Background => new ImmutableSolidColorBrush(ThemeManager.Palette.Stage);
     private static readonly IPen StagePen = new ImmutablePen(new ImmutableSolidColorBrush(Color.FromRgb(34, 48, 57)), 1);
     private static readonly IBrush GridDot = new ImmutableSolidColorBrush(Color.FromArgb(40, 130, 146, 152));
     private static readonly IBrush BodyBrush = new ImmutableSolidColorBrush(Color.FromArgb(235, 13, 24, 30));
@@ -131,7 +131,7 @@ public sealed class LedCanvas : Control
     public override void Render(DrawingContext ctx)
     {
         var area = Area();
-        ctx.DrawRectangle(Background, StagePen, new Rect(Bounds.Size).Deflate(0.5), 12, 12);
+        ctx.DrawRectangle(Background, StagePen, new Rect(Bounds.Size).Deflate(0.5), ThemeManager.Current.StageRadius, ThemeManager.Current.StageRadius);
         for (int i = 0; i <= 16; i++)
             for (int j = 0; j <= 9; j++)
                 ctx.DrawEllipse(GridDot, null, new Point(area.X + area.Width * i / 16, area.Y + area.Height * j / 9), 1, 1);

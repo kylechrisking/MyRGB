@@ -12,11 +12,14 @@ using MyRGB.Core.Presets;
 using MyRGB.Core.Sensors;
 using MyRGB.Core.Vendors;
 
-// Usage: UiSnapshots <output folder>
+// Usage: UiSnapshots <output folder> [theme id] [quick]
+// "quick" shoots only Home, Devices and Settings, for comparing themes side by side.
 // Renders the first-run tour and each page of the main window, with fake devices, batteries and
 // vendor apps, into <output>/*.png. Never touches real hardware or the real settings (temp data
 // folder, no API, no OpenRGB, no registry).
 string outDir = Path.GetFullPath(args.Length > 0 ? args[0] : "snapshots");
+string themeId = args.Length > 1 ? args[1] : ThemeManager.DefaultId;
+bool quick = args.Length > 2 && args[2] == "quick";
 Directory.CreateDirectory(outDir);
 foreach (var old in Directory.GetFiles(outDir, "*.png")) File.Delete(old);
 string data = Path.Combine(Path.GetTempPath(), "MyRGB-snapshots");
@@ -27,6 +30,7 @@ AppBuilder.Configure<App>()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .WithInterFont()
     .SetupWithoutStarting();
+ThemeManager.Apply(Application.Current!, themeId);
 
 InstalledProgram[] installed =
 [
@@ -71,6 +75,18 @@ void Shoot(string name)
     var frame = window.CaptureRenderedFrame();
     using (var file = File.Create(Path.Combine(outDir, $"{name}.png"))) frame?.Save(file, Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
     Console.WriteLine($"{name}: {(frame is null ? "no frame" : "ok")}");
+}
+
+if (quick)
+{
+    vm.Welcome?.SkipCommand.Execute(null);
+    for (int i = 0; i < 180; i++) host.Sensors.Poll();
+    vm.SelectedTab = MainViewModel.HomeTab; Shoot($"{themeId}-home");
+    vm.SelectedTab = MainViewModel.DevicesTab; Shoot($"{themeId}-devices");
+    vm.SelectedTab = MainViewModel.SettingsTab; Shoot($"{themeId}-settings");
+    vm.SelectedTab = MainViewModel.CoolingTab; Shoot($"{themeId}-cooling");
+    window.AllowClose = true; window.Close(); host.Shutdown();
+    return;
 }
 
 Shoot("00-tour");                                    // first launch shows the tour

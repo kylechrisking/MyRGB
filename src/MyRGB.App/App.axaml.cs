@@ -29,6 +29,7 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             _host = new AppHost();
+            ThemeManager.Apply(this, _host.Settings.Theme);
             var vm = new MainViewModel(_host);
             _window = new MainWindow { DataContext = vm };
             _host.ShowRequested += () => Dispatcher.UIThread.Post(ShowWindow);
