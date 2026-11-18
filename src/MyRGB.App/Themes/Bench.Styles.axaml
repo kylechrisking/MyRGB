@@ -47,4 +47,8 @@
     <Setter Property="FontSize" Value="15" />
     <Setter Property="MinHeight" Value="38" />
   </Style>
+  <!-- On/off switches drawn the theme's way (see Toggles.axaml). -->
+  <Style Selector="ToggleSwitch">
+    <Setter Property="Theme" Value="{DynamicResource DipToggleTheme}" />
+  </Style>
 </Styles>

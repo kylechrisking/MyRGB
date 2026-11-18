@@ -122,4 +122,8 @@
   <Style Selector="TabControl.nav > TabItem:selected /template/ Border#PART_LayoutRoot">
     <Setter Property="Background" Value="#0B2A8A" />
   </Style>
+  <!-- On/off switches drawn the theme's way (see Toggles.axaml). -->
+  <Style Selector="ToggleSwitch">
+    <Setter Property="Theme" Value="{DynamicResource CheckToggleTheme}" />
+  </Style>
 </Styles>

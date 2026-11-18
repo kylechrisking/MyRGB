@@ -1192,7 +1192,7 @@
                             </Border>
                             <StackPanel Margin="10,8,10,10" Spacing="1">
                               <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                              <TextBlock Classes="muted" Text="{Binding Description}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Classes="muted" Text="{Binding Description}" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                           </StackPanel>
                         </Button>

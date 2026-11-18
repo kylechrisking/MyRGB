@@ -73,6 +73,9 @@ public sealed partial class WelcomeViewModel : ObservableObject
         new("Step 6", "Control it from anywhere",
             "Closing the window keeps MyRGB running in the system tray, so your lights stay on. Use the player bar for presets, the top bar for power and brightness, the tray icon for quick switches, or Stream Deck keys if you have one.",
             NavIcons.Settings),
+        new("Step 7", "Make it look like yours",
+            "MyRGB itself comes in several looks: a paper notebook, a chalkboard, a bare circuit board, an old-school grey desktop, a blueprint and a green-screen terminal. Pick one under Settings > Appearance, or let it follow Windows' light and dark mode.",
+            NavIcons.Settings, "Pick a look", "settings"),
     ];
 
     public IReadOnlyList<FlashSwatch> Swatches { get; }

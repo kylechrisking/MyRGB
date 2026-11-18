@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Headless;
+using Avalonia.VisualTree;
 using Avalonia.Threading;
 using MyRGB.App;
 using MyRGB.App.Services;
@@ -85,6 +86,14 @@ if (quick)
     vm.SelectedTab = MainViewModel.DevicesTab; Shoot($"{themeId}-devices");
     vm.SelectedTab = MainViewModel.SettingsTab; Shoot($"{themeId}-settings");
     vm.SelectedTab = MainViewModel.CoolingTab; Shoot($"{themeId}-cooling");
+    // The themed switches redraw ToggleSwitch from scratch; make sure a click still flips one.
+    var grid = window.GetVisualDescendants().OfType<Avalonia.Controls.ToggleSwitch>().First(t => Equals(t.OnContent, "Grid"));
+    var at = grid.TranslatePoint(new Point(8, grid.Bounds.Height / 2), window)!.Value;
+    bool before = vm.Cooling.GridView;
+    window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left);
+    Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"switch click: {before} -> {vm.Cooling.GridView}");
+    Shoot($"{themeId}-cooling-clicked");
     window.AllowClose = true; window.Close(); host.Shutdown();
     return;
 }

@@ -114,4 +114,11 @@
   <sys:Double x:Key="WordmarkSize">15</sys:Double>
   <sys:Double x:Key="KickerSize">11</sys:Double>
   <sys:Double x:Key="KickerSpacing">0</sys:Double>
+
+  <!-- Tick boxes for the on/off switches. -->
+  <SolidColorBrush x:Key="ToggleBoxBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="ToggleBoxBorderBrush" Color="#404040" />
+  <SolidColorBrush x:Key="ToggleTickBrush" Color="#000000" />
+  <Thickness x:Key="ToggleBoxBorder">1</Thickness>
+  <CornerRadius x:Key="ToggleBoxRadius">0</CornerRadius>
 </ResourceDictionary>

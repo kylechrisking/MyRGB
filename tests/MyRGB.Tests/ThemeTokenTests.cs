@@ -34,7 +34,7 @@ public partial class ThemeTokenTests
     private static HashSet<string> UsedKeys()
     {
         var files = new[] { Path.Combine(Root, "src", "MyRGB.App", "MainWindow.axaml") }
-            .Concat(Directory.GetFiles(Themes, "*.axaml").Where(f => f.EndsWith("Shared.axaml") || f.EndsWith(".Styles.axaml")));
+            .Concat(Directory.GetFiles(Themes, "*.axaml").Where(f => f.EndsWith("Shared.axaml") || f.EndsWith("Toggles.axaml") || f.EndsWith(".Styles.axaml")));
         return files.SelectMany(f => Used().Matches(File.ReadAllText(f)).Select(m => m.Groups[1].Value)).ToHashSet();
     }
 
@@ -59,7 +59,7 @@ public partial class ThemeTokenTests
         foreach (var f in Directory.GetFiles(Path.Combine(FindRoot(), "src", "MyRGB.App", "Themes"), "*.axaml"))
         {
             var name = Path.GetFileNameWithoutExtension(f);
-            if (name is "Defaults" or "Shared" || name.EndsWith(".Styles")) continue;
+            if (name is "Defaults" or "Shared" or "Toggles" || name.EndsWith(".Styles")) continue;
             data.Add(name);
         }
         return data;

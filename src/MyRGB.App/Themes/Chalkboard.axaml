@@ -126,4 +126,11 @@
   <sys:Boolean x:Key="HandVisible">True</sys:Boolean>
   <sys:Boolean x:Key="NavIconsVisible">False</sys:Boolean>
   <sys:Boolean x:Key="MarkVisible">False</sys:Boolean>
+
+  <!-- Tick boxes for the on/off switches. -->
+  <SolidColorBrush x:Key="ToggleBoxBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="ToggleBoxBorderBrush" Color="#ECEAE0" />
+  <SolidColorBrush x:Key="ToggleTickBrush" Color="#F2D466" />
+  <Thickness x:Key="ToggleBoxBorder">1.5</Thickness>
+  <CornerRadius x:Key="ToggleBoxRadius">2</CornerRadius>
 </ResourceDictionary>

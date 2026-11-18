@@ -109,7 +109,9 @@ public sealed partial class MainViewModel : ObservableObject
         _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
         _openRgbPath = host.Settings.OpenRgb.ExecutablePath ?? "";
-        foreach (var t in ThemeManager.All) Themes.Add(new ThemeOptionViewModel(t, PickTheme) { IsSelected = t.Id == ThemeManager.Current.Id });
+        Themes.Add(ThemeOptionViewModel.Auto(PickTheme));
+        foreach (var t in ThemeManager.All) Themes.Add(new ThemeOptionViewModel(t, PickTheme));
+        foreach (var t in Themes) t.IsSelected = t.Id == ThemeManager.RequestedId;
 
         host.Lights.StateChanged += (_, _) => Dispatcher.UIThread.Post(SyncState);
         host.Presets.Changed += (_, _) => Dispatcher.UIThread.Post(RefreshPresets);
@@ -219,9 +221,9 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (Avalonia.Application.Current is not { } app) return;
         ThemeManager.Apply(app, id);
-        _host.Settings.Theme = ThemeManager.Current.Id;
+        _host.Settings.Theme = ThemeManager.RequestedId;
         _host.ScheduleSave();
-        foreach (var t in Themes) t.IsSelected = t.Id == ThemeManager.Current.Id;
+        foreach (var t in Themes) t.IsSelected = t.Id == ThemeManager.RequestedId;
         RefreshAlerts();
         RefreshDevices();
     }

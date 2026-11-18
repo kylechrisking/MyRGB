@@ -35,4 +35,8 @@
     <Setter Property="Padding" Value="26,0,14,0" />
     <Setter Property="MinHeight" Value="38" />
   </Style>
+  <!-- On/off switches drawn the theme's way (see Toggles.axaml). -->
+  <Style Selector="ToggleSwitch">
+    <Setter Property="Theme" Value="{DynamicResource CheckToggleTheme}" />
+  </Style>
 </Styles>

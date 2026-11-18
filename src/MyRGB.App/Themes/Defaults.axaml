@@ -6,6 +6,10 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="using:System">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceInclude Source="avares://MyRGB/Themes/Toggles.axaml" />
+  </ResourceDictionary.MergedDictionaries>
+
   <!-- Corners -->
   <CornerRadius x:Key="RadiusPanel">12</CornerRadius>
   <CornerRadius x:Key="RadiusTile">14</CornerRadius>
@@ -43,6 +47,13 @@
   <sys:Double x:Key="WordmarkSize">18</sys:Double>
   <sys:Double x:Key="KickerSize">10</sys:Double>
   <sys:Double x:Key="KickerSpacing">1.2</sys:Double>
+
+  <!-- Tick-box switches (Toggles.axaml), for themes that use them. Neutral unless the theme says otherwise. -->
+  <SolidColorBrush x:Key="ToggleBoxBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="ToggleBoxBorderBrush" Color="#808080" />
+  <SolidColorBrush x:Key="ToggleTickBrush" Color="#808080" />
+  <Thickness x:Key="ToggleBoxBorder">1.5</Thickness>
+  <CornerRadius x:Key="ToggleBoxRadius">2</CornerRadius>
 
   <!-- Bits a theme can switch on or off -->
   <sys:Boolean x:Key="HandVisible">False</sys:Boolean>

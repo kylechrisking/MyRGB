@@ -76,9 +76,40 @@ public static class ThemeManager
 
     public static ThemeInfo Find(string? id) => All.FirstOrDefault(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase)) ?? All[0];
 
+    /// <summary>"Match Windows": Notebook while Windows is in light mode, Chalkboard in dark mode.</summary>
+    public const string AutoId = "auto";
+    public const string AutoLight = "notebook";
+    public const string AutoDark = "chalkboard";
+
+    /// <summary>What was picked: a theme id, or <see cref="AutoId"/>. <see cref="Current"/> is what that resolved to.</summary>
+    public static string RequestedId { get; private set; } = DefaultId;
+
+    private static bool _watching;
+
     public static void Apply(Application app, string? id)
     {
-        var theme = Find(id);
+        RequestedId = string.Equals(id, AutoId, StringComparison.OrdinalIgnoreCase) ? AutoId : Find(id).Id;
+        ApplyTheme(app, Find(Resolve(RequestedId, IsWindowsDark(app))));
+
+        // Follow Windows when it flips between light and dark (it does at sunset with Night mode schedules).
+        if (!_watching && app.PlatformSettings is { } platform)
+        {
+            _watching = true;
+            platform.ColorValuesChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (RequestedId == AutoId && Resolve(AutoId, IsWindowsDark(app)) is var id && id != Current.Id) ApplyTheme(app, Find(id));
+            });
+        }
+    }
+
+    /// <summary>The theme an id stands for, given whether Windows is dark right now.</summary>
+    public static string Resolve(string id, bool windowsDark) => id == AutoId ? (windowsDark ? AutoDark : AutoLight) : Find(id).Id;
+
+    private static bool IsWindowsDark(Application app) =>
+        app.PlatformSettings?.GetColorValues().ThemeVariant == Avalonia.Platform.PlatformThemeVariant.Dark;
+
+    private static void ApplyTheme(Application app, ThemeInfo theme)
+    {
         var baseUri = new Uri("avares://MyRGB/");
 
         var merged = app.Resources.MergedDictionaries;
