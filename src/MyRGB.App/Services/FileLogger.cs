@@ -21,6 +21,12 @@ public sealed class FileLoggerProvider : ILoggerProvider
 
     public void Dispose() { }
 
+    /// <summary>Why the log file can't be written, while it can't; lines then go to <see cref="FallbackPath"/>.</summary>
+    public string? WriteError { get; private set; }
+
+    /// <summary>Where lines go when the log file refuses them: %TEMP%\MyRGB\myrgb.log.</summary>
+    public static string FallbackPath { get; } = Path.Combine(Path.GetTempPath(), "MyRGB", "myrgb.log");
+
     private void Write(string line)
     {
         lock (_gate)
@@ -30,8 +36,23 @@ public sealed class FileLoggerProvider : ILoggerProvider
                 var info = new FileInfo(_path);
                 if (info.Exists && info.Length > MaxBytes) File.Move(_path, _path + ".old", overwrite: true);
                 File.AppendAllText(_path, line + Environment.NewLine);
+                WriteError = null;
             }
-            catch (IOException) { /* logging must never take the app down */ }
+            catch (Exception ex)
+            {
+                // Logging must never take the app down, but it mustn't vanish either: from 11-18 to 11-22 an
+                // instance wrote nothing at all and nobody could tell why. Say why, somewhere else.
+                bool first = WriteError is null;
+                WriteError = $"{ex.GetType().Name}: {ex.Message}";
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(FallbackPath)!);
+                    if (first)
+                        File.AppendAllText(FallbackPath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} Warning     FileLogger: can't write {_path}: {WriteError}{Environment.NewLine}");
+                    File.AppendAllText(FallbackPath, line + Environment.NewLine);
+                }
+                catch { /* nowhere left to write */ }
+            }
         }
     }
 

@@ -119,6 +119,7 @@ public sealed partial class MainViewModel : ObservableObject
         host.Batteries.Changed += (_, _) => Dispatcher.UIThread.Post(ApplyBatteries);
         Vendors.Updated += RefreshAlerts;
         host.Sensors.Updated += () => Dispatcher.UIThread.Post(RefreshSensors);
+        host.HealthChanged += () => Dispatcher.UIThread.Post(RefreshAlerts);
 
         RefreshPresets();
         RefreshDevices();
@@ -613,6 +614,13 @@ public sealed partial class MainViewModel : ObservableObject
 
         foreach (var d in Devices.Where(d => d.NeedsSetup && d.Included))
             Alerts.Add(new AlertViewModel(true, $"{d.Name} needs its LED count set before it can light up.", "Set up", NavigateCommand.WithParameter("devices")));
+
+        if (_host.SaveError is { } saveError)
+            Alerts.Add(new AlertViewModel(true,
+                $"MyRGB can't save its settings ({saveError.TrimEnd('.')}). Changes you make now will be lost when it closes. Quitting and starting it again usually fixes this."));
+        if (_host.LogFile.WriteError is { } logError)
+            Alerts.Add(new AlertViewModel(false,
+                $"MyRGB can't write its log file ({logError.TrimEnd('.')}), so it's writing to {FileLoggerProvider.FallbackPath} instead."));
 
         foreach (var d in Devices.Where(d => d.Battery is { Charging: false } b && b.Percent < LowBattery))
             Alerts.Add(new AlertViewModel(true, $"{d.Name} battery is low ({d.BatteryText}). Time to charge it."));

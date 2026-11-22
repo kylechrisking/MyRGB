@@ -75,6 +75,10 @@ public sealed class AppHost : IAsyncDisposable
         LogFile = new FileLoggerProvider(Path.Combine(_options.DataDirectory, "logs", "myrgb.log"));
         Logs = LoggerFactory.Create(b => b.AddProvider(LogFile).SetMinimumLevel(LogLevel.Information));
         _log = Logs.CreateLogger<AppHost>();
+        // Which copy, with what rights, writing where: on 11-22 all three had to be dug out by hand.
+        _log.LogInformation("MyRGB {Version} starting from {Exe} ({Rights}); data in {Data}",
+            typeof(AppHost).Assembly.GetName().Version?.ToString(3), Environment.ProcessPath,
+            Environment.IsPrivilegedProcess ? "administrator" : "standard user", _options.DataDirectory);
 
         Devices = new DeviceManager(Logs.CreateLogger<DeviceManager>());
         var providers = _options.Providers?.Invoke(Settings, Logs) ??
@@ -437,11 +441,29 @@ public sealed class AppHost : IAsyncDisposable
             Settings.UserPresets = [.. Presets.UserPresets];
             Settings.Layout = [.. Layout.Placements];
             _store.Save(Settings);
+            SetSaveError(null);
         }
         catch (Exception ex)
         {
             _log.LogError(ex, "Saving settings failed");
+            SetSaveError(ex.Message);
         }
+    }
+
+    /// <summary>Why settings couldn't be saved, while they can't. Home shows it: changes would be lost on exit.</summary>
+    public string? SaveError { get; private set; }
+
+    /// <summary>Raised when <see cref="SaveError"/> or the log file's write error changes. Any thread.</summary>
+    public event Action? HealthChanged;
+
+    private string? _lastLogError;
+
+    private void SetSaveError(string? error)
+    {
+        bool changed = error != SaveError || LogFile.WriteError != _lastLogError;
+        SaveError = error;
+        _lastLogError = LogFile.WriteError;
+        if (changed) HealthChanged?.Invoke();
     }
 
     /// <summary>

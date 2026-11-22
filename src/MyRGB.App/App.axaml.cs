@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 using MyRGB.App.Services;
 using MyRGB.App.ViewModels;
 
@@ -48,7 +49,9 @@ public partial class App : Application
             desktop.Exit += (_, _) => _host.Shutdown();
             WatchForHandover(desktop);
 
-            _ = _host.StartAsync();
+            // A failure here used to vanish into a discarded task; at least put it in the log.
+            _host.StartAsync().ContinueWith(t => _host.Logs.CreateLogger<App>().LogError(t.Exception, "Starting up failed"),
+                TaskContinuationOptions.OnlyOnFaulted);
         }
 
         base.OnFrameworkInitializationCompleted();

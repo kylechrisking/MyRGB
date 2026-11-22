@@ -116,6 +116,18 @@ if (quick)
     Dispatcher.UIThread.RunJobs();
     Console.WriteLine($"switch click: {before} -> {vm.Cooling.GridView}");
     Shoot($"{themeId}-cooling-clicked");
+    // A settings file MyRGB can't write must show on Home, not fail silently.
+    var settingsFile = Path.Combine(data, "settings.json");
+    host.SaveNow();
+    File.SetAttributes(settingsFile, FileAttributes.ReadOnly);
+    host.SaveNow();
+    Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"save error: {host.SaveError ?? "none"} | alert shown: {vm.Alerts.Any(a => a.Text.Contains("can't save"))}");
+    vm.SelectedTab = MainViewModel.HomeTab; Shoot($"{themeId}-save-error");
+    File.SetAttributes(settingsFile, FileAttributes.Normal);
+    host.SaveNow();
+    Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"after fixing: {host.SaveError ?? "none"}");
     window.AllowClose = true; window.Close(); host.Shutdown();
     return;
 }
