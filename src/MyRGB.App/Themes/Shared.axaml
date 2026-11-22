@@ -6,6 +6,15 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+  <!-- The switch template (Toggles.axaml), loaded once for the whole app; themes never reload it. -->
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://MyRGB/Themes/Toggles.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Styles.Resources>
+
   <Style Selector=":is(TopLevel)">
     <Setter Property="FontFamily" Value="{DynamicResource BrandSans}" />
   </Style>

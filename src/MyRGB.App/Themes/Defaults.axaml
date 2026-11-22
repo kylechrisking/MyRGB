@@ -6,10 +6,6 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="using:System">
-  <ResourceDictionary.MergedDictionaries>
-    <ResourceInclude Source="avares://MyRGB/Themes/Toggles.axaml" />
-  </ResourceDictionary.MergedDictionaries>
-
   <!-- Corners -->
   <CornerRadius x:Key="RadiusPanel">12</CornerRadius>
   <CornerRadius x:Key="RadiusTile">14</CornerRadius>
@@ -54,6 +50,10 @@
   <SolidColorBrush x:Key="ToggleTickBrush" Color="#808080" />
   <Thickness x:Key="ToggleBoxBorder">1.5</Thickness>
   <CornerRadius x:Key="ToggleBoxRadius">2</CornerRadius>
+  <sys:Boolean x:Key="TogglePillVisible">True</sys:Boolean>
+  <sys:Boolean x:Key="ToggleBoxVisible">False</sys:Boolean>
+  <sys:Boolean x:Key="ToggleDipVisible">False</sys:Boolean>
+  <sys:Boolean x:Key="ToggleTermVisible">False</sys:Boolean>
 
   <!-- Bits a theme can switch on or off -->
   <sys:Boolean x:Key="HandVisible">False</sys:Boolean>

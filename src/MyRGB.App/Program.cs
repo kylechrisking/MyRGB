@@ -14,6 +14,7 @@ class Program
     public static void Main(string[] args)
     {
         StartMinimized = args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
+        LogCrashes();
 
         // One instance only: it owns the devices and the API port. A second launch just
         // asks the running one to show its window, unless it runs as administrator and the
@@ -30,6 +31,21 @@ class Program
         if (!IsElevated) Handover = new EventWaitHandle(false, EventResetMode.AutoReset, HandoverName);
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
+
+    /// <summary>
+    /// Put a crash in MyRGB's own log, not just Windows' event log. The 11-18 crash (a switch
+    /// re-templated by a theme change) was only found five days later in the Application event log.
+    /// </summary>
+    private static void LogCrashes() => AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+    {
+        try
+        {
+            string log = Path.Combine(MyRGB.App.Services.SettingsStore.DefaultDataDirectory, "logs", "myrgb.log");
+            Directory.CreateDirectory(Path.GetDirectoryName(log)!);
+            File.AppendAllText(log, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} Critical    Program: MyRGB crashed{Environment.NewLine}{e.ExceptionObject}{Environment.NewLine}");
+        }
+        catch { /* the process is going down either way */ }
+    };
 
     private const string HandoverName = @"Local\MyRGB.Handover";
 

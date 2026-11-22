@@ -31,7 +31,7 @@
           </Button>
           <TextBlock Grid.Column="4" Classes="muted" Text="{Binding Brightness, StringFormat='Brightness {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
           <Slider Grid.Column="5" Width="150" Minimum="0" Maximum="100" Value="{Binding Brightness}" VerticalAlignment="Center" Margin="0,0,22,0" />
-          <ToggleSwitch Grid.Column="6" IsChecked="{Binding Enabled}" OnContent="Lights on" OffContent="Lights off" VerticalAlignment="Center" />
+          <ctl:Switch Grid.Column="6" IsChecked="{Binding Enabled}" OnContent="Lights on" OffContent="Lights off" VerticalAlignment="Center" />
           <Button Grid.Column="7" Classes="ghost" Command="{Binding NavigateCommand}" CommandParameter="account" Margin="18,0,0,0"
                   VerticalAlignment="Center" IsVisible="{Binding CloudAvailable}" Padding="6,5,12,5" CornerRadius="{DynamicResource RadiusPill}"
                   ToolTip.Tip="Your MyRGB account">
@@ -577,7 +577,7 @@
                           <DataTemplate DataType="vm:BoolParameterViewModel">
                             <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,8">
                               <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                              <ToggleSwitch Grid.Column="1" IsChecked="{Binding Value}" OnContent="" OffContent="" MinWidth="0" />
+                              <ctl:Switch Grid.Column="1" IsChecked="{Binding Value}" OnContent="" OffContent="" MinWidth="0" />
                             </Grid>
                           </DataTemplate>
                         </ItemsControl.DataTemplates>
@@ -693,7 +693,7 @@
                                   <Button Classes="ghost" Content="Remove" Command="{Binding RemoveImageCommand}" IsVisible="{Binding HasImage}"
                                           ToolTip.Tip="Take MyRGB's picture off and put the screen back as it was" />
                                 </StackPanel>
-                                <ToggleSwitch IsChecked="{Binding ScreenFirst}" OnContent="Show the screen" OffContent="Show the screen"
+                                <ctl:Switch IsChecked="{Binding ScreenFirst}" OnContent="Show the screen" OffContent="Show the screen"
                                               ToolTip.Tip="{Binding ScreenFirstHint}" />
                                 <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"
                                            Text="{Binding ScreenFirstHint}" />
@@ -703,7 +703,7 @@
                             </Grid></Panel>
                           </StackPanel>
                           <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Right">
-                            <ToggleSwitch IsChecked="{Binding Included}" OnContent="MyRGB controls it" OffContent="Left alone" />
+                            <ctl:Switch IsChecked="{Binding Included}" OnContent="MyRGB controls it" OffContent="Left alone" />
                             <Button Classes="ghost" Command="{Binding FlashCommand}" IsVisible="{Binding CanFlash}" HorizontalAlignment="Right"
                                     ToolTip.Tip="Pulse this device white for a few seconds, so you can see which one it is">
                               <StackPanel Orientation="Horizontal" Spacing="7">
@@ -857,7 +857,7 @@
                         <TextBlock Classes="section" Text="Every sensor" />
                         <TextBlock Classes="muted" Text="The full list, straight from the hardware." />
                       </StackPanel>
-                      <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowAll}" OnContent="Shown" OffContent="Hidden" />
+                      <ctl:Switch Grid.Column="1" IsChecked="{Binding ShowAll}" OnContent="Shown" OffContent="Hidden" />
                     </Grid>
                     <ItemsControl ItemsSource="{Binding AllSensors}" IsVisible="{Binding ShowAll}">
                       <ItemsControl.ItemTemplate>
@@ -943,7 +943,7 @@
                           ToolTip.Tip="Build a curve and it joins every fan's mode dropdown" Margin="0,0,10,0" />
                   <Button Grid.Column="2" Classes="ghost" Content="All automatic" Command="{Binding AllAutomaticCommand}"
                           ToolTip.Tip="Every fan back to its hardware default" Margin="0,0,10,0" />
-                  <ToggleSwitch Grid.Column="3" IsChecked="{Binding GridView}" OnContent="Grid" OffContent="List" VerticalAlignment="Center" />
+                  <ctl:Switch Grid.Column="3" IsChecked="{Binding GridView}" OnContent="Grid" OffContent="List" VerticalAlignment="Center" />
                 </Grid>
 
                 <ItemsControl ItemsSource="{Binding Fans}" IsVisible="{Binding !GridView}">
@@ -1240,7 +1240,7 @@
                       </StackPanel>
                     </StackPanel>
                     <Grid ColumnDefinitions="*,Auto">
-                      <ToggleSwitch IsChecked="{Binding Account.SyncPresets}" OnContent="Sync my presets across PCs" OffContent="Sync my presets across PCs" />
+                      <ctl:Switch IsChecked="{Binding Account.SyncPresets}" OnContent="Sync my presets across PCs" OffContent="Sync my presets across PCs" />
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <TextBlock Classes="muted" Text="{Binding Account.SyncStatus}" VerticalAlignment="Center" />
                         <Button Classes="ghost" Content="Sync now" Command="{Binding Account.SyncNowCommand}" IsEnabled="{Binding Account.SyncPresets}" />
@@ -1280,7 +1280,7 @@
                   <TextBlock Classes="body" Text="MyRGB is free and open source, and every feature in it, fan control included, stays free. If it replaced a few vendor apps for you, chipping in keeps it going: it pays for the servers behind sync and the community, and for time to support more hardware." />
                   <TextBlock Classes="body" Text="Supporters get a badge on the presets they share, and room to sync up to 200 presets and share up to 15 (everyone gets 50 and 5)." />
                   <TextBlock Classes="body" Foreground="{DynamicResource AccentBrush}" Text="{Binding Account.SupporterText}" IsVisible="{Binding Account.IsSupporter}" />
-                  <ToggleSwitch IsChecked="{Binding Account.ShowBadge}" IsVisible="{Binding Account.IsSupporter}"
+                  <ctl:Switch IsChecked="{Binding Account.ShowBadge}" IsVisible="{Binding Account.IsSupporter}"
                                 OnContent="Show my supporter badge on shared presets" OffContent="Show my supporter badge on shared presets" />
                   <ItemsControl ItemsSource="{Binding Account.SupportLinks}" IsVisible="{Binding Account.HasSupportLinks}">
                     <ItemsControl.ItemsPanel>
@@ -1300,8 +1300,8 @@
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Startup" />
-                  <ToggleSwitch IsChecked="{Binding StartWithWindows}" OnContent="Start with Windows" OffContent="Start with Windows" />
-                  <ToggleSwitch IsChecked="{Binding StartMinimized}" OnContent="Start hidden in the tray" OffContent="Start hidden in the tray" />
+                  <ctl:Switch IsChecked="{Binding StartWithWindows}" OnContent="Start with Windows" OffContent="Start with Windows" />
+                  <ctl:Switch IsChecked="{Binding StartMinimized}" OnContent="Start hidden in the tray" OffContent="Start hidden in the tray" />
                   <TextBlock Classes="muted" TextWrapping="Wrap" Text="Closing the window never quits MyRGB; it keeps your lights running from the tray. Quit from the tray icon's menu." />
                 </StackPanel>
               </Border>
@@ -1311,7 +1311,7 @@
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Updates" />
                   <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-                    <ToggleSwitch IsChecked="{Binding CheckForUpdates}" OnContent="Check for updates when MyRGB starts" OffContent="Check for updates when MyRGB starts" VerticalAlignment="Center" />
+                    <ctl:Switch IsChecked="{Binding CheckForUpdates}" OnContent="Check for updates when MyRGB starts" OffContent="Check for updates when MyRGB starts" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Update.VersionText}" VerticalAlignment="Center" />
                     <Button Grid.Column="2" Classes="ghost" Content="Check now" Command="{Binding Update.CheckCommand}" IsEnabled="{Binding !Update.Busy}" />
                   </Grid>
@@ -1324,7 +1324,7 @@
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Idle dimming" />
-                  <ToggleSwitch IsChecked="{Binding IdleDimOn}" OnContent="Dim when you step away" OffContent="Dim when you step away" />
+                  <ctl:Switch IsChecked="{Binding IdleDimOn}" OnContent="Dim when you step away" OffContent="Dim when you step away" />
                   <Grid ColumnDefinitions="200,*,60" IsEnabled="{Binding IdleDimOn}">
                     <TextBlock Text="After (minutes)" VerticalAlignment="Center" />
                     <Slider Grid.Column="1" Minimum="1" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding IdleDimAfterMinutes}" />
@@ -1342,7 +1342,7 @@
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="App profiles" />
-                  <ToggleSwitch IsChecked="{Binding AppProfilesOn}" OnContent="Switch presets by app" OffContent="Switch presets by app" />
+                  <ctl:Switch IsChecked="{Binding AppProfilesOn}" OnContent="Switch presets by app" OffContent="Switch presets by app" />
                   <ItemsControl ItemsSource="{Binding AppProfileRows}" IsEnabled="{Binding AppProfilesOn}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:AppProfileRow">
@@ -1367,7 +1367,7 @@
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Global hotkeys" />
-                  <ToggleSwitch IsChecked="{Binding GlobalHotkeyOn}" OnContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" OffContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" />
+                  <ctl:Switch IsChecked="{Binding GlobalHotkeyOn}" OnContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" OffContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" />
                   <TextBlock Classes="muted" TextWrapping="Wrap" Text="Work from any app, no vendor hotkey engine needed." />
                 </StackPanel>
               </Border>

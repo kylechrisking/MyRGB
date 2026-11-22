@@ -133,4 +133,7 @@
   <SolidColorBrush x:Key="ToggleTickBrush" Color="#F2D466" />
   <Thickness x:Key="ToggleBoxBorder">1.5</Thickness>
   <CornerRadius x:Key="ToggleBoxRadius">2</CornerRadius>
+  <!-- Which switch shape shows (Toggles.axaml). -->
+  <sys:Boolean x:Key="TogglePillVisible">False</sys:Boolean>
+  <sys:Boolean x:Key="ToggleBoxVisible">True</sys:Boolean>
 </ResourceDictionary>

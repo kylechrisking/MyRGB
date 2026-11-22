@@ -34,8 +34,4 @@
     <Setter Property="MinHeight" Value="32" />
     <Setter Property="Padding" Value="12,0" />
   </Style>
-  <!-- On/off switches drawn the theme's way (see Toggles.axaml). -->
-  <Style Selector="ToggleSwitch">
-    <Setter Property="Theme" Value="{DynamicResource TerminalToggleTheme}" />
-  </Style>
 </Styles>

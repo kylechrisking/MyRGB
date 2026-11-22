@@ -31,6 +31,7 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             _host = new AppHost();
+            StartupRegistration.ClaimForInstalledCopy();
             ThemeManager.Apply(this, _host.Settings.Theme);
             var vm = _vm = new MainViewModel(_host);
             _window = new MainWindow { DataContext = vm };

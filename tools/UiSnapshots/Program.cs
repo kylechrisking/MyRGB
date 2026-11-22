@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Headless;
 using Avalonia.VisualTree;
+using Avalonia.Controls.Primitives;
 using Avalonia.Threading;
 using MyRGB.App;
 using MyRGB.App.Services;
@@ -78,6 +79,27 @@ void Shoot(string name)
     Console.WriteLine($"{name}: {(frame is null ? "no frame" : "ok")}");
 }
 
+if (args.Length > 2 && args[2] == "switch")
+{
+    // Change looks while the window is up, the way Match Windows does at sunrise and sunset.
+    vm.Welcome?.SkipCommand.Execute(null);
+    vm.SelectedTab = MainViewModel.DevicesTab; Shoot($"switch-0-{themeId}");
+    int n = 1;
+    foreach (var next in new[] { "chalkboard", "notebook", "bench", "classic", "phosphor", "blueprint", "original", "notebook", "classic", "chalkboard" })
+    {
+        try { ThemeManager.Apply(Application.Current!, next); Shoot($"switch-{n++}-{next}"); }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"switch to {next} FAILED: {ex.GetType().Name}: {ex.Message}");
+            Console.WriteLine(string.Join("\n", ex.StackTrace!.Split('\n').Take(8)));
+            foreach (var ts in window.GetVisualDescendants().OfType<MyRGB.App.Controls.Switch>())
+                Console.WriteLine($"  toggle on={ts.OnContent} theme={ts.Theme?.GetHashCode()} kids={string.Join(",", ts.GetVisualDescendants().OfType<Avalonia.StyledElement>().Select(c => c.Name).Where(x => x is not null).Take(12))} template={ts.Template?.GetHashCode()} visible={ts.IsEffectivelyVisible}");
+        }
+    }
+    window.AllowClose = true; window.Close(); host.Shutdown();
+    return;
+}
+
 if (quick)
 {
     vm.Welcome?.SkipCommand.Execute(null);
@@ -87,7 +109,7 @@ if (quick)
     vm.SelectedTab = MainViewModel.SettingsTab; Shoot($"{themeId}-settings");
     vm.SelectedTab = MainViewModel.CoolingTab; Shoot($"{themeId}-cooling");
     // The themed switches redraw ToggleSwitch from scratch; make sure a click still flips one.
-    var grid = window.GetVisualDescendants().OfType<Avalonia.Controls.ToggleSwitch>().First(t => Equals(t.OnContent, "Grid"));
+    var grid = window.GetVisualDescendants().OfType<MyRGB.App.Controls.Switch>().First(t => Equals(t.OnContent, "Grid"));
     var at = grid.TranslatePoint(new Point(8, grid.Bounds.Height / 2), window)!.Value;
     bool before = vm.Cooling.GridView;
     window.MouseDown(at, Avalonia.Input.MouseButton.Left); window.MouseUp(at, Avalonia.Input.MouseButton.Left);

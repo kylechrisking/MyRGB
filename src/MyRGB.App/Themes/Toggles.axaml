@@ -1,90 +1,72 @@
 <!--
-  Other shapes for on/off switches. A theme opts in from its Styles file with
-  <Setter Property="Theme" Value="{DynamicResource CheckToggleTheme}" /> on ToggleSwitch.
-  Each template keeps ToggleSwitch's two named parts (hidden) so the control's own code finds them.
+  The one template every on/off switch (Controls/Switch.cs) uses, in every theme. It holds four
+  shapes: a pill, a tick box, a DIP switch and a terminal [x]. The theme's Toggle*Visible tokens say
+  which one shows, so a theme change only swaps resources, never the template.
 -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctl="using:MyRGB.App.Controls">
 
-  <!-- A tick box: paper, chalk or grey 3D, depending on the theme's Toggle* tokens. -->
-  <ControlTheme x:Key="CheckToggleTheme" TargetType="ToggleSwitch">
+  <ControlTheme x:Key="{x:Type ctl:Switch}" TargetType="ctl:Switch">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Template">
       <ControlTemplate>
         <Grid ColumnDefinitions="Auto,*" Background="Transparent">
-          <Border Name="box" Width="17" Height="17" VerticalAlignment="Center"
-                  Background="{DynamicResource ToggleBoxBrush}" BorderBrush="{DynamicResource ToggleBoxBorderBrush}"
-                  BorderThickness="{DynamicResource ToggleBoxBorder}" CornerRadius="{DynamicResource ToggleBoxRadius}">
-            <Path Name="tick" Data="M3,8.5 L6.8,12.2 L14,3.6" Stroke="{DynamicResource ToggleTickBrush}" StrokeThickness="2.2"
-                  StrokeLineCap="Round" StrokeJoin="Round" IsVisible="False" Margin="-1,-1,0,0" />
-          </Border>
-          <ContentPresenter Name="off" Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" Content="{TemplateBinding OffContent}"
-                            ContentTemplate="{TemplateBinding OffContentTemplate}" />
-          <ContentPresenter Name="on" Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" Content="{TemplateBinding OnContent}"
-                            ContentTemplate="{TemplateBinding OnContentTemplate}" IsVisible="False" />
-          <Panel Name="PART_MovingKnobs" IsVisible="False"><Panel Name="PART_SwitchKnob" /></Panel>
+          <Panel VerticalAlignment="Center">
+            <!-- Pill -->
+            <Border Name="pill" Width="40" Height="20" CornerRadius="10" IsVisible="{DynamicResource TogglePillVisible}"
+                    Background="{DynamicResource SurfaceHoverBrush}" BorderBrush="{DynamicResource HairlineStrongBrush}" BorderThickness="1">
+              <Ellipse Name="knob" Width="12" Height="12" Margin="4,0" HorizontalAlignment="Left" Fill="{DynamicResource MutedBrush}" />
+            </Border>
+            <!-- Tick box -->
+            <Border Name="box" Width="17" Height="17" IsVisible="{DynamicResource ToggleBoxVisible}"
+                    Background="{DynamicResource ToggleBoxBrush}" BorderBrush="{DynamicResource ToggleBoxBorderBrush}"
+                    BorderThickness="{DynamicResource ToggleBoxBorder}" CornerRadius="{DynamicResource ToggleBoxRadius}">
+              <Path Name="tick" Data="M3,8.5 L6.8,12.2 L14,3.6" Stroke="{DynamicResource ToggleTickBrush}" StrokeThickness="2.2"
+                    StrokeLineCap="Round" StrokeJoin="Round" Opacity="0" Margin="-1,-1,0,0" />
+            </Border>
+            <!-- DIP switch -->
+            <Border Name="dip" Width="32" Height="16" IsVisible="{DynamicResource ToggleDipVisible}"
+                    Background="#050605" BorderBrush="{DynamicResource MutedBrush}" BorderThickness="1">
+              <Border Name="slider" Width="13" Height="10" Margin="2,0" HorizontalAlignment="Left" Background="{DynamicResource MutedBrush}" />
+            </Border>
+            <!-- Terminal -->
+            <TextBlock Name="mark" Text="[ ]" IsVisible="{DynamicResource ToggleTermVisible}"
+                       FontFamily="{DynamicResource BrandMono}" Foreground="{DynamicResource InkBrush}" />
+          </Panel>
+          <ContentPresenter Name="off" Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" Content="{TemplateBinding OffContent}" />
+          <ContentPresenter Name="on" Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" Content="{TemplateBinding OnContent}" IsVisible="False" />
         </Grid>
       </ControlTemplate>
     </Setter>
-    <Style Selector="^:checked /template/ Path#tick"><Setter Property="IsVisible" Value="True" /></Style>
+
     <Style Selector="^:checked /template/ ContentPresenter#on"><Setter Property="IsVisible" Value="True" /></Style>
     <Style Selector="^:checked /template/ ContentPresenter#off"><Setter Property="IsVisible" Value="False" /></Style>
-    <Style Selector="^:pointerover /template/ Border#box"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
-    <Style Selector="^:disabled"><Setter Property="Opacity" Value="0.5" /></Style>
-  </ControlTheme>
 
-  <!-- A DIP switch: a slot with a square slider that lights up when it's on. -->
-  <ControlTheme x:Key="DipToggleTheme" TargetType="ToggleSwitch">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="Template">
-      <ControlTemplate>
-        <Grid ColumnDefinitions="Auto,*" Background="Transparent">
-          <Border Width="32" Height="16" VerticalAlignment="Center" Background="#050605" BorderBrush="{DynamicResource MutedBrush}" BorderThickness="1">
-            <Border Name="slider" Width="13" Height="10" Margin="2,0" HorizontalAlignment="Left" Background="{DynamicResource MutedBrush}" />
-          </Border>
-          <ContentPresenter Name="off" Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" Content="{TemplateBinding OffContent}"
-                            ContentTemplate="{TemplateBinding OffContentTemplate}" />
-          <ContentPresenter Name="on" Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center" Content="{TemplateBinding OnContent}"
-                            ContentTemplate="{TemplateBinding OnContentTemplate}" IsVisible="False" />
-          <Panel Name="PART_MovingKnobs" IsVisible="False"><Panel Name="PART_SwitchKnob" /></Panel>
-        </Grid>
-      </ControlTemplate>
-    </Setter>
+    <Style Selector="^:checked /template/ Border#pill">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="^:checked /template/ Ellipse#knob">
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="Fill" Value="{DynamicResource OnAccentBrush}" />
+    </Style>
+    <Style Selector="^:pointerover /template/ Border#pill"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
+
+    <Style Selector="^:checked /template/ Path#tick"><Setter Property="Opacity" Value="1" /></Style>
+    <Style Selector="^:pointerover /template/ Border#box"><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" /></Style>
+
     <Style Selector="^:checked /template/ Border#slider">
       <Setter Property="HorizontalAlignment" Value="Right" />
       <Setter Property="Background" Value="{DynamicResource LedGreenBrush}" />
       <Setter Property="BoxShadow" Value="0 0 6 0 #803FE08A" />
     </Style>
-    <Style Selector="^:checked /template/ ContentPresenter#on"><Setter Property="IsVisible" Value="True" /></Style>
-    <Style Selector="^:checked /template/ ContentPresenter#off"><Setter Property="IsVisible" Value="False" /></Style>
-    <Style Selector="^:disabled"><Setter Property="Opacity" Value="0.5" /></Style>
-  </ControlTheme>
 
-  <!-- A terminal option: [ ] or [x] in front of the label. -->
-  <ControlTheme x:Key="TerminalToggleTheme" TargetType="ToggleSwitch">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
-    <Setter Property="Cursor" Value="Hand" />
-    <Setter Property="Template">
-      <ControlTemplate>
-        <Grid ColumnDefinitions="Auto,*" Background="Transparent">
-          <TextBlock Name="mark" Text="[ ]" FontFamily="{DynamicResource BrandMono}" VerticalAlignment="Center" Foreground="{DynamicResource InkBrush}" />
-          <ContentPresenter Name="off" Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Content="{TemplateBinding OffContent}"
-                            ContentTemplate="{TemplateBinding OffContentTemplate}" />
-          <ContentPresenter Name="on" Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" Content="{TemplateBinding OnContent}"
-                            ContentTemplate="{TemplateBinding OnContentTemplate}" IsVisible="False" />
-          <Panel Name="PART_MovingKnobs" IsVisible="False"><Panel Name="PART_SwitchKnob" /></Panel>
-        </Grid>
-      </ControlTemplate>
-    </Setter>
     <Style Selector="^:checked /template/ TextBlock#mark"><Setter Property="Text" Value="[x]" /></Style>
-    <Style Selector="^:checked /template/ ContentPresenter#on"><Setter Property="IsVisible" Value="True" /></Style>
-    <Style Selector="^:checked /template/ ContentPresenter#off"><Setter Property="IsVisible" Value="False" /></Style>
     <Style Selector="^:pointerover /template/ TextBlock#mark"><Setter Property="Foreground" Value="{DynamicResource AccentHoverBrush}" /></Style>
+
     <Style Selector="^:disabled"><Setter Property="Opacity" Value="0.5" /></Style>
   </ControlTheme>
 </ResourceDictionary>
