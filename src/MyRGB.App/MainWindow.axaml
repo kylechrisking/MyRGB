@@ -119,6 +119,29 @@
                 <TextBlock Classes="muted" Text="{Binding HomeSummary}" />
               </StackPanel>
 
+              <!-- What's new: after an update, until dismissed -->
+              <Border Classes="panel" IsVisible="{Binding ShowWhatsNew}" Padding="18,14">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <TextBlock Classes="section" Text="{Binding WhatsNewTitle}" VerticalAlignment="Center" />
+                      <TextBlock Classes="hand" Text="fresh!" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding WhatsNewLines}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <TextBlock Classes="body" Text="{Binding StringFormat='• {0}'}" Margin="0,1" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="6" Margin="16,0,0,0" VerticalAlignment="Top">
+                    <Button Classes="ghost" Content="Got it" Command="{Binding DismissWhatsNewCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                    <Button Classes="link" Content="Full notes ›" Command="{Binding OpenReleaseNotesCommand}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+
               <!-- At a glance: what's playing, how the PC is doing, and the fans -->
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
                 <Border Classes="panel" Padding="16,14">

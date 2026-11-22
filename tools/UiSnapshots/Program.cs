@@ -103,6 +103,10 @@ if (args.Length > 2 && args[2] == "switch")
 if (quick)
 {
     vm.Welcome?.SkipCommand.Execute(null);
+    foreach (var release in MyRGB.Core.WhatsNew.Since(new Version(0, 6, 2), MainViewModel.CurrentVersion, false))
+        foreach (var line in release.Lines) vm.WhatsNewLines.Add(line);
+    vm.SelectedTab = MainViewModel.HomeTab; Shoot($"{themeId}-whatsnew");
+    vm.DismissWhatsNewCommand.Execute(null);
     for (int i = 0; i < 180; i++) host.Sensors.Poll();
     vm.SelectedTab = MainViewModel.HomeTab; Shoot($"{themeId}-home");
     vm.SelectedTab = MainViewModel.DevicesTab; Shoot($"{themeId}-devices");

@@ -30,6 +30,9 @@ public sealed class AppSettings
     /// <summary>False until the first-run tour has been finished or skipped.</summary>
     public bool HasSeenWelcome { get; set; }
 
+    /// <summary>The version whose "What's new" card was last dismissed (see MyRGB.Core.WhatsNew).</summary>
+    public string? LastSeenVersion { get; set; }
+
     /// <summary>The "How MyRGB works" card on Home was hidden.</summary>
     public bool HideHomeGuide { get; set; }
 

@@ -126,7 +126,13 @@ public sealed partial class MainViewModel : ObservableObject
         SyncState();
         _ = Vendors.Check();
 
-        if (!host.Settings.HasSeenWelcome) OpenTour();
+        WhatsNewLines.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ShowWhatsNew));
+        bool firstRun = !host.Settings.HasSeenWelcome;
+        Version? seen = Version.TryParse(host.Settings.LastSeenVersion, out var v) ? v : null;
+        foreach (var release in WhatsNew.Since(seen, CurrentVersion, firstRun))
+            foreach (var line in release.Lines) WhatsNewLines.Add(line);
+        if (WhatsNewLines.Count == 0) RememberVersionSeen();
+        if (firstRun) OpenTour();
 
         // First look a minute in, once the account has said whether this is a supporter; then hourly,
         // since MyRGB usually runs for days at a time.
@@ -213,6 +219,34 @@ public sealed partial class MainViewModel : ObservableObject
     public bool ActiveHasEffect => ActiveCard?.HasEffect == true;
 
     [ObservableProperty] private bool _showHomeGuide;
+
+    // ---- What's new: a card on Home after an update, until dismissed ----
+
+    public static Version CurrentVersion { get; } = WhatsNew.Trim(typeof(MainViewModel).Assembly.GetName().Version ?? new Version(0, 0, 0));
+
+    /// <summary>What changed since the version last seen, newest first. Empty when there's nothing to say.</summary>
+    public ObservableCollection<string> WhatsNewLines { get; } = [];
+    public bool ShowWhatsNew => WhatsNewLines.Count > 0;
+    public string WhatsNewTitle => $"New in MyRGB {CurrentVersion.ToString(3)}";
+
+    [RelayCommand]
+    private void DismissWhatsNew()
+    {
+        WhatsNewLines.Clear();
+        OnPropertyChanged(nameof(ShowWhatsNew));
+        RememberVersionSeen();
+    }
+
+    [RelayCommand]
+    private static void OpenReleaseNotes() =>
+        AccountViewModel.OpenLink($"https://github.com/kylechrisking/MyRGB/releases/tag/v{CurrentVersion.ToString(3)}-beta");
+
+    private void RememberVersionSeen()
+    {
+        if (_host.Settings.LastSeenVersion == CurrentVersion.ToString(3)) return;
+        _host.Settings.LastSeenVersion = CurrentVersion.ToString(3);
+        _host.ScheduleSave();
+    }
 
     /// <summary>Settings' Appearance picker.</summary>
     public ObservableCollection<ThemeOptionViewModel> Themes { get; } = [];
