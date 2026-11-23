@@ -18,6 +18,11 @@ public partial class App : Application
     private NativeMenuItem? _pauseItem;
     private NativeMenuItem? _presetsItem;
     private NativeMenuItem? _themesItem;
+    private NativeMenuItem? _brightnessItem;
+    private int _brightnessShown = -1;
+
+    /// <summary>The levels the tray offers, in percent.</summary>
+    private static readonly int[] BrightnessSteps = [100, 75, 50, 25, 10];
     private MainViewModel? _vm;
 
     public override void Initialize()
@@ -81,6 +86,7 @@ public partial class App : Application
         _powerItem.Click += (_, _) => _host!.Lights.SetEnabled(!_host.Lights.State.Enabled);
 
         _presetsItem = new NativeMenuItem("Presets") { Menu = new NativeMenu() };
+        _brightnessItem = new NativeMenuItem("Brightness") { Menu = new NativeMenu() };
         _themesItem = new NativeMenuItem("Appearance") { Menu = new NativeMenu() };
         ThemeManager.Changed += RebuildThemesMenu;
 
@@ -101,7 +107,7 @@ public partial class App : Application
         };
 
         var menu = new NativeMenu();
-        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), _themesItem, new NativeMenuItemSeparator(), exit })
+        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, _brightnessItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), _themesItem, new NativeMenuItemSeparator(), exit })
             menu.Items.Add(item);
 
         var tray = new TrayIcon
@@ -114,6 +120,7 @@ public partial class App : Application
         TrayIcon.SetIcons(this, new TrayIcons { tray });
         RebuildPresetsMenu();
         RebuildThemesMenu();
+        RebuildBrightnessMenu();
     }
 
     /// <summary>Every look, with the one in use marked; picking one saves it, the same as Settings > Appearance.</summary>
@@ -136,10 +143,34 @@ public partial class App : Application
     private void UpdateTray()
     {
         if (_powerItem is not null && _host is not null)
-            _powerItem.Header = _host.Lights.State.Enabled ? "Turn lights off" : "Turn lights on";
+            _powerItem.Header = _host.Lights.State switch
+            {
+                { Enabled: true } => "Turn lights off",
+                { HeldBy: not null } => "Turn lights on anyway",
+                _ => "Turn lights on",
+            };
         if (_pauseItem is not null && _host is not null)
             _pauseItem.Header = _host.Lights.State.Paused ? "Resume animation" : "Pause animation";
         RebuildPresetsMenu();
+        RebuildBrightnessMenu();
+    }
+
+    /// <summary>A few fixed levels, the current one marked when it is one of them. Rebuilt only when the level changes.</summary>
+    private void RebuildBrightnessMenu()
+    {
+        if (_brightnessItem is null || _host is null) return;
+        int percent = (int)Math.Round(_host.Lights.State.Brightness * 100);
+        if (percent == _brightnessShown) return;
+        _brightnessShown = percent;
+        _brightnessItem.Header = $"Brightness ({percent}%)";
+        var sub = new NativeMenu();
+        foreach (int step in BrightnessSteps)
+        {
+            var item = new NativeMenuItem(step == percent ? $"● {step}%" : $"{step}%");
+            item.Click += (_, _) => _host.Lights.SetBrightness(step / 100.0);
+            sub.Items.Add(item);
+        }
+        _brightnessItem.Menu = sub;
     }
 
     /// <summary>Lets you jump straight to a look from the tray, not just step through them one at a time.</summary>

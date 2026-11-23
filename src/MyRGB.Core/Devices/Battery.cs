@@ -101,7 +101,7 @@ public sealed class BatteryMonitor : IAsyncDisposable
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     if (_loggedFailures.Add(source.HardwareKey))
-                        _log.LogWarning(ex, "Reading the battery of {Device} failed", source.Name);
+                        Disconnects.Warn(_log, ex, "Reading the battery of {Device} failed", source.Name);
                 }
                 var reading = new BatteryReading(source.HardwareKey, source.Name, status, DateTime.UtcNow);
                 // Wireless reads miss now and then (the radio is busy, other software is talking to

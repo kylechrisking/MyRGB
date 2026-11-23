@@ -97,7 +97,7 @@ public sealed class CorsairProvider : IDeviceProvider
                 {
                     _failures++;
                     _retryAfter = _now() + RetryDelay(_failures);
-                    _log.LogWarning(ex, "Could not take control of the Corsair keyboard");
+                    MyRGB.Core.Disconnects.Warn(_log, ex, "Could not take control of the Corsair keyboard");
                     Set(ProviderStatus.Error, $"Keyboard found but not responding: {ex.Message}");
                     return [];
                 }

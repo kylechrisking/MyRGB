@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 6, 7), ["Set the brightness from the tray: right-click the icon, then Brightness."]),
         new(new(0, 6, 6), ["Lights out, in Settings: turn the lights off while Windows is locked or asleep, and every night between times you pick.",
                            "Turning the lights on in the meantime keeps them on until the next lock, sleep or night."]),
         new(new(0, 6, 5), ["After an update, this card shows what changed since the version you last used."]),

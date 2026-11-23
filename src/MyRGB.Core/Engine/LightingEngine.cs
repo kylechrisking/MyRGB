@@ -386,7 +386,7 @@ public sealed class LightingEngine : IDisposable
             if (_inflight is { IsFaulted: true } && !_loggedFailure)
             {
                 _loggedFailure = true;
-                log.LogWarning(_inflight.Exception, "Writing to {Device} failed", device.Name);
+                Disconnects.Warn(log, _inflight.Exception, "Writing to {Device} failed", device.Name);
             }
 
             if (colors.AsSpan().SequenceEqual(_sent) && now - _sentAt < KeepAliveSeconds) return;
@@ -400,7 +400,7 @@ public sealed class LightingEngine : IDisposable
             }
             catch (Exception ex)
             {
-                if (!_loggedFailure) log.LogWarning(ex, "Writing to {Device} failed", device.Name);
+                if (!_loggedFailure) Disconnects.Warn(log, ex, "Writing to {Device} failed", device.Name);
                 _loggedFailure = true;
             }
         }

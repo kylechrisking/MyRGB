@@ -213,7 +213,7 @@ public sealed class OpenRgbProvider : IDeviceProvider
 
     private void OnDisconnected(Exception? error)
     {
-        _log.LogWarning(error, "Lost connection to OpenRGB");
+        MyRGB.Core.Disconnects.Warn(_log, error, "Lost connection to OpenRGB");
         SetStatus(ProviderStatus.Error, "Disconnected from OpenRGB");
         DevicesChanged?.Invoke(this, EventArgs.Empty); // drops the dead devices
     }

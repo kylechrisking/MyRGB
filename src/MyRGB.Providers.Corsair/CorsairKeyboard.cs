@@ -424,7 +424,7 @@ internal sealed class CorsairKeyboard : IScreenDevice, IDeviceCommands, IAsyncDi
     {
         if (Faulted) return;
         Faulted = true;
-        _log.LogWarning(ex, "Lost the Corsair keyboard");
+        Disconnects.Warn(_log, ex, "Lost the Corsair keyboard");
         Lost?.Invoke();
     }
 
