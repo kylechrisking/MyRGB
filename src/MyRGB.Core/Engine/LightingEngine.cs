@@ -170,7 +170,11 @@ public sealed class LightingEngine : IDisposable
             {
                 var excluded = _excluded;
                 var devices = _devices.Devices.Where(d => !excluded.Contains(d.Id) && d.Leds.Count > 0).ToList();
-                _plan = RenderPlan.Build(devices, _preset, _effects, _layout, keepEffects ? _plan : null);
+                var old = _plan;
+                _plan = RenderPlan.Build(devices, _preset, _effects, _layout, keepEffects ? old : null);
+                // A new preset fades in over the old one; a device or layout change just carries on.
+                if (!keepEffects && _running && old.Devices.Length > 0) _crossfade = new Crossfade(old);
+                else if (!keepEffects) _crossfade = null;
             }
             catch (Exception ex)
             {
@@ -199,7 +203,15 @@ public sealed class LightingEngine : IDisposable
 
             try
             {
-                plan.Render(new FrameContext(effectTime, dt), now, _fade.Lit, _fade.Level, CurrentFlash(), _log);
+                var frame = new FrameContext(effectTime, dt);
+                if (CrossfadeFor(plan, now) is { } from)
+                {
+                    from.Plan.Paint(frame);
+                    plan.Paint(frame);
+                    plan.BlendFrom(from.Plan, from.Progress);
+                    plan.Finish(now, _fade.Lit, _fade.Level, CurrentFlash(), _log, blended: true);
+                }
+                else plan.Render(frame, now, _fade.Lit, _fade.Level, CurrentFlash(), _log);
                 failures = 0;
             }
             catch (Exception ex)
@@ -221,6 +233,32 @@ public sealed class LightingEngine : IDisposable
 
     internal void RenderFrame(RenderPlan plan, double time, double dt) =>
         plan.Render(new FrameContext(time, dt), time, Lit, Brightness, CurrentFlash(), _log);
+
+    /// <summary>How long switching presets takes to blend from the old look to the new.</summary>
+    public const double CrossfadeSeconds = 0.8;
+
+    private sealed class Crossfade(RenderPlan from)
+    {
+        public RenderPlan Plan { get; } = from;
+        public double Start { get; set; } = double.NaN;
+        public double Progress { get; set; }
+    }
+
+    private volatile Crossfade? _crossfade;
+
+    /// <summary>The crossfade to draw this frame, or null once it is over or no longer fits the plan (devices changed).</summary>
+    private Crossfade? CrossfadeFor(RenderPlan plan, double now)
+    {
+        if (_crossfade is not { } c) return null;
+        if (double.IsNaN(c.Start)) c.Start = now;
+        c.Progress = (now - c.Start) / CrossfadeSeconds;
+        if (c.Progress >= 1 || !c.Plan.Devices.SequenceEqual(plan.Devices))
+        {
+            _crossfade = null;
+            return null;
+        }
+        return c;
+    }
 
     /// <summary>The flash to show this frame, with its pulse level (0.25..1), or null.</summary>
     private (FlashRequest Request, double Level)? CurrentFlash()
@@ -333,22 +371,51 @@ public sealed class LightingEngine : IDisposable
         public void Render(in FrameContext frame, double now, bool enabled, double brightness,
             (FlashRequest Request, double Level)? flash, ILogger log)
         {
-            if (enabled)
-            {
-                foreach (var g in Groups)
-                {
-                    g.Effect.Render(frame, g.Points, g.Buffer);
-                    for (int k = 0; k < g.Targets.Length; k++)
-                        Colors[g.Targets[k].Device][g.Targets[k].Led] = g.Buffer[k];
-                }
-            }
+            if (enabled) Paint(frame);
+            Finish(now, enabled, brightness, flash, log);
+        }
 
+        /// <summary>Run the effects into <see cref="Colors"/>; nothing is sent.</summary>
+        public void Paint(in FrameContext frame)
+        {
+            foreach (var g in Groups)
+            {
+                g.Effect.Render(frame, g.Points, g.Buffer);
+                for (int k = 0; k < g.Targets.Length; k++)
+                    Colors[g.Targets[k].Device][g.Targets[k].Led] = g.Buffer[k];
+            }
+        }
+
+        /// <summary>
+        /// Mix <paramref name="from"/>'s painted colors into this plan's, <paramref name="t"/> of the way to this one
+        /// (0 = all old, 1 = all new). Devices switched off by either preset count as black, so they fade too.
+        /// Both plans must list the same devices in the same order.
+        /// </summary>
+        public void BlendFrom(RenderPlan from, double t)
+        {
+            t = Math.Clamp(t, 0, 1);
+            // Ease in and out, so the change starts and settles gently.
+            t = t * t * (3 - 2 * t);
+            for (int i = 0; i < Devices.Length; i++)
+            {
+                var c = Colors[i];
+                var old = from.Colors[i];
+                for (int k = 0; k < c.Length; k++)
+                    c[k] = Rgb.Lerp(from.Off[i] ? Rgb.Black : old[k], Off[i] ? Rgb.Black : c[k], t);
+            }
+        }
+
+        /// <summary>Apply power, per-device off, brightness and any flash, then send.</summary>
+        /// <param name="blended">The colors came from <see cref="BlendFrom"/>, which has already dealt with devices switched off.</param>
+        public void Finish(double now, bool enabled, double brightness,
+            (FlashRequest Request, double Level)? flash, ILogger log, bool blended = false)
+        {
             for (int i = 0; i < Devices.Length; i++)
             {
                 var c = Colors[i];
                 if (flash is { } f && f.Request.Includes(Devices[i].Id))
                     Array.Fill(c, f.Request.Color.Scale(f.Level));
-                else if (!enabled || Off[i] || brightness <= 0) Array.Fill(c, Rgb.Black);
+                else if (!enabled || (Off[i] && !blended) || brightness <= 0) Array.Fill(c, Rgb.Black);
                 else if (brightness < 0.999)
                     for (int k = 0; k < c.Length; k++) c[k] = c[k].Scale(brightness);
 

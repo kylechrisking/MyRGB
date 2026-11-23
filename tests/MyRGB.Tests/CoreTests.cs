@@ -242,6 +242,51 @@ public class CoreTests
     }
 
     [Fact]
+    public void Blend_mixes_old_and_new_and_fades_devices_turned_off()
+    {
+        var kb = new FakeDevice("kb", null, 2);
+        var mouse = new FakeDevice("mouse", null, 1);
+        var effects = EffectRegistry.CreateDefault();
+        Preset Static(string color, bool mouseOff = false) => new()
+        {
+            Id = color, Name = color, EffectId = "static", Settings = new() { ["color"] = color },
+            Overrides = mouseOff ? [new DeviceOverride { DeviceId = "mouse", Off = true }] : [],
+        };
+        var from = LightingEngine.RenderPlan.Build([kb, mouse], Static("#000000"), effects, new CanvasLayout(), null);
+        var to = LightingEngine.RenderPlan.Build([kb, mouse], Static("#C8C8C8", mouseOff: true), effects, new CanvasLayout(), null);
+        var frame = new FrameContext(0, 0.03);
+        from.Paint(frame);
+        to.Paint(frame);
+        to.BlendFrom(from, 0.5);
+        Assert.Equal(new Rgb(100, 100, 100), to.Colors[0][0]); // half way, eased: the middle stays the middle
+        Assert.Equal(Rgb.Black, to.Colors[1][0]);
+        to.Finish(0, true, 1, null, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance, blended: true);
+        Assert.Equal(new Rgb(100, 100, 100), kb.Last![1]);
+    }
+
+    [Fact]
+    public async Task The_running_engine_crossfades_between_presets()
+    {
+        var kb = new FakeDevice("kb", null, 1);
+        var devices = new DeviceManager();
+        devices.AddProvider(new OneDeviceProvider(kb));
+        await devices.RefreshAsync(TestContext.Current.CancellationToken);
+        using var engine = new LightingEngine(devices, EffectRegistry.CreateDefault(), new CanvasLayout());
+        engine.Activate(new Preset { Id = "red", Name = "red", EffectId = "static", Settings = new() { ["color"] = "#FF0000" } });
+        engine.Start();
+        Thread.Sleep(300);
+        Assert.Equal(new Rgb(255, 0, 0), kb.Last![0]);
+
+        engine.Activate(new Preset { Id = "blue", Name = "blue", EffectId = "static", Settings = new() { ["color"] = "#0000FF" } });
+        var mixes = new HashSet<Rgb>();
+        var until = DateTime.UtcNow.AddSeconds(LightingEngine.CrossfadeSeconds + 0.4);
+        while (DateTime.UtcNow < until) { if (kb.Last![0] is { R: > 0, B: > 0 } c) mixes.Add(c); Thread.Sleep(5); }
+        engine.Stop();
+        Assert.Equal(new Rgb(0, 0, 255), kb.Last![0]);
+        Assert.True(mixes.Count >= 5, $"mixed colors seen: {mixes.Count}");
+    }
+
+    [Fact]
     public void Step_preset_wraps_around()
     {
         var effects = EffectRegistry.CreateDefault();
