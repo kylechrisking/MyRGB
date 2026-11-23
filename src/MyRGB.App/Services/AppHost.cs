@@ -60,6 +60,9 @@ public sealed class AppHostOptions
     /// <summary>Hears about sleep and wake from Windows. Off in snapshots and tests.</summary>
     public bool WatchPower { get; init; } = true;
 
+    /// <summary>Replaces Twinkle Tray (snapshots, tests).</summary>
+    public Func<IMonitorControl>? MonitorControl { get; init; }
+
     /// <summary>Registers the Ctrl+Alt+L toggle with Windows. Off in snapshots and tests.</summary>
     public bool EnableGlobalHotkey { get; init; } = true;
 }
@@ -109,6 +112,7 @@ public sealed class AppHost : IAsyncDisposable
         };
         Engine.ExcludedDevices = Settings.ExcludedDevices.ToHashSet();
         Lights = new LightingService(Engine, Presets, Effects, Devices);
+        Monitors = new MonitorSync(this, _options.MonitorControl?.Invoke() ?? new TwinkleTray(), _options.Clock, Logs.CreateLogger<MonitorSync>());
         Batteries = new BatteryMonitor(
             _options.BatteryProviders?.Invoke() ?? [new RazerBatteryProvider(), new LogitechBatteryProvider()],
             Logs.CreateLogger<BatteryMonitor>());
@@ -158,6 +162,9 @@ public sealed class AppHost : IAsyncDisposable
     public CanvasLayout Layout { get; }
     public LightingEngine Engine { get; }
     public LightingService Lights { get; }
+
+    /// <summary>Monitor brightness through Twinkle Tray (Settings > Monitors).</summary>
+    public MonitorSync Monitors { get; }
     public BatteryMonitor Batteries { get; }
     public SensorHub Sensors { get; }
     public AudioListener? Audio { get; }
@@ -306,6 +313,7 @@ public sealed class AppHost : IAsyncDisposable
 
         _dimmer = new IdleDimmer(this);
         _offWatcher = new LightsOffWatcher(this, _options.SessionLocked, _options.Clock, _options.WatchPower, Logs.CreateLogger<LightsOffWatcher>());
+        Monitors.Start();
         _foregroundTimer = new System.Threading.Timer(_ => { CheckSchedule(); CheckForeground(); }, null,
             TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(2));
 
@@ -423,7 +431,7 @@ public sealed class AppHost : IAsyncDisposable
     {
         try
         {
-            Api = new LocalApiServer(Lights, Settings.ApiPort, Logs.CreateLogger<LocalApiServer>(), () => ShowRequested?.Invoke());
+            Api = new LocalApiServer(Lights, Settings.ApiPort, Logs.CreateLogger<LocalApiServer>(), () => ShowRequested?.Invoke()) { Monitors = Monitors };
             await Api.StartAsync();
             _log.LogInformation("Local API on {Url}", Api.BaseUrl);
         }
@@ -524,6 +532,7 @@ public sealed class AppHost : IAsyncDisposable
         _syncTimer?.Dispose();
         _dimmer?.Dispose();
         _offWatcher?.Dispose();
+        Monitors.Dispose();
         _hotkeys?.Dispose();
         SaveNow();
         Engine.Dispose();

@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 7, 2), ["Monitor brightness through Twinkle Tray, in Settings > Monitors: a Screens slider up top and in the tray, dim the screens with the lights or at night, and a level per preset."]),
         new(new(0, 7, 1), ["Turn the lights off for 15 minutes to 2 hours from the tray; they come back on by themselves."]),
         new(new(0, 7, 0), ["Switching presets blends from one look to the next instead of cutting: from the app, the tray, a schedule, an app profile or a Stream Deck."]),
         new(new(0, 6, 9), ["The lights fade in and out instead of snapping: switching on or off, Lights out, and brightness changes."]),

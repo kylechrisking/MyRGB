@@ -20,6 +20,8 @@ namespace MyRGB.Api;
 /// POST /api/presets/next | /previous
 /// POST /api/power        {"on": true}  empty body toggles; {"on": false, "minutes": 30} turns off for a while
 /// POST /api/brightness   {"value": 0.8} or {"delta": -0.1}
+/// GET  /api/monitors                 monitor brightness (Twinkle Tray), 0..100
+/// POST /api/monitors     {"value": 60} or {"delta": -10}
 /// GET  /api/events                     server-sent events, one "state" event per change
 /// POST /api/app/show                   bring the desktop window to the front
 /// Every POST must carry an "X-MyRGB" header (any value).
@@ -54,6 +56,9 @@ public sealed class LocalApiServer : IAsyncDisposable
         // "localhost" prefixes need no URL ACL, so this works without admin.
         _listener.Prefixes.Add($"http://localhost:{port}/");
     }
+
+    /// <summary>Monitor brightness for /api/monitors; null answers that no monitor control is set up.</summary>
+    public IMonitorBrightness? Monitors { get; set; }
 
     public int Port { get; }
     public string BaseUrl => $"http://localhost:{Port}/api";
@@ -110,6 +115,8 @@ public sealed class LocalApiServer : IAsyncDisposable
                 ("POST", "/api/presets/previous") => Do(() => _lights.StepPreset(-1)),
                 ("POST", "/api/power") => Power(await ReadBody<PowerRequest>(req)),
                 ("POST", "/api/brightness") => Brightness(await ReadBody<BrightnessRequest>(req)),
+                ("GET", "/api/monitors") => MonitorState(),
+                ("POST", "/api/monitors") => SetMonitors(await ReadBody<MonitorRequest>(req)),
                 ("POST", "/api/app/show") => Do(() => _showWindow?.Invoke()),
                 ("POST", "/api/pause") => Pause(await ReadBody<PauseRequest>(req)),
                 ("POST", "/api/presets/shuffle") => Do(_lights.Shuffle),
@@ -162,6 +169,16 @@ public sealed class LocalApiServer : IAsyncDisposable
         else
             _lights.SetEnabled(body?.On ?? !_lights.State.Enabled);
         return _lights.State;
+    }
+
+    private MonitorsState MonitorState() =>
+        Monitors is { Available: true } m ? new(true, m.Level, m.Monitors) : new(false, 0, []);
+
+    private MonitorsState SetMonitors(MonitorRequest? body)
+    {
+        if (Monitors is { Available: true } m)
+            m.SetLevel(MonitorLevels.Clamp(body?.Value ?? m.Level + (body?.Delta ?? 0)));
+        return MonitorState();
     }
 
     private LightingState Brightness(BrightnessRequest? body)
@@ -226,6 +243,8 @@ public sealed class LocalApiServer : IAsyncDisposable
 
     public sealed record PowerRequest(bool? On, double? Minutes = null);
     public sealed record BrightnessRequest(double? Value, double? Delta);
+    public sealed record MonitorRequest(int? Value, int? Delta);
+    public sealed record MonitorsState(bool Available, int Level, IReadOnlyList<string> Monitors);
     public sealed record PauseRequest(bool? Paused);
 
     private sealed record NotFound(string? Message)

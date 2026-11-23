@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using MyRGB.App.Services;
 using MyRGB.App.ViewModels;
+using MyRGB.Core;
 
 namespace MyRGB.App;
 
@@ -20,6 +21,8 @@ public partial class App : Application
     private NativeMenuItem? _themesItem;
     private NativeMenuItem? _brightnessItem;
     private int _brightnessShown = -1;
+    private NativeMenuItem? _monitorsItem;
+    private string? _monitorsShown;
 
     /// <summary>The levels the tray offers, in percent.</summary>
     private static readonly int[] BrightnessSteps = [100, 75, 50, 25, 10];
@@ -44,6 +47,7 @@ public partial class App : Application
             _window = new MainWindow { DataContext = vm };
             _host.ShowRequested += () => Dispatcher.UIThread.Post(ShowWindow);
             _host.Lights.StateChanged += (_, _) => Dispatcher.UIThread.Post(UpdateTray);
+            _host.Monitors.Changed += () => Dispatcher.UIThread.Post(RebuildMonitorsMenu);
             _host.Presets.Changed += (_, _) => Dispatcher.UIThread.Post(RebuildPresetsMenu);
 
             CreateTray(desktop);
@@ -96,6 +100,7 @@ public partial class App : Application
 
         _presetsItem = new NativeMenuItem("Presets") { Menu = new NativeMenu() };
         _brightnessItem = new NativeMenuItem("Brightness") { Menu = new NativeMenu() };
+        _monitorsItem = new NativeMenuItem("Screens") { Menu = new NativeMenu(), IsVisible = false };
         _themesItem = new NativeMenuItem("Appearance") { Menu = new NativeMenu() };
         ThemeManager.Changed += RebuildThemesMenu;
 
@@ -116,7 +121,7 @@ public partial class App : Application
         };
 
         var menu = new NativeMenu();
-        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, offFor, _brightnessItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), _themesItem, new NativeMenuItemSeparator(), exit })
+        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, offFor, _brightnessItem, _monitorsItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), _themesItem, new NativeMenuItemSeparator(), exit })
             menu.Items.Add(item);
 
         var tray = new TrayIcon
@@ -130,6 +135,7 @@ public partial class App : Application
         RebuildPresetsMenu();
         RebuildThemesMenu();
         RebuildBrightnessMenu();
+        RebuildMonitorsMenu();
     }
 
     /// <summary>Every look, with the one in use marked; picking one saves it, the same as Settings > Appearance.</summary>
@@ -180,6 +186,26 @@ public partial class App : Application
             sub.Items.Add(item);
         }
         _brightnessItem.Menu = sub;
+    }
+
+    /// <summary>Monitor brightness through Twinkle Tray, only while that's switched on in Settings > Monitors.</summary>
+    private void RebuildMonitorsMenu()
+    {
+        if (_monitorsItem is null || _host is null) return;
+        var m = _host.Monitors;
+        string key = m.Available ? m.Level.ToString() : "off";
+        if (key == _monitorsShown) return;
+        _monitorsShown = key;
+        _monitorsItem.IsVisible = m.Available;
+        _monitorsItem.Header = $"Screens ({m.Level}%)";
+        var sub = new NativeMenu();
+        foreach (int step in MonitorLevels.Steps)
+        {
+            var item = new NativeMenuItem(step == m.Level ? $"● {step}%" : $"{step}%");
+            item.Click += (_, _) => _host.Monitors.SetLevel(step);
+            sub.Items.Add(item);
+        }
+        _monitorsItem.Menu = sub;
     }
 
     /// <summary>Lets you jump straight to a look from the tray, not just step through them one at a time.</summary>

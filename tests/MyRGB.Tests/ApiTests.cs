@@ -83,6 +83,32 @@ public sealed class ApiTests : IAsyncLifetime
         Assert.InRange(_lights.OffUntil!.Value, DateTime.Now.AddMinutes(29), DateTime.Now.AddMinutes(31));
     }
 
+    private sealed class FakeMonitors : IMonitorBrightness
+    {
+        public bool Available => true;
+        public int Level { get; private set; } = 70;
+        public IReadOnlyList<string> Monitors => ["DELL", "ASUS"];
+        public void SetLevel(int level) => Level = level;
+    }
+
+    [Fact]
+    public async Task Monitor_brightness()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var none = await _http.GetFromJsonAsync<LocalApiServer.MonitorsState>("monitors", Json, ct);
+        Assert.False(none!.Available);
+
+        var fake = new FakeMonitors();
+        _server.Monitors = fake;
+        var state = await _http.GetFromJsonAsync<LocalApiServer.MonitorsState>("monitors", Json, ct);
+        Assert.Equal(70, state!.Level);
+        Assert.Equal(["DELL", "ASUS"], state.Monitors);
+        await _http.PostAsJsonAsync("monitors", new { value = 40 }, ct);
+        Assert.Equal(40, fake.Level);
+        await _http.PostAsJsonAsync("monitors", new { delta = -50 }, ct);
+        Assert.Equal(0, fake.Level);
+    }
+
     [Fact]
     public async Task Pause_shuffle_and_flash()
     {

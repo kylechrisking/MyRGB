@@ -113,6 +113,16 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var p in host.Settings.AppProfiles) AppProfileRows.Add(new AppProfileRow(host, p, this));
         _scheduleOn = host.Settings.ScheduleOn;
         foreach (var e in host.Settings.Schedule) ScheduleRows.Add(new ScheduleRow(e, this));
+        _twinkleOn = host.Settings.TwinkleOn;
+        _monitorLevel = host.Settings.MonitorLevel ?? host.Monitors.Level;
+        _monitorsFollowLights = host.Settings.MonitorsFollowLights;
+        _monitorsOffLevel = host.Settings.MonitorsOffLevel;
+        _monitorsNightOn = host.Settings.MonitorsNightOn;
+        _monitorsNightLevel = host.Settings.MonitorsNightLevel;
+        _monitorPresetLevelsOn = host.Settings.MonitorPresetLevelsOn;
+        foreach (var m in host.Settings.MonitorPresetLevels) MonitorPresetRows.Add(new MonitorPresetRow(m, this));
+        host.Monitors.Changed += () => Dispatcher.UIThread.Post(SyncMonitors);
+        SyncMonitors();
         _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
         _openRgbPath = host.Settings.OpenRgb.ExecutablePath ?? "";
@@ -301,7 +311,11 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _newAppProfileProcess = "";
     [ObservableProperty] private bool _globalHotkeyOn;
     [ObservableProperty] private bool _offWhenLocked;
-    [ObservableProperty] private bool _nightOn;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NightTimesEnabled))]
+    private bool _nightOn;
+    /// <summary>The night times also drive the monitors' night level.</summary>
+    public bool NightTimesEnabled => NightOn || MonitorsNightOn;
     [ObservableProperty] private string _nightFrom;
     [ObservableProperty] private string _nightTo;
     public IReadOnlyList<string> NightChoices => NightHours.Choices;
@@ -316,6 +330,91 @@ public sealed partial class MainViewModel : ObservableObject
         change(_host.Settings);
         _host.ScheduleSave();
         _host.CheckLightsOff();
+    }
+
+    // ---- Monitors (Twinkle Tray) -------------------------------------------------------------------
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowMonitorSlider))]
+    private bool _twinkleOn;
+    [ObservableProperty] private double _monitorLevel;
+    [ObservableProperty] private bool _monitorsFollowLights;
+    [ObservableProperty] private int _monitorsOffLevel;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NightTimesEnabled))]
+    private bool _monitorsNightOn;
+    [ObservableProperty] private int _monitorsNightLevel;
+    [ObservableProperty] private bool _monitorPresetLevelsOn;
+    [ObservableProperty] private string _monitorStatus = "";
+    public ObservableCollection<MonitorPresetRow> MonitorPresetRows { get; } = [];
+    public IReadOnlyList<int> MonitorSteps => MonitorLevels.Steps;
+    public bool TwinkleInstalled => _host.Monitors.Installed;
+    public bool ShowMonitorSlider => TwinkleOn && TwinkleInstalled;
+    private bool _syncingMonitors;
+
+    partial void OnTwinkleOnChanged(bool value)
+    {
+        _host.Settings.TwinkleOn = value;
+        _host.ScheduleSave();
+        if (value) _ = _host.Monitors.RefreshAsync();
+        else _host.Monitors.SettingsChanged();
+        SyncMonitors();
+    }
+
+    partial void OnMonitorLevelChanged(double value)
+    {
+        if (!_syncingMonitors) _host.Monitors.SetLevel((int)Math.Round(value));
+    }
+
+    partial void OnMonitorsFollowLightsChanged(bool value) => SaveMonitors(s => s.MonitorsFollowLights = value);
+    partial void OnMonitorsOffLevelChanged(int value) => SaveMonitors(s => s.MonitorsOffLevel = value);
+    partial void OnMonitorsNightOnChanged(bool value) => SaveMonitors(s => s.MonitorsNightOn = value);
+    partial void OnMonitorsNightLevelChanged(int value) => SaveMonitors(s => s.MonitorsNightLevel = value);
+    partial void OnMonitorPresetLevelsOnChanged(bool value) => SaveMonitors(s => s.MonitorPresetLevelsOn = value);
+
+    private void SaveMonitors(Action<AppSettings> change)
+    {
+        change(_host.Settings);
+        _host.ScheduleSave();
+        _host.Monitors.Update();
+    }
+
+    [RelayCommand]
+    private void AddMonitorPresetLevel()
+    {
+        string presetId = _host.Lights.State.ActivePresetId ?? _host.Lights.GetPresets().FirstOrDefault()?.Id ?? "rainbow-wave";
+        var entry = new PresetMonitorLevel(presetId, 50);
+        _host.Settings.MonitorPresetLevels.Add(entry);
+        MonitorPresetRows.Add(new MonitorPresetRow(entry, this));
+        SaveMonitors(_ => { });
+    }
+
+    internal void RemoveMonitorPresetLevel(MonitorPresetRow row)
+    {
+        _host.Settings.MonitorPresetLevels.Remove(row.Entry);
+        MonitorPresetRows.Remove(row);
+        SaveMonitors(_ => { });
+    }
+
+    internal void UpdateMonitorPresetLevel(MonitorPresetRow row, PresetMonitorLevel updated)
+    {
+        int idx = _host.Settings.MonitorPresetLevels.IndexOf(row.Entry);
+        if (idx >= 0) _host.Settings.MonitorPresetLevels[idx] = updated;
+        row.Entry = updated;
+        SaveMonitors(_ => { });
+    }
+
+    private void SyncMonitors()
+    {
+        var m = _host.Monitors;
+        _syncingMonitors = true;
+        try { MonitorLevel = m.Level; }
+        finally { _syncingMonitors = false; }
+        MonitorStatus = !m.Installed ? "Twinkle Tray isn't installed. Get it from the Microsoft Store or twinkletray.com, then come back here."
+            : !TwinkleOn ? "Twinkle Tray is installed. Switch this on to let MyRGB set your monitors' brightness."
+            : m.Problem is { } p ? p
+            : m.Monitors.Count == 0 ? "Looking for your monitors…"
+            : $"Controlling {string.Join(" and ", m.Monitors)}.";
     }
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private string _openRgbPath;
@@ -789,4 +888,31 @@ public sealed partial class ScheduleRow : ObservableObject
 
     [RelayCommand]
     private void Remove() => _owner.RemoveScheduleEntry(this);
+}
+
+public sealed partial class MonitorPresetRow : ObservableObject
+{
+    private readonly MainViewModel _owner;
+
+    public MonitorPresetRow(PresetMonitorLevel entry, MainViewModel owner)
+    {
+        _owner = owner;
+        Entry = entry;
+        _presetId = entry.PresetId;
+        _level = entry.Level;
+    }
+
+    public PresetMonitorLevel Entry { get; internal set; }
+
+    public ObservableCollection<PresetCardViewModel> AvailablePresets => _owner.Presets;
+    public IReadOnlyList<int> Steps => MonitorLevels.Steps;
+
+    [ObservableProperty] private string _presetId;
+    [ObservableProperty] private int _level;
+
+    partial void OnPresetIdChanged(string value) { if (value is not null) _owner.UpdateMonitorPresetLevel(this, Entry with { PresetId = value }); }
+    partial void OnLevelChanged(int value) => _owner.UpdateMonitorPresetLevel(this, Entry with { Level = value });
+
+    [RelayCommand]
+    private void Remove() => _owner.RemoveMonitorPresetLevel(this);
 }

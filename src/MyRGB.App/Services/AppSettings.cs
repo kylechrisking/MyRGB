@@ -79,6 +79,24 @@ public sealed class AppSettings
     public string NightFrom { get; set; } = "23:00";
     public string NightTo { get; set; } = "07:00";
 
+    /// <summary>Drive the monitors' brightness through Twinkle Tray.</summary>
+    public bool TwinkleOn { get; set; }
+
+    /// <summary>The everyday monitor level, 0..100, as set with the slider; null until first read from the monitors.</summary>
+    public int? MonitorLevel { get; set; }
+
+    /// <summary>Monitors go down to <see cref="MonitorsOffLevel"/> while the lights are off.</summary>
+    public bool MonitorsFollowLights { get; set; }
+    public int MonitorsOffLevel { get; set; } = 10;
+
+    /// <summary>Monitors go down to <see cref="MonitorsNightLevel"/> during night hours (the Lights out times).</summary>
+    public bool MonitorsNightOn { get; set; }
+    public int MonitorsNightLevel { get; set; } = 25;
+
+    /// <summary>Presets that set the monitors to their own level.</summary>
+    public bool MonitorPresetLevelsOn { get; set; }
+    public List<PresetMonitorLevel> MonitorPresetLevels { get; set; } = [];
+
     /// <summary>Ctrl+Alt+L turns the lights on or off from anywhere.</summary>
     public bool GlobalHotkeyOn { get; set; }
 

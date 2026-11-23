@@ -29,7 +29,13 @@
               <TextBlock Text="How it works" />
             </StackPanel>
           </Button>
-          <TextBlock Grid.Column="4" Classes="muted" Text="{Binding Brightness, StringFormat='Brightness {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowMonitorSlider}" ToolTip.Tip="Monitor brightness, through Twinkle Tray">
+              <TextBlock Classes="muted" Text="{Binding MonitorLevel, StringFormat='Screens {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
+              <Slider Width="110" Minimum="0" Maximum="100" Value="{Binding MonitorLevel}" VerticalAlignment="Center" Margin="0,0,22,0" />
+            </StackPanel>
+            <TextBlock Classes="muted" Text="{Binding Brightness, StringFormat='Brightness {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
+          </StackPanel>
           <Slider Grid.Column="5" Width="150" Minimum="0" Maximum="100" Value="{Binding Brightness}" VerticalAlignment="Center" Margin="0,0,22,0" />
           <ctl:Switch Grid.Column="6" IsChecked="{Binding Enabled}" OnContent="Lights on" OffContent="Lights off" VerticalAlignment="Center" />
           <Button Grid.Column="7" Classes="ghost" Command="{Binding NavigateCommand}" CommandParameter="account" Margin="18,0,0,0"
@@ -1367,13 +1373,55 @@
                   <TextBlock Classes="section" Text="Lights out" />
                   <ctl:Switch IsChecked="{Binding OffWhenLocked}" OnContent="Off while Windows is locked or asleep" OffContent="Off while Windows is locked or asleep" />
                   <ctl:Switch IsChecked="{Binding NightOn}" OnContent="Off at night" OffContent="Off at night" />
-                  <StackPanel Orientation="Horizontal" Spacing="10" IsEnabled="{Binding NightOn}">
+                  <StackPanel Orientation="Horizontal" Spacing="10" IsEnabled="{Binding NightTimesEnabled}">
                     <TextBlock Text="From" VerticalAlignment="Center" />
                     <ComboBox ItemsSource="{Binding NightChoices}" SelectedItem="{Binding NightFrom}" MinWidth="100" />
                     <TextBlock Text="to" VerticalAlignment="Center" />
                     <ComboBox ItemsSource="{Binding NightChoices}" SelectedItem="{Binding NightTo}" MinWidth="100" />
                   </StackPanel>
                   <TextBlock Classes="muted" TextWrapping="Wrap" Text="Your lights go dark and come back on their own. Turning them on in the meantime (here, from the tray, a hotkey or a Stream Deck) keeps them on until the next lock, sleep or night." />
+                </StackPanel>
+              </Border>
+
+              <Border Classes="panel">
+                <StackPanel Spacing="10">
+                  <TextBlock Classes="section" Text="Monitors" />
+                  <ctl:Switch IsChecked="{Binding TwinkleOn}" IsEnabled="{Binding TwinkleInstalled}" OnContent="Set monitor brightness with Twinkle Tray" OffContent="Set monitor brightness with Twinkle Tray" />
+                  <TextBlock Classes="muted" Text="{Binding MonitorStatus}" TextWrapping="Wrap" />
+                  <StackPanel Spacing="10" IsEnabled="{Binding ShowMonitorSlider}">
+                    <Grid ColumnDefinitions="200,*,60">
+                      <TextBlock Text="Brightness (%)" VerticalAlignment="Center" />
+                      <Slider Grid.Column="1" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding MonitorLevel}" />
+                      <TextBlock Grid.Column="2" Text="{Binding MonitorLevel}" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <ctl:Switch IsChecked="{Binding MonitorsFollowLights}" OnContent="Dim with the lights, to" OffContent="Dim with the lights, to" VerticalAlignment="Center" />
+                      <ComboBox ItemsSource="{Binding MonitorSteps}" SelectedItem="{Binding MonitorsOffLevel}" IsEnabled="{Binding MonitorsFollowLights}" MinWidth="80" />
+                      <TextBlock Text="%" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <ctl:Switch IsChecked="{Binding MonitorsNightOn}" OnContent="At night, set them to" OffContent="At night, set them to" VerticalAlignment="Center" />
+                      <ComboBox ItemsSource="{Binding MonitorSteps}" SelectedItem="{Binding MonitorsNightLevel}" IsEnabled="{Binding MonitorsNightOn}" MinWidth="80" />
+                      <TextBlock Text="%" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ctl:Switch IsChecked="{Binding MonitorPresetLevelsOn}" OnContent="Presets set their own monitor brightness" OffContent="Presets set their own monitor brightness" />
+                    <ItemsControl ItemsSource="{Binding MonitorPresetRows}" IsEnabled="{Binding MonitorPresetLevelsOn}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MonitorPresetRow">
+                          <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,6">
+                            <ComboBox ItemsSource="{Binding AvailablePresets}"
+                                      SelectedValueBinding="{Binding Id}" SelectedValue="{Binding PresetId}"
+                                      DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding Steps}" SelectedItem="{Binding Level}" MinWidth="80" />
+                            <TextBlock Grid.Column="2" Text="%" VerticalAlignment="Center" />
+                            <Button Grid.Column="3" Classes="ghost" Content="✕" Command="{Binding RemoveCommand}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Classes="ghost" Content="Add a preset" Command="{Binding AddMonitorPresetLevelCommand}" IsEnabled="{Binding MonitorPresetLevelsOn}" />
+                  </StackPanel>
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Night uses the times under Lights out. Night wins over the lights, which win over a preset's level, which wins over the slider. A change you make in Twinkle Tray itself stays until one of these has a reason to change it. The local API has the same control: GET or POST /api/monitors." />
                 </StackPanel>
               </Border>
 
