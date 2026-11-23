@@ -67,6 +67,10 @@ public sealed class AppSettings
     public double IdleDimAfterMinutes { get; set; } = 10;
     public double IdleDimPercent { get; set; } = 10;
 
+    /// <summary>Switch presets at set times every day.</summary>
+    public bool ScheduleOn { get; set; }
+    public List<ScheduledPreset> Schedule { get; set; } = [];
+
     /// <summary>Lights off while Windows is locked or the PC is asleep.</summary>
     public bool OffWhenLocked { get; set; }
 

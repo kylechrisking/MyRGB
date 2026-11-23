@@ -111,6 +111,8 @@ public sealed partial class MainViewModel : ObservableObject
         _nightFrom = night.From.ToString("HH:mm");
         _nightTo = night.To.ToString("HH:mm");
         foreach (var p in host.Settings.AppProfiles) AppProfileRows.Add(new AppProfileRow(host, p, this));
+        _scheduleOn = host.Settings.ScheduleOn;
+        foreach (var e in host.Settings.Schedule) ScheduleRows.Add(new ScheduleRow(e, this));
         _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
         _openRgbPath = host.Settings.OpenRgb.ExecutablePath ?? "";
@@ -549,6 +551,47 @@ public sealed partial class MainViewModel : ObservableObject
         _host.ScheduleSave();
     }
 
+    [ObservableProperty] private bool _scheduleOn;
+    public ObservableCollection<ScheduleRow> ScheduleRows { get; } = [];
+
+    partial void OnScheduleOnChanged(bool value)
+    {
+        _host.Settings.ScheduleOn = value;
+        ScheduleChanged();
+    }
+
+    [RelayCommand]
+    private void AddScheduleEntry()
+    {
+        // Start a new row an hour after the last one, so adding a few in a row gives distinct times.
+        var last = ScheduleRows.Select(r => r.Entry.Time).DefaultIfEmpty(new TimeOnly(17, 0)).Max();
+        var entry = new ScheduledPreset(last.AddHours(1).ToString("HH:00"), _host.Lights.State.ActivePresetId ?? _host.Lights.GetPresets().FirstOrDefault()?.Id ?? "rainbow-wave");
+        _host.Settings.Schedule.Add(entry);
+        ScheduleRows.Add(new ScheduleRow(entry, this));
+        ScheduleChanged();
+    }
+
+    internal void RemoveScheduleEntry(ScheduleRow row)
+    {
+        _host.Settings.Schedule.Remove(row.Entry);
+        ScheduleRows.Remove(row);
+        ScheduleChanged();
+    }
+
+    internal void UpdateScheduleEntry(ScheduleRow row, ScheduledPreset updated)
+    {
+        int idx = _host.Settings.Schedule.IndexOf(row.Entry);
+        if (idx >= 0) _host.Settings.Schedule[idx] = updated;
+        row.Entry = updated;
+        ScheduleChanged();
+    }
+
+    private void ScheduleChanged()
+    {
+        _host.ScheduleSave();
+        _host.CheckScheduleNow();
+    }
+
     partial void OnStartWithWindowsChanged(bool value) => StartupRegistration.Set(value);
 
     partial void OnOpenRgbPathChanged(string value)
@@ -719,4 +762,31 @@ public sealed partial class AppProfileRow : ObservableObject
 
     [RelayCommand]
     private void Remove() => _owner.RemoveAppProfile(this);
+}
+
+public sealed partial class ScheduleRow : ObservableObject
+{
+    private readonly MainViewModel _owner;
+
+    public ScheduleRow(ScheduledPreset entry, MainViewModel owner)
+    {
+        _owner = owner;
+        Entry = entry;
+        _at = entry.Time.ToString("HH:mm");
+        _presetId = entry.PresetId;
+    }
+
+    public ScheduledPreset Entry { get; internal set; }
+
+    public IReadOnlyList<string> Times => NightHours.Choices;
+    public ObservableCollection<PresetCardViewModel> AvailablePresets => _owner.Presets;
+
+    [ObservableProperty] private string _at;
+    [ObservableProperty] private string _presetId;
+
+    partial void OnAtChanged(string value) { if (value is not null) _owner.UpdateScheduleEntry(this, Entry with { At = value }); }
+    partial void OnPresetIdChanged(string value) { if (value is not null) _owner.UpdateScheduleEntry(this, Entry with { PresetId = value }); }
+
+    [RelayCommand]
+    private void Remove() => _owner.RemoveScheduleEntry(this);
 }

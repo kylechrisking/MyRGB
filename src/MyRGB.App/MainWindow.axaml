@@ -1404,6 +1404,29 @@
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
+                  <TextBlock Classes="section" Text="Schedule" />
+                  <ctl:Switch IsChecked="{Binding ScheduleOn}" OnContent="Change presets through the day" OffContent="Change presets through the day" />
+                  <ItemsControl ItemsSource="{Binding ScheduleRows}" IsEnabled="{Binding ScheduleOn}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ScheduleRow">
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10" Margin="0,0,0,6">
+                          <TextBlock Text="At" VerticalAlignment="Center" />
+                          <ComboBox Grid.Column="1" ItemsSource="{Binding Times}" SelectedItem="{Binding At}" MinWidth="100" />
+                          <ComboBox Grid.Column="2" ItemsSource="{Binding AvailablePresets}"
+                                    SelectedValueBinding="{Binding Id}" SelectedValue="{Binding PresetId}"
+                                    DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch" />
+                          <Button Grid.Column="3" Classes="ghost" Content="✕" Command="{Binding RemoveCommand}" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button Classes="ghost" Content="Add a time" Command="{Binding AddScheduleEntryCommand}" IsEnabled="{Binding ScheduleOn}" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="At each time, MyRGB switches to that preset and keeps it until the next one; pick something else in between and it stays until then. When MyRGB starts, it picks up wherever the day has got to. App profiles still win while their program is in front." />
+                </StackPanel>
+              </Border>
+
+              <Border Classes="panel">
+                <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Global hotkeys" />
                   <ctl:Switch IsChecked="{Binding GlobalHotkeyOn}" OnContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" OffContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" />
                   <TextBlock Classes="muted" TextWrapping="Wrap" Text="Work from any app, no vendor hotkey engine needed." />

@@ -159,6 +159,25 @@ if (quick)
     Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Lights out").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
     Shoot($"{themeId}-lights-out");
     vm.NightOn = false; vm.OffWhenLocked = false;
+    // Schedule: picks up where the day is, switches when a time comes round, leaves manual picks alone in between.
+    void Wait() { Thread.Sleep(2600); Dispatcher.UIThread.RunJobs(); }
+    fakeNow = new DateTime(2026, 11, 23, 17, 0, 0);
+    vm.ScheduleOn = true;
+    vm.AddScheduleEntryCommand.Execute(null); vm.AddScheduleEntryCommand.Execute(null);
+    vm.ScheduleRows[0].At = "08:00"; vm.ScheduleRows[0].PresetId = "ocean";
+    vm.ScheduleRows[1].At = "18:00"; vm.ScheduleRows[1].PresetId = "aurora";
+    Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"schedule 17:00: {host.Lights.State.ActivePresetId}");
+    host.Lights.ActivatePreset("fire"); fakeNow = fakeNow.AddMinutes(59); Wait();
+    Console.WriteLine($"picked fire, 17:59: {host.Lights.State.ActivePresetId}");
+    fakeNow = fakeNow.AddMinutes(2); Wait();
+    Console.WriteLine($"18:01: {host.Lights.State.ActivePresetId}");
+    fakeNow = fakeNow.AddHours(14); Wait();
+    Console.WriteLine($"08:01 next day: {host.Lights.State.ActivePresetId} | saved {string.Join(", ", host.Settings.Schedule.Select(e => $"{e.At} {e.PresetId}"))}");
+    vm.SelectedTab = MainViewModel.SettingsTab; Dispatcher.UIThread.RunJobs();
+    Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Schedule").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
+    Shoot($"{themeId}-schedule");
+    vm.ScheduleOn = false;
     Console.WriteLine($"real session locked: {typeof(AppHost).Assembly.GetType("MyRGB.App.Services.LightsOffWatcher")!.GetMethod("SessionLocked")!.Invoke(null, null)}");
     Console.WriteLine($"saved: night={host.Settings.NightOn} {host.Settings.NightFrom}-{host.Settings.NightTo} locked={host.Settings.OffWhenLocked} enabled={host.Engine.Enabled}");
     window.AllowClose = true; window.Close(); host.Shutdown();

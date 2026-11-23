@@ -306,7 +306,7 @@ public sealed class AppHost : IAsyncDisposable
 
         _dimmer = new IdleDimmer(this);
         _offWatcher = new LightsOffWatcher(this, _options.SessionLocked, _options.Clock, _options.WatchPower, Logs.CreateLogger<LightsOffWatcher>());
-        _foregroundTimer = new System.Threading.Timer(_ => CheckForeground(), null,
+        _foregroundTimer = new System.Threading.Timer(_ => { CheckSchedule(); CheckForeground(); }, null,
             TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(2));
 
         if (_options.EnableGlobalHotkey)
@@ -377,6 +377,36 @@ public sealed class AppHost : IAsyncDisposable
             else LeaveProfile();
         }
         catch (Exception ex) { _log.LogWarning(ex, "App profile check failed"); }
+    }
+
+    private DateTime? _scheduleCheckedAt;
+
+    /// <summary>Re-apply the schedule from scratch, e.g. after it was edited or switched on.</summary>
+    public void CheckScheduleNow()
+    {
+        _scheduleCheckedAt = null;
+        CheckSchedule();
+    }
+
+    /// <summary>
+    /// Switch preset when a scheduled time comes round. The first check (startup, or the schedule just
+    /// switched on) applies whichever entry is current. While an app profile holds a preset, the
+    /// scheduled one becomes the preset to go back to.
+    /// </summary>
+    private void CheckSchedule()
+    {
+        try
+        {
+            var now = _options.Clock?.Invoke() ?? DateTime.Now;
+            var entries = Settings.Schedule.ToArray();
+            if (!Settings.ScheduleOn || entries.Length == 0) { _scheduleCheckedAt = null; return; }
+            var entry = _scheduleCheckedAt is { } since ? PresetSchedule.Due(entries, since, now) : PresetSchedule.Current(entries, now);
+            _scheduleCheckedAt = now;
+            if (entry is null || Presets.Find(entry.PresetId) is null) return;
+            if (_inProfile) _preProfilePreset = entry.PresetId;
+            else if (Lights.State.ActivePresetId != entry.PresetId) Lights.ActivatePreset(entry.PresetId);
+        }
+        catch (Exception ex) { _log.LogWarning(ex, "Preset schedule check failed"); }
     }
 
     private void LeaveProfile()

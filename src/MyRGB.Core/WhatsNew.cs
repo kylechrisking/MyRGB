@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 6, 8), ["Change presets through the day: Settings > Schedule. Pick a time and a preset; add as many as you like."]),
         new(new(0, 6, 7), ["Set the brightness from the tray: right-click the icon, then Brightness."]),
         new(new(0, 6, 6), ["Lights out, in Settings: turn the lights off while Windows is locked or asleep, and every night between times you pick.",
                            "Turning the lights on in the meantime keeps them on until the next lock, sleep or night."]),
