@@ -74,6 +74,16 @@ public sealed class ApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Power_off_for_a_while()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var state = await (await _http.PostAsJsonAsync("power", new { on = false, minutes = 30 }, ct)).Content.ReadFromJsonAsync<LightingState>(Json, ct);
+        Assert.False(state!.Enabled);
+        Assert.StartsWith("turned off for a while", state.HeldBy);
+        Assert.InRange(_lights.OffUntil!.Value, DateTime.Now.AddMinutes(29), DateTime.Now.AddMinutes(31));
+    }
+
+    [Fact]
     public async Task Pause_shuffle_and_flash()
     {
         var ct = TestContext.Current.CancellationToken;

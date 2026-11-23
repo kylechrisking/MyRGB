@@ -28,6 +28,9 @@ public interface ILightingController
     void SetEnabled(bool enabled);
     void SetBrightness(double brightness);
 
+    /// <summary>Turn the lights off until a time, then back on by themselves.</summary>
+    void TurnOffUntil(DateTime until);
+
     /// <summary>Freeze or resume the animation.</summary>
     void SetPaused(bool paused);
 
@@ -110,6 +113,47 @@ public sealed class LightingService : ILightingController
     public bool IsHeld(string id)
     {
         lock (_holds) return _holds.Exists(h => h.Id == id);
+    }
+
+    /// <summary>The hold a "lights off for a while" timer uses.</summary>
+    public const string TimerId = "timer";
+
+    private DateTime? _offUntil;
+
+    /// <summary>When a "lights off for a while" timer will turn the lights back on, or null.</summary>
+    public DateTime? OffUntil
+    {
+        get { lock (_holds) return _offUntil; }
+    }
+
+    /// <summary>
+    /// Turn the lights off until <paramref name="until"/>, then back on by themselves. Turning them on
+    /// earlier ends it, like any hold. Nothing is saved: a restart in between just brings them back.
+    /// </summary>
+    public void TurnOffUntil(DateTime until)
+    {
+        lock (_holds) _offUntil = until;
+        Hold(TimerId, $"turned off for a while, until {until:HH:mm}");
+        // Lights that were switched off come on when the time is up too: that's what was asked for.
+        if (!_engine.Enabled)
+        {
+            _engine.Enabled = true;
+            Raise();
+        }
+    }
+
+    /// <summary>End the timer once its time has come, or forget it if the lights were turned on in the meantime.</summary>
+    public void CheckTimer(DateTime now)
+    {
+        bool release;
+        lock (_holds)
+        {
+            if (_offUntil is not { } until) return;
+            bool held = _holds.Exists(h => h.Id == TimerId);
+            release = held && now >= until;
+            if (release || !held) _offUntil = null;
+        }
+        if (release) Release(TimerId);
     }
 
     /// <summary>How long a flash lasts unless stopped.</summary>

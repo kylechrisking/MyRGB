@@ -58,6 +58,7 @@ internal sealed class LightsOffWatcher : IDisposable
                 _wasNight = isNight;
 
                 if (!s.OffWhenLocked) lights.Release(AsleepId);
+                lights.CheckTimer(_now());
             }
         }
         catch (Exception ex)

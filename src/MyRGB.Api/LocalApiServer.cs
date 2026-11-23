@@ -18,7 +18,7 @@ namespace MyRGB.Api;
 /// GET  /api/devices                    connected devices
 /// POST /api/presets/{id}/activate
 /// POST /api/presets/next | /previous
-/// POST /api/power        {"on": true}  empty body toggles
+/// POST /api/power        {"on": true}  empty body toggles; {"on": false, "minutes": 30} turns off for a while
 /// POST /api/brightness   {"value": 0.8} or {"delta": -0.1}
 /// GET  /api/events                     server-sent events, one "state" event per change
 /// POST /api/app/show                   bring the desktop window to the front
@@ -157,7 +157,10 @@ public sealed class LocalApiServer : IAsyncDisposable
 
     private LightingState Power(PowerRequest? body)
     {
-        _lights.SetEnabled(body?.On ?? !_lights.State.Enabled);
+        if (body is { On: false, Minutes: > 0 and <= 24 * 60 } timed)
+            _lights.TurnOffUntil(DateTime.Now.AddMinutes(timed.Minutes.Value));
+        else
+            _lights.SetEnabled(body?.On ?? !_lights.State.Enabled);
         return _lights.State;
     }
 
@@ -221,7 +224,7 @@ public sealed class LocalApiServer : IAsyncDisposable
         res.Close();
     }
 
-    public sealed record PowerRequest(bool? On);
+    public sealed record PowerRequest(bool? On, double? Minutes = null);
     public sealed record BrightnessRequest(double? Value, double? Delta);
     public sealed record PauseRequest(bool? Paused);
 

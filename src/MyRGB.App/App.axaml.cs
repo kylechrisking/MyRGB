@@ -23,6 +23,7 @@ public partial class App : Application
 
     /// <summary>The levels the tray offers, in percent.</summary>
     private static readonly int[] BrightnessSteps = [100, 75, 50, 25, 10];
+    private static readonly (string Label, int Minutes)[] OffForSteps = [("15 minutes", 15), ("30 minutes", 30), ("1 hour", 60), ("2 hours", 120)];
     private MainViewModel? _vm;
 
     public override void Initialize()
@@ -85,6 +86,14 @@ public partial class App : Application
         _powerItem = new NativeMenuItem("Turn lights off");
         _powerItem.Click += (_, _) => _host!.Lights.SetEnabled(!_host.Lights.State.Enabled);
 
+        var offFor = new NativeMenuItem("Turn lights off for") { Menu = new NativeMenu() };
+        foreach (var (label, minutes) in OffForSteps)
+        {
+            var step = new NativeMenuItem(label);
+            step.Click += (_, _) => _host!.Lights.TurnOffUntil(DateTime.Now.AddMinutes(minutes));
+            offFor.Menu.Items.Add(step);
+        }
+
         _presetsItem = new NativeMenuItem("Presets") { Menu = new NativeMenu() };
         _brightnessItem = new NativeMenuItem("Brightness") { Menu = new NativeMenu() };
         _themesItem = new NativeMenuItem("Appearance") { Menu = new NativeMenu() };
@@ -107,7 +116,7 @@ public partial class App : Application
         };
 
         var menu = new NativeMenu();
-        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, _brightnessItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), _themesItem, new NativeMenuItemSeparator(), exit })
+        foreach (var item in new NativeMenuItemBase[] { open, _powerItem, offFor, _brightnessItem, _presetsItem, next, shuffle, _pauseItem, new NativeMenuItemSeparator(), _themesItem, new NativeMenuItemSeparator(), exit })
             menu.Items.Add(item);
 
         var tray = new TrayIcon

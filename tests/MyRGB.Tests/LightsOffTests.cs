@@ -104,4 +104,62 @@ public class LightsOffTests
         Assert.False(svc.State.Enabled);
     }
 
+    [Fact]
+    public void Off_for_a_while_comes_back_on_by_itself()
+    {
+        var (svc, engine) = Build();
+        using var _ = engine;
+        var noon = new DateTime(2026, 11, 22, 12, 0, 0);
+        svc.TurnOffUntil(noon.AddMinutes(30));
+        Assert.False(svc.State.Enabled);
+        Assert.Equal("turned off for a while, until 12:30", svc.State.HeldBy);
+
+        svc.CheckTimer(noon.AddMinutes(29));
+        Assert.False(svc.State.Enabled);
+        svc.CheckTimer(noon.AddMinutes(30));
+        Assert.True(svc.State.Enabled);
+        Assert.Null(svc.OffUntil);
+    }
+
+    [Fact]
+    public void Off_for_a_while_also_brings_switched_off_lights_back()
+    {
+        var (svc, engine) = Build();
+        using var _ = engine;
+        svc.SetEnabled(false);
+        var noon = new DateTime(2026, 11, 22, 12, 0, 0);
+        svc.TurnOffUntil(noon.AddMinutes(15));
+        Assert.False(svc.State.Enabled);
+        svc.CheckTimer(noon.AddHours(1));
+        Assert.True(svc.State.Enabled);
+    }
+
+    [Fact]
+    public void Turning_on_early_cancels_the_timer()
+    {
+        var (svc, engine) = Build();
+        using var _ = engine;
+        var noon = new DateTime(2026, 11, 22, 12, 0, 0);
+        svc.TurnOffUntil(noon.AddHours(1));
+        svc.SetEnabled(true);
+        svc.CheckTimer(noon.AddMinutes(1));
+        Assert.Null(svc.OffUntil);
+        svc.SetEnabled(false);
+        svc.CheckTimer(noon.AddHours(2)); // the old timer mustn't switch them back on
+        Assert.False(svc.State.Enabled);
+    }
+
+    [Fact]
+    public void Night_hours_outlast_a_timer()
+    {
+        var (svc, engine) = Build();
+        using var _ = engine;
+        var noon = new DateTime(2026, 11, 22, 12, 0, 0);
+        svc.TurnOffUntil(noon.AddMinutes(5));
+        svc.Hold("night", "night hours, until 07:00");
+        svc.CheckTimer(noon.AddMinutes(10));
+        Assert.False(svc.State.Enabled);
+        Assert.Equal("night hours, until 07:00", svc.State.HeldBy);
+    }
+
 }
