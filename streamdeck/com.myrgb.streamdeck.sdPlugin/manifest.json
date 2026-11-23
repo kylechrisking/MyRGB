@@ -2,10 +2,10 @@
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
   "UUID": "com.myrgb.streamdeck",
   "Name": "MyRGB",
-  "Version": "0.2.0.0",
+  "Version": "0.3.0.0",
   "Author": "Root Labs",
   "URL": "https://www.rootlabs.us",
-  "Description": "Control MyRGB lighting: switch, shuffle and pause presets, toggle lights, and adjust brightness.",
+  "Description": "Control MyRGB lighting: switch, shuffle and pause presets, toggle lights, and adjust brightness, including your monitors' through Twinkle Tray.",
   "Icon": "imgs/plugin",
   "Category": "MyRGB",
   "CategoryIcon": "imgs/category",
@@ -46,6 +46,18 @@
         "TriggerDescription": { "Rotate": "Brightness", "Push": "Lights on/off", "Touch": "Lights on/off" }
       },
       "States": [{ "Image": "imgs/keys/brightness-key", "TitleAlignment": "bottom" }]
+    },
+    {
+      "UUID": "com.myrgb.streamdeck.monitors",
+      "Name": "Screen Brightness",
+      "Tooltip": "Raise, lower, or set your monitors' brightness through Twinkle Tray (switch it on in MyRGB > Settings > Monitors). On Stream Deck +, turn the dial.",
+      "Icon": "imgs/actions/monitors",
+      "Controllers": ["Keypad", "Encoder"],
+      "Encoder": {
+        "layout": "$B1",
+        "TriggerDescription": { "Rotate": "Screen brightness", "Push": "Full / dim", "Touch": "Full / dim" }
+      },
+      "States": [{ "Image": "imgs/keys/monitors-key", "TitleAlignment": "bottom" }]
     },
     {
       "UUID": "com.myrgb.streamdeck.cycle",

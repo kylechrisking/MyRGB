@@ -45,6 +45,20 @@ internal static class KeyImages
             $"<rect x=\"20\" y=\"98\" width=\"{width}\" height=\"12\" rx=\"6\" fill=\"{color}\"/>");
     }
 
+    /// <summary>A monitor over a fill bar, for the Screens key.</summary>
+    public static string Monitors(double level, bool available)
+    {
+        int width = (int)Math.Round(Math.Clamp(level, 0, 1) * 104);
+        string color = available ? "#FCB442" : "#6E6E78";
+        return Svg(
+            "<rect width=\"144\" height=\"144\" fill=\"#101018\"/>" +
+            $"<rect x=\"44\" y=\"28\" width=\"56\" height=\"38\" rx=\"5\" fill=\"none\" stroke=\"{color}\" stroke-width=\"6\"/>" +
+            $"<path d=\"M72 66V76M58 78H86\" stroke=\"{color}\" stroke-width=\"6\" stroke-linecap=\"round\"/>" +
+            $"<circle cx=\"72\" cy=\"47\" r=\"{4 + 5 * Math.Clamp(level, 0, 1):0.#}\" fill=\"{color}\"/>" +
+            "<rect x=\"20\" y=\"98\" width=\"104\" height=\"12\" rx=\"6\" fill=\"#2A2A38\"/>" +
+            $"<rect x=\"20\" y=\"98\" width=\"{width}\" height=\"12\" rx=\"6\" fill=\"{color}\"/>");
+    }
+
     private static string Svg(string body) =>
         "data:image/svg+xml;charset=utf8," + Uri.EscapeDataString(
             $"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"144\" height=\"144\" viewBox=\"0 0 144 144\">{body}</svg>");

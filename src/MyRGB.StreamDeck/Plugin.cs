@@ -17,12 +17,15 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
     public const string CycleAction = "com.myrgb.streamdeck.cycle";
     public const string PauseAction = "com.myrgb.streamdeck.pause";
     public const string ShuffleAction = "com.myrgb.streamdeck.shuffle";
+    public const string MonitorsAction = "com.myrgb.streamdeck.monitors";
 
     private sealed record Instance(string Action, bool IsEncoder, JsonObject Settings);
 
     private readonly ConcurrentDictionary<string, Instance> _visible = new();
     private List<PresetSummary> _presets = [];
     private DateTime _presetsFetched = DateTime.MinValue;
+    private MonitorsState? _monitors;
+    private Timer? _monitorPoll;
 
     public async Task OnMessage(JsonObject msg)
     {
@@ -36,6 +39,7 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
             case "willAppear" when context is not null && action is not null:
                 _visible[context] = new Instance(action, payload?["controller"]?.GetValue<string>() == "Encoder", Settings(payload));
                 if (!rgb.Online) await rgb.RefreshAsync(); // redraws every key if it comes online
+                if (action == MonitorsAction) { await RefreshMonitors(redraw: false); WatchMonitors(); }
                 await Render(context);
                 break;
             case "willDisappear" when context is not null:
@@ -52,6 +56,11 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
                 int ticks = payload?["ticks"]?.GetValue<int>() ?? 0;
                 if (dial.Action == BrightnessAction) await rgb.AdjustBrightnessAsync(ticks * Step(dial) / 100.0);
                 else if (dial.Action == CycleAction) await rgb.StepAsync(ticks);
+                else if (dial.Action == MonitorsAction) await ShowMonitors(await rgb.AdjustMonitorsAsync((int)(ticks * Step(dial))));
+                break;
+            case "dialDown" or "touchTap" when context is not null && _visible.TryGetValue(context, out var pushed) && pushed.Action == MonitorsAction:
+                // Push: full brightness, or down to a quarter when already there.
+                await ShowMonitors(await rgb.SetMonitorsAsync(_monitors is { Level: >= 100 } ? 25 : 100));
                 break;
             case "dialDown" or "touchTap" when context is not null:
                 await rgb.TogglePowerAsync();
@@ -90,6 +99,16 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
                     "down" => await rgb.AdjustBrightnessAsync(-Step(key) / 100),
                     _ => await rgb.AdjustBrightnessAsync(Step(key) / 100),
                 };
+            case MonitorsAction:
+                string how = key.Settings["mode"]?.GetValue<string>() ?? "up";
+                var result = how switch
+                {
+                    "set" => await rgb.SetMonitorsAsync((int)Number(key.Settings, "value", 50)),
+                    "down" => await rgb.AdjustMonitorsAsync(-(int)Step(key)),
+                    _ => await rgb.AdjustMonitorsAsync((int)Step(key)),
+                };
+                await ShowMonitors(result);
+                return result is { Available: true };
             default:
                 return false;
         }
@@ -138,6 +157,22 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
                         ["indicator"] = new JsonObject { ["value"] = (int)Math.Round(s.Brightness * 100) },
                     });
                 break;
+            case MonitorsAction:
+            {
+                var m = _monitors;
+                bool on = m is { Available: true };
+                string text = on ? $"{m!.Level}%" : "Off in\nMyRGB";
+                await deck.SetImageAsync(context, KeyImages.Monitors(on ? m!.Level / 100.0 : 0, on));
+                await deck.SetTitleAsync(context, text);
+                if (inst.IsEncoder)
+                    await deck.SetFeedbackAsync(context, new JsonObject
+                    {
+                        ["title"] = "Screens",
+                        ["value"] = on ? text : "off",
+                        ["indicator"] = new JsonObject { ["value"] = on ? m!.Level : 0 },
+                    });
+                break;
+            }
             case PauseAction:
                 await deck.SetStateAsync(context, s.Paused ? 1 : 0);
                 await deck.SetTitleAsync(context, s.Paused ? "Paused" : "Playing");
@@ -151,6 +186,40 @@ internal sealed class Plugin(StreamDeckConnection deck, MyRgbClient rgb)
                     await deck.SetFeedbackAsync(context, new JsonObject { ["title"] = "Preset", ["value"] = s.ActivePresetName ?? "" });
                 break;
         }
+    }
+
+    /// <summary>A press or turn answered with the new monitor state: show it on every Screens key.</summary>
+    private async Task ShowMonitors(MonitorsState? state)
+    {
+        if (state is not null) _monitors = state;
+        await RedrawMonitorKeys();
+    }
+
+    private async Task RefreshMonitors(bool redraw)
+    {
+        var state = await rgb.GetMonitorsAsync();
+        if (state == _monitors || (state is not null && _monitors is not null && state.Available == _monitors.Available && state.Level == _monitors.Level)) return;
+        _monitors = state;
+        if (redraw) await RedrawMonitorKeys();
+    }
+
+    private async Task RedrawMonitorKeys()
+    {
+        foreach (var (context, inst) in _visible)
+            if (inst.Action == MonitorsAction) await Render(context);
+    }
+
+    /// <summary>Monitor changes don't come over the event stream; look every few seconds while a Screens key is showing.</summary>
+    private void WatchMonitors()
+    {
+        _monitorPoll ??= new Timer(async _ =>
+        {
+            try
+            {
+                if (_visible.Values.Any(i => i.Action == MonitorsAction)) await RefreshMonitors(redraw: true);
+            }
+            catch (Exception) { /* try again next time */ }
+        }, null, TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(4));
     }
 
     private async Task SendPresetList(string action, string context)

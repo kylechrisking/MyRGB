@@ -40,11 +40,13 @@
       <span class="value" id="stepValue">10%</span>
     </div>
     <div class="row" id="valueRow">
-      <label for="value">Brightness</label>
+      <label for="value"><span id="valueLabel">Brightness</span></label>
       <input id="value" type="range" min="0" max="100" value="50" />
       <span class="value" id="valueValue">50%</span>
     </div>
   </div>
+
+  <p class="note" id="monitorsNote" hidden>Sets every monitor through Twinkle Tray. Switch it on in MyRGB under Settings &gt; Monitors first.</p>
 
   <!-- Next/Previous -->
   <div id="cycle" hidden>
@@ -91,6 +93,11 @@
     }
 
     function show(kind) {
+      if (kind === 'monitors') {
+        document.getElementById('monitorsNote').hidden = false;
+        document.getElementById('valueLabel').textContent = 'Screens';
+        kind = 'brightness';
+      }
       document.getElementById(kind).hidden = false;
       if (kind === 'brightness') {
         bindRange('step', '%', 10);

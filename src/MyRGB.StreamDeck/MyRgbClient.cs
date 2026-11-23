@@ -5,6 +5,8 @@ namespace MyRGB.StreamDeck;
 
 internal sealed record LightingState(bool Enabled, double Brightness, string? ActivePresetId, string? ActivePresetName, bool Paused = false);
 
+internal sealed record MonitorsState(bool Available, int Level, List<string> Monitors);
+
 internal sealed record PresetSummary(string Id, string Name, string EffectId, bool BuiltIn, List<string> Swatch);
 
 /// <summary>Talks to the MyRGB desktop app's local API and follows its state over server-sent events.</summary>
@@ -43,6 +45,26 @@ internal sealed class MyRgbClient : IDisposable
     public Task<bool> SetPowerAsync(bool on) => PostAsync("power", new { on });
     public Task<bool> SetBrightnessAsync(double value) => PostAsync("brightness", new { value });
     public Task<bool> AdjustBrightnessAsync(double delta) => PostAsync("brightness", new { delta });
+
+    /// <summary>Monitor brightness through Twinkle Tray, or null when MyRGB can't be reached (older versions answer 404).</summary>
+    public async Task<MonitorsState?> GetMonitorsAsync()
+    {
+        try { return await _http.GetFromJsonAsync<MonitorsState>("monitors", Json); }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException) { return null; }
+    }
+
+    public Task<MonitorsState?> SetMonitorsAsync(int value) => PostMonitorsAsync(new { value });
+    public Task<MonitorsState?> AdjustMonitorsAsync(int delta) => PostMonitorsAsync(new { delta });
+
+    private async Task<MonitorsState?> PostMonitorsAsync(object body)
+    {
+        try
+        {
+            using var res = await _http.PostAsJsonAsync("monitors", body, Json);
+            return res.IsSuccessStatusCode ? await res.Content.ReadFromJsonAsync<MonitorsState>(Json) : null;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException) { return null; }
+    }
 
     private async Task<bool> PostAsync(string path, object? body)
     {
