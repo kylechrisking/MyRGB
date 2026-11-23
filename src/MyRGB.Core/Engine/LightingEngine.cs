@@ -83,6 +83,10 @@ public sealed class LightingEngine : IDisposable
 
     private volatile bool _heldOff;
     private bool Lit => _enabled && !_heldOff;
+    private readonly Fade _fade = new();
+
+    /// <summary>Skip the fade on the next frame and go straight to black or full, e.g. just before the PC sleeps.</summary>
+    public void SkipFade() => _fade.SnapNext = true;
 
     public void Activate(Preset preset)
     {
@@ -143,6 +147,7 @@ public sealed class LightingEngine : IDisposable
     {
         if (_running) return;
         _running = true;
+        _fade.SnapNext = true; // start at the saved brightness and power, not a fade from full
         Rebuild(keepEffects: true);
         _thread = new Thread(Run) { IsBackground = true, Name = "MyRGB render", Priority = ThreadPriority.AboveNormal };
         _thread.Start();
@@ -185,6 +190,7 @@ public sealed class LightingEngine : IDisposable
         {
             double now = clock.Elapsed.TotalSeconds;
             double dt = Math.Clamp(now - last, 0, 0.25);
+            _fade.Step(Lit, Brightness, dt); // real time, so fades finish even while paused
             last = now;
             // Effects see their own clock, which stands still while paused.
             if (_paused) dt = 0;
@@ -193,7 +199,7 @@ public sealed class LightingEngine : IDisposable
 
             try
             {
-                plan.Render(new FrameContext(effectTime, dt), now, Lit, Brightness, CurrentFlash(), _log);
+                plan.Render(new FrameContext(effectTime, dt), now, _fade.Lit, _fade.Level, CurrentFlash(), _log);
                 failures = 0;
             }
             catch (Exception ex)

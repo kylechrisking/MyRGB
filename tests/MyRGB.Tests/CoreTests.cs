@@ -207,6 +207,41 @@ public class CoreTests
     }
 
     [Fact]
+    public async Task The_running_engine_fades_off_instead_of_snapping()
+    {
+        var kb = new FakeDevice("kb", null, 1);
+        var devices = new DeviceManager();
+        devices.AddProvider(new OneDeviceProvider(kb));
+        await devices.RefreshAsync(TestContext.Current.CancellationToken);
+        var effects = EffectRegistry.CreateDefault();
+        using var engine = new LightingEngine(devices, effects, new CanvasLayout());
+        engine.Activate(new Preset { Id = "t", Name = "t", EffectId = "static", Settings = new() { ["color"] = "#FFFFFF" } });
+        engine.Start();
+        Thread.Sleep(300);
+        Assert.Equal(new Rgb(255, 255, 255), kb.Last![0]); // started at full: no fade in from the snap
+
+        engine.Enabled = false;
+        var seen = new HashSet<byte>();
+        var until = DateTime.UtcNow.AddSeconds(Fade.PowerSeconds + 0.4);
+        while (DateTime.UtcNow < until) { seen.Add(kb.Last![0].R); Thread.Sleep(5); }
+        engine.Stop();
+        Assert.Equal(Rgb.Black, kb.Last![0]);
+        Assert.True(seen.Count(v => v is > 0 and < 255) >= 5, $"in-between levels seen: {string.Join(",", seen.Order())}");
+    }
+
+    private sealed class OneDeviceProvider(IRgbDevice device) : IDeviceProvider
+    {
+        public string Id => "one";
+        public string DisplayName => "one";
+        public int Priority => 0;
+        public ProviderStatus Status => ProviderStatus.Connected;
+        public string? StatusMessage => null;
+        public event EventHandler? DevicesChanged { add { } remove { } }
+        public Task<IReadOnlyList<IRgbDevice>> DiscoverAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<IRgbDevice>>([device]);
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    [Fact]
     public void Step_preset_wraps_around()
     {
         var effects = EffectRegistry.CreateDefault();

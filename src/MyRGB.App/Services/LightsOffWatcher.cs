@@ -86,6 +86,7 @@ internal sealed class LightsOffWatcher : IDisposable
         if (type == PbtApmSuspend)
         {
             _host.Lights.Hold(AsleepId, "the PC is asleep");
+            _host.Engine.SkipFade(); // no time for a fade: Windows is about to cut power
             // Windows waits for this callback; give the render thread a couple of frames to send black.
             Thread.Sleep(150);
         }
