@@ -1364,6 +1364,21 @@
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
+                  <TextBlock Classes="section" Text="Lights out" />
+                  <ctl:Switch IsChecked="{Binding OffWhenLocked}" OnContent="Off while Windows is locked or asleep" OffContent="Off while Windows is locked or asleep" />
+                  <ctl:Switch IsChecked="{Binding NightOn}" OnContent="Off at night" OffContent="Off at night" />
+                  <StackPanel Orientation="Horizontal" Spacing="10" IsEnabled="{Binding NightOn}">
+                    <TextBlock Text="From" VerticalAlignment="Center" />
+                    <ComboBox ItemsSource="{Binding NightChoices}" SelectedItem="{Binding NightFrom}" MinWidth="100" />
+                    <TextBlock Text="to" VerticalAlignment="Center" />
+                    <ComboBox ItemsSource="{Binding NightChoices}" SelectedItem="{Binding NightTo}" MinWidth="100" />
+                  </StackPanel>
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Your lights go dark and come back on their own. Turning them on in the meantime (here, from the tray, a hotkey or a Stream Deck) keeps them on until the next lock, sleep or night." />
+                </StackPanel>
+              </Border>
+
+              <Border Classes="panel">
+                <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="App profiles" />
                   <ctl:Switch IsChecked="{Binding AppProfilesOn}" OnContent="Switch presets by app" OffContent="Switch presets by app" />
                   <ItemsControl ItemsSource="{Binding AppProfileRows}" IsEnabled="{Binding AppProfilesOn}">

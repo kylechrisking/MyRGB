@@ -51,6 +51,15 @@ public sealed class AppHostOptions
 
     public bool EnableApi { get; init; } = true;
 
+    /// <summary>Replaces asking Windows whether the session is locked (tests, snapshots).</summary>
+    public Func<bool>? SessionLocked { get; init; }
+
+    /// <summary>Replaces the clock night hours go by (tests, snapshots).</summary>
+    public Func<DateTime>? Clock { get; init; }
+
+    /// <summary>Hears about sleep and wake from Windows. Off in snapshots and tests.</summary>
+    public bool WatchPower { get; init; } = true;
+
     /// <summary>Registers the Ctrl+Alt+L toggle with Windows. Off in snapshots and tests.</summary>
     public bool EnableGlobalHotkey { get; init; } = true;
 }
@@ -296,6 +305,7 @@ public sealed class AppHost : IAsyncDisposable
         else ApiError = "disabled";
 
         _dimmer = new IdleDimmer(this);
+        _offWatcher = new LightsOffWatcher(this, _options.SessionLocked, _options.Clock, _options.WatchPower, Logs.CreateLogger<LightsOffWatcher>());
         _foregroundTimer = new System.Threading.Timer(_ => CheckForeground(), null,
             TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(2));
 
@@ -318,6 +328,10 @@ public sealed class AppHost : IAsyncDisposable
     }
 
     private IdleDimmer? _dimmer;
+    private LightsOffWatcher? _offWatcher;
+
+    /// <summary>Apply changed lock or night-hours settings now rather than on the next tick.</summary>
+    public void CheckLightsOff() => _offWatcher?.Check();
     private GlobalHotkeys? _hotkeys;
     private System.Threading.Timer? _foregroundTimer;
     private System.Threading.Timer? _syncTimer;
@@ -479,6 +493,7 @@ public sealed class AppHost : IAsyncDisposable
         _foregroundTimer?.Dispose();
         _syncTimer?.Dispose();
         _dimmer?.Dispose();
+        _offWatcher?.Dispose();
         _hotkeys?.Dispose();
         SaveNow();
         Engine.Dispose();

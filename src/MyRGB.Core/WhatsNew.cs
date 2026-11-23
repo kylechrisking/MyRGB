@@ -11,6 +11,8 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 6, 6), ["Lights out, in Settings: turn the lights off while Windows is locked or asleep, and every night between times you pick.",
+                           "Turning the lights on in the meantime keeps them on until the next lock, sleep or night."]),
         new(new(0, 6, 5), ["After an update, this card shows what changed since the version you last used."]),
         new(new(0, 6, 4), ["If MyRGB can't save its settings, Home tells you, so changes don't quietly vanish when it closes."]),
         new(new(0, 6, 3), ["Fixed a crash when the look changed while MyRGB was running, e.g. Match Windows at sunrise.",

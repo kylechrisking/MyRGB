@@ -43,6 +43,8 @@ InstalledProgram[] installed =
     new("Elgato Stream Deck", "Corsair Memory, Inc.", "7.6.0", "MsiExec.exe /I{187BBE1D-5634-411D-A397-EEC5E7A87487}"),
 ];
 
+bool fakeLocked = false;
+var fakeNow = new DateTime(2026, 11, 22, 21, 0, 0);
 var host = new AppHost(new AppHostOptions
 {
     DataDirectory = data,
@@ -56,6 +58,9 @@ var host = new AppHost(new AppHostOptions
     DynamicLightingOn = () => true,
     ListenToAudio = false,
     Sensors = () => new FakeSensors(),
+    SessionLocked = () => fakeLocked,
+    Clock = () => fakeNow,
+    WatchPower = false,
 });
 // Stay on this thread: it's Avalonia's UI thread, and awaiting would resume elsewhere.
 host.StartAsync().GetAwaiter().GetResult();
@@ -132,6 +137,30 @@ if (quick)
     host.SaveNow();
     Dispatcher.UIThread.RunJobs();
     Console.WriteLine($"after fixing: {host.SaveError ?? "none"}");
+    // Lights out: night hours and the lock screen hold the lights off; turning them on wins until next time.
+    void Step(string what)
+    {
+        host.CheckLightsOff();
+        Dispatcher.UIThread.RunJobs();
+        var st = host.Lights.State;
+        Console.WriteLine($"{what}: lit={st.Enabled} held={st.HeldBy ?? "-"} alert={vm.Alerts.Any(a => a.Text.StartsWith("Your lights are off for now"))}");
+    }
+    vm.NightFrom = "23:00"; vm.NightTo = "07:00"; vm.NightOn = true; Step("21:00 night on");
+    fakeNow = fakeNow.AddHours(2.5); Step("23:30");
+    vm.SelectedTab = MainViewModel.HomeTab; Shoot($"{themeId}-night");
+    vm.Alerts.First(a => a.Text.StartsWith("Your lights are off for now")).Action!.Execute(null); Step("turn on anyway");
+    fakeNow = fakeNow.AddHours(1); Step("00:30 still on");
+    fakeNow = fakeNow.AddHours(7); Step("07:30 morning");
+    fakeNow = fakeNow.AddHours(15.5); Step("23:00 next night");
+    fakeNow = fakeNow.AddHours(8); Step("07:00 next morning");
+    vm.OffWhenLocked = true; fakeLocked = true; Step("locked");
+    fakeLocked = false; Step("unlocked");
+    vm.SelectedTab = MainViewModel.SettingsTab;
+    Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Lights out").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
+    Shoot($"{themeId}-lights-out");
+    vm.NightOn = false; vm.OffWhenLocked = false;
+    Console.WriteLine($"real session locked: {typeof(AppHost).Assembly.GetType("MyRGB.App.Services.LightsOffWatcher")!.GetMethod("SessionLocked")!.Invoke(null, null)}");
+    Console.WriteLine($"saved: night={host.Settings.NightOn} {host.Settings.NightFrom}-{host.Settings.NightTo} locked={host.Settings.OffWhenLocked} enabled={host.Engine.Enabled}");
     window.AllowClose = true; window.Close(); host.Shutdown();
     return;
 }

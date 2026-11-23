@@ -67,6 +67,14 @@ public sealed class AppSettings
     public double IdleDimAfterMinutes { get; set; } = 10;
     public double IdleDimPercent { get; set; } = 10;
 
+    /// <summary>Lights off while Windows is locked or the PC is asleep.</summary>
+    public bool OffWhenLocked { get; set; }
+
+    /// <summary>Lights off every night between these times ("HH:mm"); turning them on ends it until the next night.</summary>
+    public bool NightOn { get; set; }
+    public string NightFrom { get; set; } = "23:00";
+    public string NightTo { get; set; } = "07:00";
+
     /// <summary>Ctrl+Alt+L turns the lights on or off from anywhere.</summary>
     public bool GlobalHotkeyOn { get; set; }
 

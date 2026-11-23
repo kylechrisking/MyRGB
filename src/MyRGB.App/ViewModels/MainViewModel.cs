@@ -105,6 +105,11 @@ public sealed partial class MainViewModel : ObservableObject
         _idleDimAfterMinutes = host.Settings.IdleDimAfterMinutes;
         _idleDimPercent = host.Settings.IdleDimPercent;
         _globalHotkeyOn = host.Settings.GlobalHotkeyOn;
+        _offWhenLocked = host.Settings.OffWhenLocked;
+        _nightOn = host.Settings.NightOn;
+        var night = LightsOffWatcher.NightFor(host.Settings);
+        _nightFrom = night.From.ToString("HH:mm");
+        _nightTo = night.To.ToString("HH:mm");
         foreach (var p in host.Settings.AppProfiles) AppProfileRows.Add(new AppProfileRow(host, p, this));
         _showHomeGuide = !host.Settings.HideHomeGuide;
         _startWithWindows = StartupRegistration.IsEnabled;
@@ -293,6 +298,23 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private double _idleDimPercent;
     [ObservableProperty] private string _newAppProfileProcess = "";
     [ObservableProperty] private bool _globalHotkeyOn;
+    [ObservableProperty] private bool _offWhenLocked;
+    [ObservableProperty] private bool _nightOn;
+    [ObservableProperty] private string _nightFrom;
+    [ObservableProperty] private string _nightTo;
+    public IReadOnlyList<string> NightChoices => NightHours.Choices;
+
+    partial void OnOffWhenLockedChanged(bool value) => SaveLightsOff(s => s.OffWhenLocked = value);
+    partial void OnNightOnChanged(bool value) => SaveLightsOff(s => s.NightOn = value);
+    partial void OnNightFromChanged(string value) { if (value is not null) SaveLightsOff(s => s.NightFrom = value); }
+    partial void OnNightToChanged(string value) { if (value is not null) SaveLightsOff(s => s.NightTo = value); }
+
+    private void SaveLightsOff(Action<AppSettings> change)
+    {
+        change(_host.Settings);
+        _host.ScheduleSave();
+        _host.CheckLightsOff();
+    }
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private string _openRgbPath;
     [ObservableProperty] private bool _isScanning;
@@ -630,7 +652,9 @@ public sealed partial class MainViewModel : ObservableObject
     {
         Alerts.Clear();
 
-        if (!_host.Lights.State.Enabled)
+        if (_host.Lights.State.HeldBy is { } heldBy)
+            Alerts.Add(new AlertViewModel(false, $"Your lights are off for now: {heldBy}.", "Turn on anyway", TogglePowerCommand));
+        else if (!_host.Lights.State.Enabled)
             Alerts.Add(new AlertViewModel(false, "Your lights are switched off.", "Turn on", TogglePowerCommand));
 
         if (_host.DynamicLightingOn() == true)

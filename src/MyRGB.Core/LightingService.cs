@@ -5,7 +5,9 @@ using MyRGB.Core.Presets;
 
 namespace MyRGB.Core;
 
-public sealed record LightingState(bool Enabled, double Brightness, string? ActivePresetId, string? ActivePresetName, bool Paused = false);
+/// <param name="Enabled">Whether the lights are lit: switched on and not held off.</param>
+/// <param name="HeldBy">Why the lights are off for now although they're switched on (e.g. "Windows is locked"), or null.</param>
+public sealed record LightingState(bool Enabled, double Brightness, string? ActivePresetId, string? ActivePresetName, bool Paused = false, string? HeldBy = null);
 
 public sealed record PresetSummary(string Id, string Name, string EffectId, bool BuiltIn, IReadOnlyList<string> Swatch);
 
@@ -22,6 +24,7 @@ public interface ILightingController
     IReadOnlyList<DeviceSummary> GetDevices();
     bool ActivatePreset(string id);
     void StepPreset(int delta);
+    /// <summary>Switch the lights on or off. Turning them on also ends any hold, such as night hours.</summary>
     void SetEnabled(bool enabled);
     void SetBrightness(double brightness);
 
@@ -64,8 +67,50 @@ public sealed class LightingService : ILightingController
 
     public event EventHandler? StateChanged;
 
-    public LightingState State =>
-        new(_engine.Enabled, _engine.Brightness, _engine.ActivePreset?.Id, _engine.ActivePreset?.Name, _engine.Paused);
+    public LightingState State
+    {
+        get
+        {
+            string? heldBy;
+            lock (_holds) heldBy = _engine.Enabled && _holds.Count > 0 ? _holds[^1].Why : null;
+            return new(_engine.Enabled && heldBy is null, _engine.Brightness, _engine.ActivePreset?.Id,
+                _engine.ActivePreset?.Name, _engine.Paused, heldBy);
+        }
+    }
+
+    private readonly List<(string Id, string Why)> _holds = [];
+
+    /// <summary>
+    /// Keep the lights off for a reason until <see cref="Release"/>, or until someone turns them on.
+    /// Holding again under the same id just updates the reason.
+    /// </summary>
+    public void Hold(string id, string why)
+    {
+        lock (_holds)
+        {
+            int i = _holds.FindIndex(h => h.Id == id);
+            if (i >= 0 && _holds[i].Why == why) return;
+            if (i >= 0) _holds[i] = (id, why);
+            else _holds.Add((id, why));
+            _engine.HeldOff = true;
+        }
+        Raise();
+    }
+
+    public void Release(string id)
+    {
+        lock (_holds)
+        {
+            if (_holds.RemoveAll(h => h.Id == id) == 0) return;
+            _engine.HeldOff = _holds.Count > 0;
+        }
+        Raise();
+    }
+
+    public bool IsHeld(string id)
+    {
+        lock (_holds) return _holds.Exists(h => h.Id == id);
+    }
 
     /// <summary>How long a flash lasts unless stopped.</summary>
     public static readonly TimeSpan FlashLength = TimeSpan.FromSeconds(4);
@@ -129,8 +174,17 @@ public sealed class LightingService : ILightingController
         ActivatePreset(all[next].Id);
     }
 
+    /// <summary>Switch the lights on or off. Turning them on also ends every hold: asking for light wins.</summary>
     public void SetEnabled(bool enabled)
     {
+        if (enabled)
+        {
+            lock (_holds)
+            {
+                _holds.Clear();
+                _engine.HeldOff = false;
+            }
+        }
         _engine.Enabled = enabled;
         Raise();
     }

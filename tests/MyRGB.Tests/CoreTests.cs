@@ -158,6 +158,22 @@ public class CoreTests
     }
 
     [Fact]
+    public void A_held_engine_sends_black_but_stays_switched_on()
+    {
+        var kb = new FakeDevice("kb", null, 3);
+        var preset = new Preset { Id = "t", Name = "t", EffectId = "static", Settings = new() { ["color"] = "#C86400" } };
+        var effects = EffectRegistry.CreateDefault();
+        using var engine = new LightingEngine(new DeviceManager(), effects, new CanvasLayout()) { HeldOff = true };
+        var plan = LightingEngine.RenderPlan.Build([kb], preset, effects, new CanvasLayout(), null);
+        engine.RenderFrame(plan, 0, 0.03);
+        Assert.All(kb.Last!, c => Assert.Equal(Rgb.Black, c));
+        Assert.True(engine.Enabled);
+        engine.HeldOff = false;
+        engine.RenderFrame(plan, 0.1, 0.03);
+        Assert.All(kb.Last!, c => Assert.Equal(new Rgb(200, 100, 0), c));
+    }
+
+    [Fact]
     public void Shuffle_never_picks_the_current_preset()
     {
         var effects = EffectRegistry.CreateDefault();

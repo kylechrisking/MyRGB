@@ -71,6 +71,19 @@ public sealed class LightingEngine : IDisposable
         set => _enabled = value;
     }
 
+    /// <summary>
+    /// Off for now (Windows locked, asleep, night hours) without touching <see cref="Enabled"/>, so the
+    /// user's own on/off choice is what gets saved, and what comes back when the hold ends.
+    /// </summary>
+    public bool HeldOff
+    {
+        get => _heldOff;
+        set => _heldOff = value;
+    }
+
+    private volatile bool _heldOff;
+    private bool Lit => _enabled && !_heldOff;
+
     public void Activate(Preset preset)
     {
         _preset = preset;
@@ -180,7 +193,7 @@ public sealed class LightingEngine : IDisposable
 
             try
             {
-                plan.Render(new FrameContext(effectTime, dt), now, _enabled, Brightness, CurrentFlash(), _log);
+                plan.Render(new FrameContext(effectTime, dt), now, Lit, Brightness, CurrentFlash(), _log);
                 failures = 0;
             }
             catch (Exception ex)
@@ -201,7 +214,7 @@ public sealed class LightingEngine : IDisposable
     }
 
     internal void RenderFrame(RenderPlan plan, double time, double dt) =>
-        plan.Render(new FrameContext(time, dt), time, _enabled, Brightness, CurrentFlash(), _log);
+        plan.Render(new FrameContext(time, dt), time, Lit, Brightness, CurrentFlash(), _log);
 
     /// <summary>The flash to show this frame, with its pulse level (0.25..1), or null.</summary>
     private (FlashRequest Request, double Level)? CurrentFlash()
