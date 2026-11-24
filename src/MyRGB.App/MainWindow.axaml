@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:MyRGB.App.ViewModels"
         xmlns:ctl="using:MyRGB.App.Controls"
+        xmlns:svc="using:MyRGB.App.Services"
         xmlns:presets="using:MyRGB.Core.Presets"
         xmlns:sensors="using:MyRGB.Core.Sensors"
         x:Class="MyRGB.App.MainWindow"
@@ -1494,8 +1495,19 @@
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Global hotkeys" />
-                  <ctl:Switch IsChecked="{Binding GlobalHotkeyOn}" OnContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" OffContent="Ctrl+Alt+L: lights on/off · Ctrl+Alt+N: next preset" />
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Work from any app, no vendor hotkey engine needed." />
+                  <ctl:Switch IsChecked="{Binding GlobalHotkeyOn}" OnContent="Use keyboard shortcuts from any app" OffContent="Use keyboard shortcuts from any app" />
+                  <ItemsControl ItemsSource="{Binding Hotkeys}" IsEnabled="{Binding GlobalHotkeyOn}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="svc:HotkeyStatus">
+                        <Grid ColumnDefinitions="160,*,Auto" Margin="0,0,0,4">
+                          <TextBlock FontFamily="{DynamicResource BrandMono}" FontSize="12" Text="{Binding Keys}" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Does}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                          <TextBlock Grid.Column="2" Classes="muted" Text="taken by another app" IsVisible="{Binding Taken}" VerticalAlignment="Center" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding HotkeysNote}" />
                 </StackPanel>
               </Border>
 

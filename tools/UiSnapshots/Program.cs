@@ -50,7 +50,7 @@ var host = new AppHost(new AppHostOptions
 {
     DataDirectory = data,
     EnableApi = false,
-    EnableGlobalHotkey = false,
+    EnableGlobalHotkey = true, // registers nothing until the switch is on
     Providers = (_, _) => [new FakeProvider()],
     BatteryProviders = () => [new FakeBatteries()],
     DetectVendorApps = () => VendorAppCatalog.Detect(installed, ["iCUE"]),
@@ -207,6 +207,16 @@ if (quick)
     Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Monitors").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
     Shoot($"{themeId}-monitors");
     Console.WriteLine($"saved monitors: on={host.Settings.MonitorsOn} level={host.Settings.MonitorLevel} follow={host.Settings.MonitorsFollowLights}/{host.Settings.MonitorsOffLevel} night={host.Settings.MonitorsNightOn}/{host.Settings.MonitorsNightLevel} presets={string.Join(",", host.Settings.MonitorPresetLevels.Select(p => $"{p.PresetId}={p.Level}"))} ranges={string.Join(",", host.Settings.MonitorRanges.Select(r => $"{r.Name}={r.Darkest}-{r.Brightest}"))}");
+    // Hotkeys: hold Ctrl+Alt+B here first, the way another app would, then switch MyRGB's on.
+    bool heldB = OtherApp.RegisterHotKey(IntPtr.Zero, 0xB0B, 0x0001 | 0x0002 | 0x4000, 0x42);
+    vm.GlobalHotkeyOn = true; Thread.Sleep(500); Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"hotkeys (other app holds Ctrl+Alt+B: {heldB}): {string.Join(", ", vm.Hotkeys.Select(h => h.Keys + (h.Taken ? " TAKEN" : "")))}");
+    Console.WriteLine($"hotkeys note: {vm.HotkeysNote}");
+    Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Global hotkeys").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
+    Shoot($"{themeId}-hotkeys");
+    vm.GlobalHotkeyOn = false; Thread.Sleep(300); Dispatcher.UIThread.RunJobs();
+    OtherApp.UnregisterHotKey(IntPtr.Zero, 0xB0B);
+    Console.WriteLine($"hotkeys off: {string.Join(", ", vm.Hotkeys.Where(h => h.Taken).Select(h => h.Keys))} taken");
     Console.WriteLine($"real session locked: {typeof(AppHost).Assembly.GetType("MyRGB.App.Services.LightsOffWatcher")!.GetMethod("SessionLocked")!.Invoke(null, null)}");
     Console.WriteLine($"saved: night={host.Settings.NightOn} {host.Settings.NightFrom}-{host.Settings.NightTo} locked={host.Settings.OffWhenLocked} enabled={host.Engine.Enabled}");
     window.AllowClose = true; window.Close(); host.Shutdown();
@@ -498,4 +508,10 @@ sealed class FakeMonitors : IMonitorControl
         Dell = levelFor("DELL S3222DGM"); Asus = levelFor("ASUS VG24VQ1B"); Sets++;
         return Task.CompletedTask;
     }
+}
+
+static class OtherApp
+{
+    [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint modifiers, uint vk);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 }

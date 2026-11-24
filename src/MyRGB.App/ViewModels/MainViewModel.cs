@@ -105,6 +105,8 @@ public sealed partial class MainViewModel : ObservableObject
         _idleDimAfterMinutes = host.Settings.IdleDimAfterMinutes;
         _idleDimPercent = host.Settings.IdleDimPercent;
         _globalHotkeyOn = host.Settings.GlobalHotkeyOn;
+        host.HotkeysChanged += () => Dispatcher.UIThread.Post(SyncHotkeys);
+        SyncHotkeys();
         _offWhenLocked = host.Settings.OffWhenLocked;
         _nightOn = host.Settings.NightOn;
         var night = LightsOffWatcher.NightFor(host.Settings);
@@ -310,6 +312,16 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private double _idleDimPercent;
     [ObservableProperty] private string _newAppProfileProcess = "";
     [ObservableProperty] private bool _globalHotkeyOn;
+    [ObservableProperty] private IReadOnlyList<HotkeyStatus> _hotkeys = [];
+    [ObservableProperty] private string _hotkeysNote = "";
+
+    private void SyncHotkeys()
+    {
+        Hotkeys = _host.Hotkeys;
+        var taken = Hotkeys.Where(h => h.Taken).Select(h => h.Keys).ToList();
+        HotkeysNote = taken.Count == 0 ? "Work from any app, no vendor hotkey engine needed. The brightness keys repeat while you hold them."
+            : $"{string.Join(", ", taken)} {(taken.Count == 1 ? "is" : "are")} already used by another app, so MyRGB can't have {(taken.Count == 1 ? "it" : "them")}. The rest work.";
+    }
     [ObservableProperty] private bool _offWhenLocked;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NightTimesEnabled))]

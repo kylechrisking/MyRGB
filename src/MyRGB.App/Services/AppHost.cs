@@ -320,11 +320,8 @@ public sealed class AppHost : IAsyncDisposable
         if (_options.EnableGlobalHotkey)
         {
             _hotkeys = new GlobalHotkeys();
-            _hotkeys.Pressed += id =>
-            {
-                if (id == GlobalHotkeys.ToggleLightsId) Lights.SetEnabled(!Lights.State.Enabled);
-                else if (id == GlobalHotkeys.NextPresetId) Lights.StepPreset(1);
-            };
+            _hotkeys.Pressed += OnHotkey;
+            _hotkeys.StatusChanged += () => HotkeysChanged?.Invoke();
             ApplyGlobalHotkeySetting();
         }
 
@@ -348,7 +345,7 @@ public sealed class AppHost : IAsyncDisposable
     private bool _inProfile;
     private string? _preProfilePreset;
 
-    /// <summary>Turns Ctrl+Alt+L / Ctrl+Alt+N on or off; does nothing if hotkeys were disabled at startup.</summary>
+    /// <summary>Turns the global shortcuts on or off; does nothing if hotkeys were left out at startup.</summary>
     public void SetGlobalHotkeyEnabled(bool on)
     {
         Settings.GlobalHotkeyOn = on;
@@ -356,10 +353,37 @@ public sealed class AppHost : IAsyncDisposable
         ScheduleSave();
     }
 
-    private void ApplyGlobalHotkeySetting()
+    private void ApplyGlobalHotkeySetting() => _hotkeys?.SetAll(Settings.GlobalHotkeyOn);
+
+    /// <summary>Every global shortcut, with which ones another app already holds.</summary>
+    public IReadOnlyList<HotkeyStatus> Hotkeys => _hotkeys?.Status() ?? GlobalHotkeys.Plain();
+
+    /// <summary><see cref="Hotkeys"/> changed. Any thread.</summary>
+    public event Action? HotkeysChanged;
+
+    /// <summary>How far one press of a brightness key moves the lights (0..1) or the screens (0..100).</summary>
+    public const double HotkeyLightStep = 0.1;
+    public const int HotkeyScreenStep = 10;
+
+    private void OnHotkey(int id)
     {
-        _hotkeys?.SetToggleLights(Settings.GlobalHotkeyOn);
-        _hotkeys?.SetNextPreset(Settings.GlobalHotkeyOn);
+        try
+        {
+            switch (id)
+            {
+                case GlobalHotkeys.ToggleLightsId: Lights.SetEnabled(!Lights.State.Enabled); break;
+                case GlobalHotkeys.NextPresetId: Lights.StepPreset(1); break;
+                case GlobalHotkeys.PreviousPresetId: Lights.StepPreset(-1); break;
+                case GlobalHotkeys.BrighterId: Lights.SetBrightness(BrightnessSteps.Next(Lights.State.Brightness, +1)); break;
+                case GlobalHotkeys.DimmerId: Lights.SetBrightness(BrightnessSteps.Next(Lights.State.Brightness, -1)); break;
+                case GlobalHotkeys.ScreensBrighterId: if (Monitors.Available) Monitors.SetLevel(Monitors.Level + HotkeyScreenStep); break;
+                case GlobalHotkeys.ScreensDimmerId: if (Monitors.Available) Monitors.SetLevel(Monitors.Level - HotkeyScreenStep); break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Hotkey {Id} failed", id);
+        }
     }
 
     /// <summary>The brightness to remember while the idle dim holds, so settings keep the user's choice.</summary>
