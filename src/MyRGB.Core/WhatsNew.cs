@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 7, 9), ["A wireless headset that was asleep when MyRGB started (the G733, for one) now lights up by itself once you wake it."]),
         new(new(0, 7, 8), ["Scan again (on Devices) now asks OpenRGB to look for hardware too, so a wireless headset or mouse switched on after OpenRGB started turns up without a restart."]),
         new(new(0, 7, 7), ["Safer RAM lighting: the task that runs OpenRGB as administrator could be pointed at a copy in your own folder. If yours was, Home offers to fix it with one Windows prompt."]),
         new(new(0, 7, 6), ["More keyboard shortcuts in Settings > Global hotkeys: previous preset, lights brighter or dimmer, and screens brighter or dimmer. Settings now says if another app already has one."]),

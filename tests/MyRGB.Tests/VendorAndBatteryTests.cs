@@ -74,6 +74,20 @@ public class VendorAndBatteryTests
         Assert.Equal(70, monitor.Readings["usb:test"].Status?.Percent);
     }
 
+    [Fact]
+    public async Task A_device_waking_up_is_reported_once()
+    {
+        var source = new FlakySource { Next = null };
+        await using var monitor = new BatteryMonitor([new OneSource(source)]);
+        var woke = new List<string>();
+        monitor.Woke += r => woke.Add(r.HardwareKey);
+        await monitor.RefreshAsync(); // first sight, asleep: nothing to report
+        source.Next = new BatteryStatus(60, false);
+        await monitor.RefreshAsync();
+        await monitor.RefreshAsync(); // still awake: not again
+        Assert.Equal(["usb:test"], woke);
+    }
+
     private sealed class FlakySource : IBatterySource
     {
         public BatteryStatus? Next;

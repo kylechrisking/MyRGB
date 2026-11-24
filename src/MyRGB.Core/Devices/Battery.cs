@@ -60,6 +60,12 @@ public sealed class BatteryMonitor : IAsyncDisposable
     /// <summary>Raised (any thread) after a poll changes any reading.</summary>
     public event EventHandler? Changed;
 
+    /// <summary>
+    /// Raised (any thread) when a device that was asleep or off answers again. Backends that scan once
+    /// (OpenRGB) lose a wireless headset that was asleep when they looked; this is the cue to look again.
+    /// </summary>
+    public event Action<BatteryReading>? Woke;
+
     public void Start() => _loop = Task.Run(() => RunAsync(_cts.Token));
 
     /// <summary>Re-find devices and read them now, e.g. after a rescan.</summary>
@@ -111,10 +117,12 @@ public sealed class BatteryMonitor : IAsyncDisposable
                 next[source.HardwareKey] = reading;
             }
 
+            var woke = next.Values.Where(r => r.Status is not null && _readings.TryGetValue(r.HardwareKey, out var old) && old.Status is null).ToList();
             bool changed = next.Count != _readings.Count
                 || next.Any(kv => !_readings.TryGetValue(kv.Key, out var old) || old.Status != kv.Value.Status);
             _readings = next;
             if (changed) Changed?.Invoke(this, EventArgs.Empty);
+            foreach (var r in woke) Woke?.Invoke(r);
         }
         catch (OperationCanceledException) { }
         finally

@@ -119,6 +119,7 @@ public sealed class AppHost : IAsyncDisposable
         Batteries = new BatteryMonitor(
             _options.BatteryProviders?.Invoke() ?? [new RazerBatteryProvider(), new LogitechBatteryProvider()],
             Logs.CreateLogger<BatteryMonitor>());
+        Batteries.Woke += OnDeviceWoke;
 
         Cloud = _options.Cloud?.Invoke()
                 ?? (CloudConfig.Load() is { } cloud ? new SupabaseCloud(cloud, _options.DataDirectory) : new OfflineCloud());
@@ -274,6 +275,22 @@ public sealed class AppHost : IAsyncDisposable
     /// <summary>The helper's version, when it's connected; an older one than the app deserves a re-enable.</summary>
     public string? SensorHelperVersion => SensorSource is PipeSensors { Connected: true } p ? p.HelperVersion : null;
     public LocalApiServer? Api { get; private set; }
+
+    private DateTime _lastWakeRescan = DateTime.MinValue;
+
+    /// <summary>
+    /// A wireless device answered again after sleeping. OpenRGB drops a G733 that was asleep when it scanned
+    /// and never notices it waking, so if it's missing from the list, ask OpenRGB to look again. A rescan
+    /// blinks the lights for a few seconds, so at most once every two minutes.
+    /// </summary>
+    private void OnDeviceWoke(BatteryReading reading)
+    {
+        if (Devices.Devices.Any(d => string.Equals(d.HardwareKey, reading.HardwareKey, StringComparison.OrdinalIgnoreCase))) return;
+        if (DateTime.UtcNow - _lastWakeRescan < TimeSpan.FromMinutes(2)) return;
+        _lastWakeRescan = DateTime.UtcNow;
+        _log.LogInformation("{Device} woke up but isn't in the device list; asking OpenRGB to look again", reading.Name);
+        _ = Devices.RescanHardwareAsync();
+    }
 
     /// <summary>Look for devices again: OpenRGB rescans its hardware, then every provider is asked for its list.</summary>
     public async Task RescanDevicesAsync()
