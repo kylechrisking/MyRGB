@@ -551,6 +551,22 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand] private void NextPreset() => _host.Lights.StepPreset(1);
     [RelayCommand] private void PreviousPreset() => _host.Lights.StepPreset(-1);
 
+    /// <summary>Re-register the elevated OpenRGB task from an admin-only copy of OpenRGB: one Windows prompt.</summary>
+    [RelayCommand]
+    private void FixOpenRgbTask()
+    {
+        string script = Path.Combine(AppContext.BaseDirectory, "setup", "setup-openrgb-admin.ps1");
+        string bundled = Path.Combine(AppContext.BaseDirectory, "OpenRGB", "OpenRGB.exe");
+        string? source = File.Exists(bundled) ? bundled : _host.UnsafeOpenRgbTask();
+        if (!File.Exists(script) || source is null) return;
+        bool asked = Program.Elevate("powershell.exe",
+            $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{script}\" " +
+            $"-OpenRgbPath \"{source}\" -CopyTo \"{MyRGB.Providers.OpenRgb.ElevatedTask.SafeOpenRgbDir}\" -User \"{Environment.UserDomainName}\\{Environment.UserName}\"");
+        if (!asked) return;
+        // The script takes a few seconds; look again so the alert goes once it's done.
+        _ = Task.Delay(TimeSpan.FromSeconds(10)).ContinueWith(_ => Dispatcher.UIThread.Post(RefreshAlerts));
+    }
+
     [RelayCommand]
     private void OpenDynamicLighting()
     {
@@ -827,6 +843,11 @@ public sealed partial class MainViewModel : ObservableObject
             Alerts.Add(new AlertViewModel(false, $"Your lights are off for now: {heldBy}.", "Turn on anyway", TogglePowerCommand));
         else if (!_host.Lights.State.Enabled)
             Alerts.Add(new AlertViewModel(false, "Your lights are switched off.", "Turn on", TogglePowerCommand));
+
+        if (_host.UnsafeOpenRgbTask() is not null)
+            Alerts.Add(new AlertViewModel(true,
+                "The task that runs OpenRGB as administrator for your RAM lighting starts it from your own user folder, where any program could swap it. One Windows prompt moves it into Program Files, where only administrators can change it.",
+                "Fix it", FixOpenRgbTaskCommand));
 
         if (_host.DynamicLightingOn() == true)
             Alerts.Add(new AlertViewModel(true,

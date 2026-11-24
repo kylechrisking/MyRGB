@@ -45,12 +45,14 @@ InstalledProgram[] installed =
 
 bool fakeLocked = false;
 var fakeMonitors = new FakeMonitors();
+string? fakeUnsafeTask = null;
 var fakeNow = new DateTime(2026, 11, 22, 21, 0, 0);
 var host = new AppHost(new AppHostOptions
 {
     DataDirectory = data,
     EnableApi = false,
     EnableGlobalHotkey = true, // registers nothing until the switch is on
+    UnsafeOpenRgbTask = () => fakeUnsafeTask,
     Providers = (_, _) => [new FakeProvider()],
     BatteryProviders = () => [new FakeBatteries()],
     DetectVendorApps = () => VendorAppCatalog.Detect(installed, ["iCUE"]),
@@ -217,6 +219,15 @@ if (quick)
     vm.GlobalHotkeyOn = false; Thread.Sleep(300); Dispatcher.UIThread.RunJobs();
     OtherApp.UnregisterHotKey(IntPtr.Zero, 0xB0B);
     Console.WriteLine($"hotkeys off: {string.Join(", ", vm.Hotkeys.Where(h => h.Taken).Select(h => h.Keys))} taken");
+    // The elevated OpenRGB task pointing at a user-writable exe: Home offers the fix.
+    Console.WriteLine($"real OpenRGB task unsafe exe: {MyRGB.Providers.OpenRgb.ElevatedTask.UnsafeExe() ?? "(none)"}");
+    fakeUnsafeTask = @"C:\Users\you\AppData\Local\Programs\OpenRGB\OpenRGB.exe";
+    vm.SelectedTab = MainViewModel.HomeTab;
+    typeof(MainViewModel).GetMethod("RefreshAlerts", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(vm, null);
+    Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"home alerts: {string.Join(" / ", vm.Alerts.Select(a => a.ActionLabel ?? "-"))}");
+    Shoot($"{themeId}-unsafe-task");
+    fakeUnsafeTask = null;
     Console.WriteLine($"real session locked: {typeof(AppHost).Assembly.GetType("MyRGB.App.Services.LightsOffWatcher")!.GetMethod("SessionLocked")!.Invoke(null, null)}");
     Console.WriteLine($"saved: night={host.Settings.NightOn} {host.Settings.NightFrom}-{host.Settings.NightTo} locked={host.Settings.OffWhenLocked} enabled={host.Engine.Enabled}");
     window.AllowClose = true; window.Close(); host.Shutdown();

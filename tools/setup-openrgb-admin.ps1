@@ -139,10 +139,24 @@ try {
         }
         if ($up) { Log "Registered and started ${taskPath}Sensors for $User." }
         else { Log "Registered ${taskPath}Sensors for $User, but the helper has not come up yet; it may still be starting." }
+        # Only the helper. Falling through re-registered the OpenRGB task with the defaults below, which
+        # pointed it at OpenRGB in the user's own folder (0.4.0 to 0.7.6).
+        return
     }
 
     if (-not (Test-Path $OpenRgbPath)) { throw "OpenRGB not found at $OpenRgbPath" }
     $sourceExe = (Resolve-Path $OpenRgbPath).Path
+    # The task runs as administrator, so it must never run an exe a user could swap: anything outside
+    # Program Files is copied in first, whether or not the caller asked.
+    if (-not $CopyTo -and -not $sourceExe.StartsWith($programFiles + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        $CopyTo = Join-Path $machineDir 'OpenRGB'
+    }
+    # The OpenRGB the old launcher started, so it can be stopped and MyRGB restarts it through the new task.
+    $previousExe = $null
+    if (Test-Path $launcher) {
+        $m = [regex]::Match((Get-Content $launcher -Raw), 'sh\.Run """(.+?)""')
+        if ($m.Success) { $previousExe = $m.Groups[1].Value }
+    }
     if ($InstallPawnIO) { Install-PawnIO }
     if (-not (Get-Service PawnIO -ErrorAction SilentlyContinue)) {
         Write-Warning 'PawnIO is not installed; OpenRGB will run elevated but still cannot reach SMBus devices.'
@@ -190,6 +204,9 @@ sh.Run """$OpenRgbPath"" --server --server-host 127.0.0.1 --server-port $Port --
 
     # An unelevated OpenRGB that MyRGB started earlier can't see SMBus; stop it so MyRGB relaunches through the task.
     Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $sourceExe } | Stop-Process -Force
+    if ($previousExe -and $previousExe -ne $OpenRgbPath) {
+        Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $previousExe } | Stop-Process -Force
+    }
     Log "Registered $taskPath$taskName for $User."
 }
 catch {

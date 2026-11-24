@@ -37,6 +37,9 @@ public sealed class AppHostOptions
     /// <summary>Replaces the hardware sensors (CPU, GPU, fans).</summary>
     public Func<ISensorSource>? Sensors { get; init; }
 
+    /// <summary>Replaces checking the elevated OpenRGB task for a user-writable exe.</summary>
+    public Func<string?>? UnsafeOpenRgbTask { get; init; }
+
     /// <summary>Replaces reading whether Windows Dynamic Lighting is on.</summary>
     public Func<bool?>? DynamicLightingOn { get; init; }
 
@@ -271,6 +274,9 @@ public sealed class AppHost : IAsyncDisposable
     /// <summary>The helper's version, when it's connected; an older one than the app deserves a re-enable.</summary>
     public string? SensorHelperVersion => SensorSource is PipeSensors { Connected: true } p ? p.HelperVersion : null;
     public LocalApiServer? Api { get; private set; }
+
+    /// <summary>The user-writable OpenRGB the elevated task would run as administrator, or null when it's safe or absent.</summary>
+    public string? UnsafeOpenRgbTask() => _options.UnsafeOpenRgbTask is { } fake ? fake() : MyRGB.Providers.OpenRgb.ElevatedTask.UnsafeExe();
 
     /// <summary>Whether Windows Dynamic Lighting is switched on (null if this Windows has none).</summary>
     public bool? DynamicLightingOn() => _options.DynamicLightingOn is { } fake ? fake() : DynamicLighting.IsOn();

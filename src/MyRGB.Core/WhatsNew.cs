@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 7, 7), ["Safer RAM lighting: the task that runs OpenRGB as administrator could be pointed at a copy in your own folder. If yours was, Home offers to fix it with one Windows prompt."]),
         new(new(0, 7, 6), ["More keyboard shortcuts in Settings > Global hotkeys: previous preset, lights brighter or dimmer, and screens brighter or dimmer. Settings now says if another app already has one."]),
         new(new(0, 7, 5), ["Match your monitors in Settings > Monitors: give each one its own darkest and brightest, and the Screens slider runs between them."]),
         new(new(0, 7, 4), ["Monitor brightness no longer needs Twinkle Tray: MyRGB talks to your monitors itself, over DDC/CI. Switch it on in Settings > Monitors."]),
