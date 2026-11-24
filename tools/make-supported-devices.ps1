@@ -1,4 +1,4 @@
-# Rebuilds src\MyRGB.App\Assets\supported-devices.tsv: every device OpenRGB 1.1 knows how to detect,
+# Rebuilds tools\supported-devices.tsv, the list for the website's "will it work" page: every device OpenRGB 1.1 knows how to detect,
 # read from the detector registrations in its source (the release tarball build-installer.ps1 pins).
 # Each line: name <tab> connection. MyRGB drives all of these through the bundled OpenRGB.
 param([string]$Root = (Split-Path $PSScriptRoot -Parent))
@@ -33,7 +33,7 @@ Get-ChildItem (Join-Path $work 'openrgb\Controllers') -Recurse -Include *.cpp | 
 }
 Remove-Item $work -Recurse -Force
 
-$out = Join-Path $Root 'src\MyRGB.App\Assets\supported-devices.tsv'
+$out = Join-Path $Root 'tools\supported-devices.tsv'
 $lines = $found.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Name)`t$($_.Value)" }
 [IO.File]::WriteAllLines($out, [string[]]$lines, (New-Object Text.UTF8Encoding $false))
 Write-Output "$($lines.Count) devices written to $out"

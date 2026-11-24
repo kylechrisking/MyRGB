@@ -22,16 +22,39 @@ public static class AudioFeed
     private static volatile AudioFrame _frame = AudioFrame.Silent;
     private static long _lastAsked;
 
+    /// <summary>A stand-in frame for this thread only (effect thumbnails), so they move without real audio.</summary>
+    [ThreadStatic] private static AudioFrame? _pretend;
+
     /// <summary>The latest frame, and a note that an effect wants audio.</summary>
     public static AudioFrame Get()
     {
+        if (_pretend is { } pretend) return pretend; // a thumbnail: doesn't ask the host to listen
         Volatile.Write(ref _lastAsked, Environment.TickCount64);
         return _frame;
     }
 
+    /// <summary>The latest frame, without asking the host to keep listening.</summary>
+    public static AudioFrame Peek() => _frame;
+
     /// <summary>True when an effect has asked for audio within the last <paramref name="window"/>.</summary>
     public static bool Wanted(TimeSpan window) =>
         Environment.TickCount64 - Volatile.Read(ref _lastAsked) < window.TotalMilliseconds;
+
+    /// <summary>
+    /// Until disposed, <see cref="Get"/> on this thread returns <paramref name="frame"/> instead of the real
+    /// audio. Effect thumbnails use it to show a music effect moving; the lights (another thread) never see it.
+    /// </summary>
+    public static IDisposable Pretend(AudioFrame frame)
+    {
+        var before = _pretend;
+        _pretend = frame;
+        return new Restore(before);
+    }
+
+    private sealed class Restore(AudioFrame? before) : IDisposable
+    {
+        public void Dispose() => _pretend = before;
+    }
 
     /// <summary>Called by the capture side with each new analysis.</summary>
     public static void Publish(AudioFrame frame) => _frame = frame;

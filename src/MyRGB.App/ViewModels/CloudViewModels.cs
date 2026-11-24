@@ -198,12 +198,12 @@ public sealed partial class CommunityViewModel : ObservableObject
 
     public ObservableCollection<SharedPresetViewModel> Items { get; } = [];
     public ObservableCollection<Preset> Shareable { get; } = [];
-    public IReadOnlyList<string> SortOptions { get; } = ["Most popular", "Newest"];
+    public IReadOnlyList<string> SortOptions { get; } = ["Top voted", "Newest", "Suggested for built-ins"];
     public bool IsSignedIn => _host.Cloud.User is not null;
     public bool HasShareable => Shareable.Count > 0;
 
     [ObservableProperty] private string _search = "";
-    [ObservableProperty] private string _sort = "Most popular";
+    [ObservableProperty] private string _sort = "Top voted";
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _loadedOnce;
@@ -235,10 +235,17 @@ public sealed partial class CommunityViewModel : ObservableObject
         Status = "";
         try
         {
-            var sort = Sort == "Newest" ? CommunitySort.Newest : CommunitySort.Popular;
+            var sort = Sort switch { "Newest" => CommunitySort.Newest, "Suggested for built-ins" => CommunitySort.Suggested, _ => CommunitySort.Popular };
             var found = await _host.Cloud.BrowseAsync(Search, sort, CancellationToken.None);
+            IReadOnlyDictionary<Guid, MyVote> mine = new Dictionary<Guid, MyVote>();
+            if (IsSignedIn)
+            {
+                try { mine = await _host.Cloud.GetMyVotesAsync(CancellationToken.None); }
+                catch (Exception ex) when (ex is CloudException or HttpRequestException) { } // arrows just start unlit
+            }
             Items.Clear();
-            foreach (var s in found) Items.Add(new SharedPresetViewModel(s, this, _host.Cloud.User?.Id == s.AuthorId, _host.Effects.Find(s.EffectId)));
+            foreach (var s in found)
+                Items.Add(new SharedPresetViewModel(s, this, _host.Cloud.User?.Id == s.AuthorId, _host.Effects.Find(s.EffectId), mine.GetValueOrDefault(s.Id)));
         }
         catch (Exception ex) when (ex is CloudException or HttpRequestException or TaskCanceledException)
         {
@@ -267,6 +274,20 @@ public sealed partial class CommunityViewModel : ObservableObject
         {
             try { await _host.Cloud.CountInstallAsync(item.Shared.Id, CancellationToken.None); }
             catch (Exception ex) when (ex is CloudException or HttpRequestException) { } // the count is a nicety
+        }
+    }
+
+    /// <summary>Send a vote; the card has already changed, and goes back if the server says no.</summary>
+    internal async Task Vote(SharedPresetViewModel item, int vote, bool nominate, int oldVote, bool oldNominate)
+    {
+        try
+        {
+            await _host.Cloud.VoteAsync(item.Shared.Id, vote, nominate, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is CloudException or HttpRequestException or TaskCanceledException)
+        {
+            item.Undo(oldVote, oldNominate);
+            item.Status = ex is CloudException ? ex.Message : CloudErrors.Unreachable(ex);
         }
     }
 
@@ -322,7 +343,7 @@ public sealed partial class CommunityViewModel : ObservableObject
     }
 }
 
-public sealed partial class SharedPresetViewModel(SharedPreset shared, CommunityViewModel owner, bool isMine, EffectDefinition? effect) : ObservableObject
+public sealed partial class SharedPresetViewModel(SharedPreset shared, CommunityViewModel owner, bool isMine, EffectDefinition? effect, MyVote? myVote = null) : ObservableObject
 {
     public SharedPreset Shared => shared;
     public string Name => shared.Name;
@@ -345,6 +366,51 @@ public sealed partial class SharedPresetViewModel(SharedPreset shared, Community
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _reporting;
     [ObservableProperty] private string _reportReason = "";
+
+    // ---- Votes: one up or down per person, and an optional "make this a built-in" suggestion ----
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VotedUp), nameof(VotedDown), nameof(ScoreText))]
+    private int _myVote = myVote?.Vote ?? 0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NominateText))]
+    private bool _nominated = myVote?.Nominate ?? false;
+
+    /// <summary>The score without this user's vote, so their arrows move it live.</summary>
+    private readonly int _othersScore = shared.Score - (myVote?.Vote ?? 0);
+    private readonly int _othersNominations = shared.Nominations - ((myVote?.Nominate ?? false) ? 1 : 0);
+
+    public bool VotedUp => MyVote > 0;
+    public bool VotedDown => MyVote < 0;
+    public string ScoreText => (_othersScore + MyVote).ToString();
+    public string NominateText => (_othersNominations + (Nominated ? 1 : 0)) is var n and > 0
+        ? (Nominated ? $"★ Suggested · {n}" : $"☆ Suggest · {n}")
+        : "☆ Suggest";
+
+    /// <summary>Signed in, and not your own preset.</summary>
+    public bool CanVote => owner.IsSignedIn && !isMine;
+    public string VoteTip => isMine ? "Your own preset" : owner.IsSignedIn ? "" : "Sign in to vote";
+
+    [RelayCommand] private void UpVote() => Cast(MyVote > 0 ? 0 : 1, Nominated);
+    [RelayCommand] private void DownVote() => Cast(MyVote < 0 ? 0 : -1, Nominated);
+    [RelayCommand] private void ToggleNominate() => Cast(MyVote, !Nominated);
+
+    private void Cast(int vote, bool nominate)
+    {
+        if (!CanVote) return;
+        int oldVote = MyVote;
+        bool oldNominate = Nominated;
+        MyVote = vote;
+        Nominated = nominate;
+        _ = owner.Vote(this, vote, nominate, oldVote, oldNominate);
+    }
+
+    internal void Undo(int vote, bool nominate)
+    {
+        MyVote = vote;
+        Nominated = nominate;
+    }
 
     [RelayCommand(CanExecute = nameof(Supported))] private Task Install() => owner.Install(this);
     [RelayCommand] private Task Remove() => owner.Remove(this);

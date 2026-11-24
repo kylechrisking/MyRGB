@@ -36,6 +36,7 @@ public sealed partial class DeviceRowViewModel(
     public string Vendor => device.Vendor;
     public string Type => device.Slot is { } slot ? $"{DeviceIcons.Label(device.Type)} · DIMM {slot}" : DeviceIcons.Label(device.Type);
     public Geometry Icon => DeviceIcons.For(device.Type);
+    public DeviceType Kind => device.Type;
     public string? HardwareKey => device.HardwareKey;
     public bool NeedsSetup => device.Leds.Count == 0;
 
@@ -57,10 +58,13 @@ public sealed partial class DeviceRowViewModel(
     public bool HasResizableZones => ResizableZones.Count > 0;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StatusText), nameof(StatusBrush), nameof(CanFlash))]
+    [NotifyPropertyChangedFor(nameof(StatusText), nameof(StatusBrush), nameof(CanFlash), nameof(ThumbOpacity))]
     private bool _included = included;
 
     partial void OnIncludedChanged(bool value) => setIncluded(device.Id, value);
+
+    /// <summary>A device left to other software is drawn faded on the Devices grid.</summary>
+    public double ThumbOpacity => Included ? 1 : 0.45;
 
     public string StatusText => NeedsSetup ? "Needs setup" : Included ? "Controlled by MyRGB" : "Left to other software";
 

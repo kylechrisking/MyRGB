@@ -23,6 +23,7 @@ public sealed partial class VendorAppsViewModel(AppHost host) : ObservableObject
     [ObservableProperty] private bool _checkedOnce;
 
     public bool NothingFound => CheckedOnce && Apps.Count == 0;
+    public bool HasApps => Apps.Count > 0;
     public int RunningCount => Apps.Count(a => a.Running);
 
     /// <summary>Raised after each check, so Home can update its alerts.</summary>
@@ -45,6 +46,7 @@ public sealed partial class VendorAppsViewModel(AppHost host) : ObservableObject
                 Apps.Add(new VendorAppViewModel(app, devices, names, excluded, this));
             CheckedOnce = true;
             OnPropertyChanged(nameof(NothingFound));
+            OnPropertyChanged(nameof(HasApps));
             OnPropertyChanged(nameof(RunningCount));
             Updated?.Invoke();
         }

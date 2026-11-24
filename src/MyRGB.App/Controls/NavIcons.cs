@@ -21,7 +21,7 @@ public static class NavIcons
     public static Geometry Download { get; } = StreamGeometry.Parse("M11,3 H13 V12 H17.5 L12,17.5 L6.5,12 H11 Z M4,20 H20 V21.5 H4 Z");
     public static Geometry Check { get; } = StreamGeometry.Parse("M9,16.2 L4.8,12 L3.4,13.4 L9,19 L21,7 L19.6,5.6 Z");
 
-    // Flash a device, and the player bar's transport buttons.
+    // Flash a device, and the preset buttons on Home.
     public static Geometry Flash { get; } = StreamGeometry.Parse("M12,8 A4,4 0 1 1 11.99,8 Z M11,1 H13 V5 H11 Z M11,19 H13 V23 H11 Z M1,11 H5 V13 H1 Z M19,11 H23 V13 H19 Z M4.9,3.5 L7.7,6.3 L6.3,7.7 L3.5,4.9 Z M16.3,6.3 L19.1,3.5 L20.5,4.9 L17.7,7.7 Z M3.5,19.1 L6.3,16.3 L7.7,17.7 L4.9,20.5 Z M16.3,17.7 L17.7,16.3 L20.5,19.1 L19.1,20.5 Z");
     public static Geometry Play { get; } = StreamGeometry.Parse("M7,4 L20,12 L7,20 Z");
     public static Geometry Pause { get; } = StreamGeometry.Parse("M6,4 H10 V20 H6 Z M14,4 H18 V20 H14 Z");

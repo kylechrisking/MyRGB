@@ -103,6 +103,9 @@ public sealed class AppSettings
     /// <summary>Ctrl+Alt+L turns the lights on or off from anywhere.</summary>
     public bool GlobalHotkeyOn { get; set; }
 
+    /// <summary>Devices page shows tiles with a drawing of each device instead of the detailed list.</summary>
+    public bool DevicesGrid { get; set; }
+
     /// <summary>The look, by <see cref="ThemeManager"/> id. Notebook unless picked otherwise.</summary>
     public string Theme { get; set; } = ThemeManager.DefaultId;
     public OpenRgbOptions OpenRgb { get; set; } = new();

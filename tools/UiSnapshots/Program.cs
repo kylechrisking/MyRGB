@@ -94,7 +94,7 @@ if (args.Length > 2 && args[2] == "switch")
     vm.Welcome?.SkipCommand.Execute(null);
     vm.SelectedTab = MainViewModel.DevicesTab; Shoot($"switch-0-{themeId}");
     int n = 1;
-    foreach (var next in new[] { "chalkboard", "notebook", "bench", "classic", "phosphor", "blueprint", "original", "notebook", "classic", "chalkboard" })
+    foreach (var next in new[] { "dark", "notebook", "light", "classic", "phosphor", "blueprint", "original", "notebook", "classic", "dark" })
     {
         try { ThemeManager.Apply(Application.Current!, next); Shoot($"switch-{n++}-{next}"); }
         catch (Exception ex)
@@ -120,7 +120,7 @@ if (quick)
     vm.SelectedTab = MainViewModel.HomeTab; Shoot($"{themeId}-home");
     vm.SelectedTab = MainViewModel.DevicesTab; Shoot($"{themeId}-devices");
     vm.SelectedTab = MainViewModel.SettingsTab; Shoot($"{themeId}-settings");
-    vm.SelectedTab = MainViewModel.CoolingTab; Shoot($"{themeId}-cooling");
+    vm.SelectedTab = MainViewModel.MonitoringTab; vm.ShowCooling = true; Shoot($"{themeId}-cooling"); vm.ShowCooling = false;
     // The themed switches redraw ToggleSwitch from scratch; make sure a click still flips one.
     var grid = window.GetVisualDescendants().OfType<MyRGB.App.Controls.Switch>().First(t => Equals(t.OnContent, "Grid"));
     var at = grid.TranslatePoint(new Point(8, grid.Bounds.Height / 2), window)!.Value;
@@ -252,6 +252,13 @@ Shoot("02d-update");
 vm.Update.Available = null;
 vm.SelectedTab = MainViewModel.PresetsTab; Shoot("03-presets");
 vm.SelectedTab = MainViewModel.CommunityTab; Thread.Sleep(300); Shoot("03b-community");
+{
+    var c = vm.Community.Items;
+    Console.WriteLine($"community: {string.Join(", ", c.Select(i => $"{i.Name}={i.ScoreText}{(i.VotedUp ? "^" : i.VotedDown ? "v" : "")} [{i.NominateText}]"))}");
+    c[2].DownVoteCommand.Execute(null); c[3].UpVoteCommand.Execute(null); c[3].ToggleNominateCommand.Execute(null); Thread.Sleep(200); Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"after voting: {string.Join(", ", c.Select(i => $"{i.Name}={i.ScoreText}{(i.VotedUp ? "^" : i.VotedDown ? "v" : "")} [{i.NominateText}]"))}");
+    Shoot("03c-community-voted");
+}
 vm.EditPreset("ocean"); Shoot("04-studio");
 vm.Studio.SelectedTarget = vm.Studio.Targets[1]; Shoot("04b-studio-device");
 vm.Studio.SelectedTarget = vm.Studio.Targets[0];
@@ -260,8 +267,9 @@ var song = Enumerable.Range(0, AudioFrame.BandCount).Select(b => (float)Math.Cla
 AudioFeed.Publish(new AudioFrame(0.8f, song, 3, song));
 vm.EditPreset("visualizer"); Shoot("04c-visualizer");
 AudioFeed.Publish(AudioFrame.Silent);
-vm.SelectedTab = MainViewModel.LayoutTab; Shoot("05-layout");
+vm.SelectedTab = MainViewModel.StudioTab; vm.ArrangingLayout = true; Shoot("05-layout"); vm.ArrangingLayout = false;
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
+vm.DevicesGrid = true; Shoot("06a-devices-grid"); vm.DevicesGrid = false;
 {
     // A picture for the keyboard's screen: wider than the screen, so the crop shows.
     var card = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(400, 200), new Avalonia.Vector(96, 96));
@@ -282,10 +290,9 @@ vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
     screen.ScreenFirst = true;
     Shoot("06g-devices-screen");
 }
-vm.Supported.Query = "razer basilisk"; Console.WriteLine($"supported search: {vm.Supported.Summary} first={vm.Supported.Results.FirstOrDefault()?.Name}");
 host.SetFan(new FanSetting { FanId = "fake/gpu/fan1", Mode = FanMode.Curve, SensorKey = SensorKeys.GpuTemp });
 vm.SelectedTab = MainViewModel.MonitoringTab; Shoot("06b-monitoring");
-vm.SelectedTab = MainViewModel.CoolingTab;
+vm.ShowCooling = true;
 // Show the curve editor on fan 1 and the zero-percent floor on fan 2.
 vm.Cooling.Fans[0].Mode = FanRowViewModel.CurveMode;
 vm.Cooling.Fans[0].SilentCommand.Execute(null);
@@ -300,7 +307,8 @@ vm.Cooling.Fans[0].Mode = FanRowViewModel.CurveMode;
 vm.Cooling.Builder.Open();
 Shoot("06f-curve-builder");
 vm.Cooling.Builder.CancelCommand.Execute(null);
-vm.SelectedTab = MainViewModel.VendorsTab; Shoot("07-vendors");
+vm.ShowCooling = false;
+vm.SelectedTab = MainViewModel.SettingsTab; Shoot("07-vendors");
 vm.Vendors.Apps[0].AskUninstallCommand.Execute(null); Shoot("08-vendors-confirm");
 vm.SelectedTab = MainViewModel.SettingsTab; Shoot("09-settings");
 window.Height = 2400; Shoot("09b-settings-full"); window.Height = 860;
@@ -392,10 +400,10 @@ sealed class FakeCloud : ICloud
     private readonly List<SharedPreset> _shared =
     [
         new(Guid.NewGuid(), "Synthwave Sunset", "Pink to purple, slow drift. Great with a dark desk.", "gradient",
-            P("Synthwave Sunset", "gradient", ("from", "#FF2E97"), ("to", "#6A00FF")), ["#FF2E97", "#D11FB8", "#A010D8", "#7A04F0", "#6A00FF"], 1284, DateTimeOffset.Now.AddDays(-20), Guid.NewGuid(), "neonfox"),
-        new(Guid.NewGuid(), "Deep Sea", "", "plasma", P("Deep Sea", "plasma", ("palette", "Ocean")), ["#001A50", "#0060D0", "#00C8E0", "#0090C0", "#003070"], 865, DateTimeOffset.Now.AddDays(-9), Guid.NewGuid(), "marlin", true),
-        new(Guid.NewGuid(), "Toxic", "Green waves on black.", "color-wave", P("Toxic", "color-wave", ("color", "#7CFF00")), ["#000500", "#3A8000", "#7CFF00", "#3A8000", "#000500"], 402, DateTimeOffset.Now.AddDays(-3), Guid.NewGuid(), "kilowatt"),
-        new(Guid.NewGuid(), "Ember", "Warm fire for late nights.", "fire", P("Ember", "fire"), ["#300000", "#A01000", "#FF5000", "#FF9020", "#FFC040"], 233, DateTimeOffset.Now.AddDays(-1), Guid.NewGuid(), "dusk"),
+            P("Synthwave Sunset", "gradient", ("from", "#FF2E97"), ("to", "#6A00FF")), ["#FF2E97", "#D11FB8", "#A010D8", "#7A04F0", "#6A00FF"], 1284, DateTimeOffset.Now.AddDays(-20), Guid.NewGuid(), "neonfox", Score: 212, Nominations: 37),
+        new(Guid.NewGuid(), "Deep Sea", "", "plasma", P("Deep Sea", "plasma", ("palette", "Ocean")), ["#001A50", "#0060D0", "#00C8E0", "#0090C0", "#003070"], 865, DateTimeOffset.Now.AddDays(-9), Guid.NewGuid(), "marlin", true, Score: 96, Nominations: 8),
+        new(Guid.NewGuid(), "Toxic", "Green waves on black.", "color-wave", P("Toxic", "color-wave", ("color", "#7CFF00")), ["#000500", "#3A8000", "#7CFF00", "#3A8000", "#000500"], 402, DateTimeOffset.Now.AddDays(-3), Guid.NewGuid(), "kilowatt", Score: -4),
+        new(Guid.NewGuid(), "Ember", "Warm fire for late nights.", "fire", P("Ember", "fire"), ["#300000", "#A01000", "#FF5000", "#FF9020", "#FFC040"], 233, DateTimeOffset.Now.AddDays(-1), Guid.NewGuid(), "dusk", Score: 18, Nominations: 2),
     ];
 
     public bool IsConfigured => true;
@@ -411,6 +419,14 @@ sealed class FakeCloud : ICloud
     public Task DeleteSharedAsync(Guid id, CancellationToken ct) => Task.CompletedTask;
     public Task CountInstallAsync(Guid id, CancellationToken ct) => Task.CompletedTask;
     public Task ReportAsync(Guid id, string reason, CancellationToken ct) => Task.CompletedTask;
+    public readonly Dictionary<Guid, MyVote> Votes = [];
+    public Task<IReadOnlyDictionary<Guid, MyVote>> GetMyVotesAsync(CancellationToken ct)
+    {
+        // Start with one up-vote and suggestion already cast, so the snapshot shows lit arrows.
+        if (Votes.Count == 0) Votes[_shared[0].Id] = new MyVote(1, true);
+        return Task.FromResult<IReadOnlyDictionary<Guid, MyVote>>(new Dictionary<Guid, MyVote>(Votes));
+    }
+    public Task VoteAsync(Guid id, int vote, bool nominate, CancellationToken ct) { Votes[id] = new MyVote(vote, nominate); return Task.CompletedTask; }
     public Task<SupporterStatus?> GetSupportAsync(CancellationToken ct) => Task.FromResult<SupporterStatus?>(new(true, DateTimeOffset.Now.AddDays(300), true));
     public Task SetBadgeVisibleAsync(bool visible, CancellationToken ct) => Task.CompletedTask;
 }

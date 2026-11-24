@@ -11,6 +11,11 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 8, 0), ["A tidier window: Layout is part of the Studio (switch on Arrange devices), Cooling is part of Monitoring, and Vendor apps sit in Settings, only while one is installed.",
+                           "Home's Lighting card has the preset buttons; the music-player bar is gone.",
+                           "Devices can show as a grid, with a drawing of each device lit the way it is right now.",
+                           "Vote community presets up or down, and suggest your favourites for MyRGB's built-in presets.",
+                           "Looks: Original is the default again, sharpened; Match Windows now uses plain Light and Dark; Bench and Chalkboard were retired."]),
         new(new(0, 7, 9), ["A wireless headset that was asleep when MyRGB started (the G733, for one) now lights up by itself once you wake it."]),
         new(new(0, 7, 8), ["Scan again (on Devices) now asks OpenRGB to look for hardware too, so a wireless headset or mouse switched on after OpenRGB started turns up without a restart."]),
         new(new(0, 7, 7), ["Safer RAM lighting: the task that runs OpenRGB as administrator could be pointed at a copy in your own folder. If yours was, Home offers to fix it with one Windows prompt."]),

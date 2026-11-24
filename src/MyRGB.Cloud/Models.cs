@@ -35,12 +35,15 @@ public sealed record RemotePreset(string PresetId, Preset? Data, bool Deleted, D
 public sealed record SharedPreset(
     Guid Id, string Name, string Description, string EffectId, Preset Data,
     IReadOnlyList<string> Swatch, int Downloads, DateTimeOffset CreatedAt, Guid AuthorId, string AuthorName,
-    bool AuthorSupporter = false);
+    bool AuthorSupporter = false, int Score = 0, int Nominations = 0);
+
+/// <summary>The signed-in user's own vote on a shared preset: -1, 0 or 1, and whether they suggested it as a built-in.</summary>
+public sealed record MyVote(int Vote, bool Nominate);
 
 /// <summary>Whether the signed-in user supports MyRGB, until when (null: no end date), and if their badge shows.</summary>
 public sealed record SupporterStatus(bool Active, DateTimeOffset? Until, bool ShowBadge);
 
-public enum CommunitySort { Popular, Newest }
+public enum CommunitySort { Popular, Newest, Suggested }
 
 /// <summary>Sign-in providers MyRGB offers. The id is the one Supabase expects.</summary>
 public sealed record SignInProvider(string Id, string Name)

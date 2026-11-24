@@ -30,6 +30,12 @@ public interface ICloud
     Task CountInstallAsync(Guid id, CancellationToken ct);
     Task ReportAsync(Guid id, string reason, CancellationToken ct);
 
+    /// <summary>The signed-in user's votes, by shared preset; empty when signed out.</summary>
+    Task<IReadOnlyDictionary<Guid, MyVote>> GetMyVotesAsync(CancellationToken ct);
+
+    /// <summary>Vote a shared preset up (1), down (-1) or neither (0), and suggest it for MyRGB's built-ins or not.</summary>
+    Task VoteAsync(Guid id, int vote, bool nominate, CancellationToken ct);
+
     /// <summary>The signed-in user's supporter status; null when signed out or the service doesn't track it.</summary>
     Task<SupporterStatus?> GetSupportAsync(CancellationToken ct);
 

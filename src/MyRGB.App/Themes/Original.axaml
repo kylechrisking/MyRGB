@@ -1,6 +1,7 @@
-<!-- The look MyRGB shipped with up to 0.5.1: dark slate, Root green, Manrope. Its palette is the brand kit's. -->
+<!-- Original: dark slate, Root green, Manrope, RGB edges. The look MyRGB started with, sharpened; the default from 0.8.0. Its palette is the brand kit's. -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
   <ResourceDictionary.MergedDictionaries>
     <ResourceInclude Source="avares://MyRGB/Themes/Defaults.axaml" />
     <ResourceInclude Source="avares://MyRGB/Theme.axaml" />
@@ -43,4 +44,13 @@
   <SolidColorBrush x:Key="MeterTrackBrush" Color="#162127" />
   <SolidColorBrush x:Key="SupporterWashBrush" Color="#3A1426" />
   <SolidColorBrush x:Key="SupporterBrush" Color="#FF7EB6" />
+
+  <!-- Readings and labels in JetBrains Mono: an instrument panel, not a web page. -->
+  <FontFamily x:Key="KickerFont">avares://MyRGB/Assets/Fonts#JetBrains Mono</FontFamily>
+  <FontFamily x:Key="NumberFont">avares://MyRGB/Assets/Fonts#JetBrains Mono</FontFamily>
+  <sys:Double x:Key="KickerSize">10.5</sys:Double>
+  <sys:Double x:Key="KickerSpacing">1.5</sys:Double>
+  <sys:Double x:Key="H1Size">28</sys:Double>
+  <CornerRadius x:Key="RadiusPanel">10</CornerRadius>
+  <CornerRadius x:Key="RadiusTile">10</CornerRadius>
 </ResourceDictionary>

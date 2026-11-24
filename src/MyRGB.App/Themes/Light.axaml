@@ -1,0 +1,109 @@
+<!-- Light: plain and quiet, like Windows' own light mode. What Match Windows uses by day. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+  <ResourceDictionary.MergedDictionaries>
+    <ResourceInclude Source="avares://MyRGB/Themes/Defaults.axaml" />
+  </ResourceDictionary.MergedDictionaries>
+
+  <SolidColorBrush x:Key="PageBrush" Color="#F3F3F3" />
+  <SolidColorBrush x:Key="BaseBrush" Color="#F3F3F3" />
+  <SolidColorBrush x:Key="ChromeBrush" Color="#EBEBEB" />
+  <SolidColorBrush x:Key="TopBarBrush" Color="#F9F9F9" />
+  <SolidColorBrush x:Key="ChromeEdgeBrush" Color="#E0E0E0" />
+  <SolidColorBrush x:Key="NavBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#F7F7F7" />
+  <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#EDEDED" />
+  <SolidColorBrush x:Key="HairlineBrush" Color="#E5E5E5" />
+  <SolidColorBrush x:Key="HairlineStrongBrush" Color="#C8C8C8" />
+  <SolidColorBrush x:Key="OverlayBrush" Color="#66000000" />
+
+  <SolidColorBrush x:Key="InkBrush" Color="#1B1B1B" />
+  <SolidColorBrush x:Key="InkSecondaryBrush" Color="#3D3D3D" />
+  <SolidColorBrush x:Key="MutedBrush" Color="#5F5F5F" />
+  <SolidColorBrush x:Key="SubtleBrush" Color="#8A8A8A" />
+  <SolidColorBrush x:Key="HandBrush" Color="#5F5F5F" />
+
+  <SolidColorBrush x:Key="AccentBrush" Color="#005FB8" />
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="#004C94" />
+  <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="AccentWashBrush" Color="#E5EFF9" />
+  <SolidColorBrush x:Key="LinkBrush" Color="#005FB8" />
+
+  <SolidColorBrush x:Key="LedRedBrush" Color="#D13438" />
+  <SolidColorBrush x:Key="LedGreenBrush" Color="#0F7B0F" />
+  <SolidColorBrush x:Key="LedBlueBrush" Color="#005FB8" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="#0F7B0F" />
+  <SolidColorBrush x:Key="WarningBrush" Color="#9D5D00" />
+  <SolidColorBrush x:Key="DangerBrush" Color="#C42B1C" />
+  <SolidColorBrush x:Key="InfoBrush" Color="#005FB8" />
+  <SolidColorBrush x:Key="InfoWashBrush" Color="#EAF2FB" />
+  <SolidColorBrush x:Key="DangerWashBrush" Color="#FDE7E9" />
+
+  <LinearGradientBrush x:Key="RgbGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+    <GradientStop Offset="0" Color="#E8414E" />
+    <GradientStop Offset="0.5" Color="#2FAE5F" />
+    <GradientStop Offset="1" Color="#2F7FE0" />
+  </LinearGradientBrush>
+  <LinearGradientBrush x:Key="RgbGradientVertical" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#E8414E" />
+    <GradientStop Offset="0.5" Color="#2FAE5F" />
+    <GradientStop Offset="1" Color="#2F7FE0" />
+  </LinearGradientBrush>
+
+  <!-- The selected page: a light fill and Windows' short accent bar. -->
+  <SolidColorBrush x:Key="NavSelectedBrush" Color="#E6E6E6" />
+  <SolidColorBrush x:Key="NavSelectedEdgeBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="NavSelectedInkBrush" Color="#1B1B1B" />
+  <SolidColorBrush x:Key="NavPipeBrush" Color="#005FB8" />
+  <Thickness x:Key="NavItemMargin">8,2</Thickness>
+
+  <SolidColorBrush x:Key="PlayBrush" Color="#005FB8" />
+  <SolidColorBrush x:Key="PlayHoverBrush" Color="#004C94" />
+  <SolidColorBrush x:Key="OnPlayBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="PlayBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="PrimaryBrush" Color="#005FB8" />
+  <SolidColorBrush x:Key="OnPrimaryBrush" Color="#FFFFFF" />
+
+  <SolidColorBrush x:Key="ScreenWellBrush" Color="#202020" />
+  <SolidColorBrush x:Key="BadgeBrush" Color="#F0F0F0" />
+  <SolidColorBrush x:Key="BadgeBorderBrush" Color="#E0E0E0" />
+  <Thickness x:Key="BadgeBorder">1</Thickness>
+  <SolidColorBrush x:Key="IconBoxBrush" Color="#F0F0F0" />
+  <SolidColorBrush x:Key="IconBoxBorderBrush" Color="Transparent" />
+  <SolidColorBrush x:Key="IconBoxInkBrush" Color="#3D3D3D" />
+  <SolidColorBrush x:Key="MeterTrackBrush" Color="#E5E5E5" />
+  <SolidColorBrush x:Key="SupporterWashBrush" Color="#FCE8F1" />
+  <SolidColorBrush x:Key="SupporterBrush" Color="#B4236A" />
+
+  <Color x:Key="SystemAccentColor">#005FB8</Color>
+  <Color x:Key="SystemAccentColorLight1">#1975C5</Color>
+  <Color x:Key="SystemAccentColorLight2">#3F8FD3</Color>
+  <Color x:Key="SystemAccentColorLight3">#6AAAE0</Color>
+  <Color x:Key="SystemAccentColorDark1">#0052A0</Color>
+  <Color x:Key="SystemAccentColorDark2">#004C94</Color>
+  <Color x:Key="SystemAccentColorDark3">#003D78</Color>
+
+  <CornerRadius x:Key="RadiusPanel">8</CornerRadius>
+  <CornerRadius x:Key="RadiusTile">8</CornerRadius>
+  <CornerRadius x:Key="RadiusControl">4</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">6</CornerRadius>
+  <CornerRadius x:Key="RadiusBadge">4</CornerRadius>
+  <CornerRadius x:Key="RadiusIconBox">6</CornerRadius>
+  <CornerRadius x:Key="RadiusNav">4</CornerRadius>
+  <CornerRadius x:Key="RadiusDialog">8</CornerRadius>
+  <sys:Double x:Key="DialogStripe">0</sys:Double>
+  <sys:Double x:Key="RadiusPreview">4</sys:Double>
+
+  <FontFamily x:Key="BrandSans">Segoe UI Variable Text, Segoe UI</FontFamily>
+  <FontFamily x:Key="BrandDisplay">Segoe UI Variable Display, Segoe UI</FontFamily>
+  <FontFamily x:Key="BrandMono">Cascadia Mono, Consolas</FontFamily>
+  <FontFamily x:Key="KickerFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+  <FontFamily x:Key="NumberFont">Segoe UI Variable Display, Segoe UI</FontFamily>
+  <sys:Double x:Key="H1Size">28</sys:Double>
+  <sys:Double x:Key="SectionSize">16</sys:Double>
+  <sys:Double x:Key="WordmarkSize">18</sys:Double>
+  <sys:Double x:Key="KickerSize">12</sys:Double>
+  <sys:Double x:Key="KickerSpacing">0</sys:Double>
+</ResourceDictionary>

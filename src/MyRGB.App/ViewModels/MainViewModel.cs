@@ -77,8 +77,7 @@ public sealed record AlertViewModel(bool Warning, string Text, string? ActionLab
 public sealed partial class MainViewModel : ObservableObject
 {
     // Sidebar order. Keep in sync with the TabItems in MainWindow.axaml.
-    public const int HomeTab = 0, PresetsTab = 1, CommunityTab = 2, StudioTab = 3, LayoutTab = 4, DevicesTab = 5,
-        MonitoringTab = 6, CoolingTab = 7, VendorsTab = 8, SettingsTab = 9;
+    public const int HomeTab = 0, PresetsTab = 1, CommunityTab = 2, StudioTab = 3, DevicesTab = 4, MonitoringTab = 5, SettingsTab = 6;
 
     private const int LowBattery = 20;
 
@@ -96,7 +95,6 @@ public sealed partial class MainViewModel : ObservableObject
         Cooling = new CoolingViewModel(host);
         SupportNudge = new SupportNudgeViewModel(host, Account);
         Update = new UpdateViewModel(host);
-        Supported.Search();
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
         _checkForUpdates = host.Settings.CheckForUpdates;
@@ -105,6 +103,7 @@ public sealed partial class MainViewModel : ObservableObject
         _idleDimAfterMinutes = host.Settings.IdleDimAfterMinutes;
         _idleDimPercent = host.Settings.IdleDimPercent;
         _globalHotkeyOn = host.Settings.GlobalHotkeyOn;
+        _devicesGrid = host.Settings.DevicesGrid;
         host.HotkeysChanged += () => Dispatcher.UIThread.Post(SyncHotkeys);
         SyncHotkeys();
         _offWhenLocked = host.Settings.OffWhenLocked;
@@ -184,14 +183,13 @@ public sealed partial class MainViewModel : ObservableObject
     public CoolingViewModel Cooling { get; }
     public SupportNudgeViewModel SupportNudge { get; }
     public UpdateViewModel Update { get; }
-    public SupportedDevicesViewModel Supported { get; } = new();
 
     /// <summary>Sensor pages only redraw while they're showing; the hub keeps reading either way.</summary>
     private void RefreshSensors()
     {
         // Home shows a summary of both.
-        if (SelectedTab is MonitoringTab or HomeTab) Monitoring.Refresh();
-        if (SelectedTab is CoolingTab or HomeTab) Cooling.Refresh();
+        if (SelectedTab is HomeTab || (SelectedTab is MonitoringTab && !ShowCooling)) Monitoring.Refresh();
+        if (SelectedTab is HomeTab || (SelectedTab is MonitoringTab && ShowCooling)) Cooling.Refresh();
     }
 
     /// <summary>Builds without an account service hide Community and the account panels.</summary>
@@ -200,7 +198,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSelectedTabChanged(int value)
     {
         if (value == CommunityTab && !Community.LoadedOnce) _ = Community.Load();
-        if (value is MonitoringTab or CoolingTab) RefreshSensors();
+        if (value is MonitoringTab) RefreshSensors();
         // Opening the Studio from the menu starts from whatever is playing, not an empty editor.
         if (value == StudioTab && !Studio.HasLoaded)
             Studio.Load(_host.Engine.ActivePreset is { } p && p.Id != AppHost.DraftPresetId ? p : _host.Presets.BuiltIns[0]);
@@ -299,7 +297,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public Geometry PauseIcon => Paused ? NavIcons.Play : NavIcons.Pause;
     public string PauseTip => Paused ? "Resume the animation" : "Freeze the animation where it is";
-    public string PlayingLabel => Paused ? "Paused" : "Now playing";
+    public string PlayingLabel => Paused ? "Lighting · paused" : "Lighting";
     [ObservableProperty] private IBrush? _activeSwatch;
     [ObservableProperty] private string _providerStatus = "Looking for your devices…";
     [ObservableProperty] private string _homeSummary = "Looking for your devices…";
@@ -501,25 +499,54 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex) { PresetIoStatus = $"Couldn't import that file: {ex.Message}"; }
     }
 
-    /// <summary>Jump to a page by name; used by Home's buttons and the tour.</summary>
+    /// <summary>Jump to a page by name; used by Home's buttons and the tour. Old page names still work.</summary>
     [RelayCommand]
     private void Navigate(string? page)
     {
+        if (page is "layout") ArrangingLayout = true;
+        if (page is "cooling") ShowCooling = true;
+        else if (page is "monitoring") ShowCooling = false;
         SelectedTab = page switch
         {
             "home" => HomeTab,
             "presets" => PresetsTab,
-            "studio" => StudioTab,
-            "layout" => LayoutTab,
+            "studio" or "layout" => StudioTab,
             "devices" => DevicesTab,
-            "monitoring" => MonitoringTab,
-            "cooling" => CoolingTab,
-            "vendors" => VendorsTab,
+            "monitoring" or "cooling" => MonitoringTab,
             "community" => CommunityTab,
-            "settings" or "account" => SettingsTab,
+            "settings" or "account" or "vendors" => SettingsTab,
             _ => SelectedTab,
         };
     }
+
+    /// <summary>Devices page: tiles with a lit drawing of each device, or the detailed list.</summary>
+    [ObservableProperty] private bool _devicesGrid;
+
+    partial void OnDevicesGridChanged(bool value)
+    {
+        _host.Settings.DevicesGrid = value;
+        _host.ScheduleSave();
+    }
+
+    [RelayCommand]
+    private void SetDevicesGrid(string? on) => DevicesGrid = on == "True";
+
+    /// <summary>Studio's live preview doubles as the layout editor while this is on.</summary>
+    [ObservableProperty] private bool _arrangingLayout;
+
+    /// <summary>Monitoring shows Cooling (temperatures and fans) instead of the live readings.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MonitoringIntro))]
+    private bool _showCooling;
+
+    public string MonitoringIntro => ShowCooling
+        ? "Temperatures, and the fans MyRGB drives for you. Give any fan a fixed speed or a curve; anything you leave on Automatic runs on its hardware default."
+        : "Live readings from your PC, once a second, with the last five minutes charted. Nothing leaves this computer.";
+
+    [RelayCommand]
+    private void SetShowCooling(string? on) => ShowCooling = on == "True";
+
+    partial void OnShowCoolingChanged(bool value) => RefreshSensors();
 
     public const string WebsiteUrl = "https://www.rootlabs.us";
 
@@ -882,7 +909,7 @@ public sealed partial class MainViewModel : ObservableObject
 
 internal static class CommandExtensions
 {
-    /// <summary>Bind a parameter now, so an alert's button can carry "go to the Vendor apps page".</summary>
+    /// <summary>Bind a parameter now, so an alert's button can carry "go to the vendor apps in Settings".</summary>
     public static IRelayCommand WithParameter(this IRelayCommand<string?> command, string parameter) =>
         new RelayCommand(() => command.Execute(parameter));
 }

@@ -1,0 +1,45 @@
+<!--
+  Original's shape: the slate and green MyRGB started with, sharpened. A thin line of RGB light under
+  the top bar (the one thing every MyRGB look keeps is that gradient, and here it's the edge of the
+  window), labels and readings set in JetBrains Mono like an instrument panel, and panels that sit on
+  the slate with a lit top edge instead of a drop shadow.
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Border.topbar">
+    <Setter Property="BorderBrush" Value="{DynamicResource RgbGradient}" />
+    <Setter Property="BorderThickness" Value="0,0,0,2" />
+  </Style>
+
+  <!-- Panels: a hairline, with the top edge a shade lighter, as if lit from above. -->
+  <Style Selector="Border.panel">
+    <Setter Property="BorderBrush">
+      <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#33505E" />
+        <GradientStop Offset="0.12" Color="#223039" />
+        <GradientStop Offset="1" Color="#1A262E" />
+      </LinearGradientBrush>
+    </Setter>
+  </Style>
+
+  <Style Selector="TextBlock.kicker">
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="#8FA3A8" />
+  </Style>
+  <Style Selector="TextBlock.h1">
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="LetterSpacing" Value="-0.5" />
+  </Style>
+  <Style Selector="TextBlock.wordmark">
+    <Setter Property="FontWeight" Value="ExtraBold" />
+  </Style>
+
+  <!-- The selected page glows faintly green from its RGB pipe. -->
+  <Style Selector="TabControl.nav > TabItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="BoxShadow" Value="inset 3 0 12 -6 #5556DB8F" />
+  </Style>
+
+  <Style Selector="Border.dialog">
+    <Setter Property="BoxShadow" Value="0 0 0 1 #2E404B, 0 18 48 0 #A0000000" />
+  </Style>
+</Styles>

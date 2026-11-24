@@ -153,11 +153,17 @@ public sealed partial class SupabaseCloud : ICloud, IDisposable
 
     private sealed record CommunityRow(
         Guid Id, string Name, string Description, string Effect_id, JsonElement Data, string[] Swatch,
-        int Downloads, DateTimeOffset Created_at, Guid Author_id, string Author_name, bool Author_supporter = false);
+        int Downloads, DateTimeOffset Created_at, Guid Author_id, string Author_name, bool Author_supporter = false,
+        int Score = 0, int Nominations = 0);
 
     public async Task<IReadOnlyList<SharedPreset>> BrowseAsync(string? search, CommunitySort sort, CancellationToken ct)
     {
-        string order = sort == CommunitySort.Newest ? "created_at.desc" : "downloads.desc,created_at.desc";
+        string order = sort switch
+        {
+            CommunitySort.Newest => "created_at.desc",
+            CommunitySort.Suggested => "nominations.desc,score.desc,created_at.desc",
+            _ => "score.desc,downloads.desc,created_at.desc",
+        };
         string url = $"rest/v1/community_presets?select=*&order={order}&limit=60";
         if (SearchTerm(search) is { } term) url += $"&name=ilike.*{Uri.EscapeDataString(term)}*";
 
@@ -165,7 +171,7 @@ public sealed partial class SupabaseCloud : ICloud, IDisposable
         var rows = await Get<List<CommunityRow>>(url, ct, requireUser: false);
         return rows
             .Select(r => PresetJson.Read(r.Data) is { } data
-                ? new SharedPreset(r.Id, r.Name, r.Description, r.Effect_id, data, r.Swatch, r.Downloads, r.Created_at, r.Author_id, r.Author_name, r.Author_supporter)
+                ? new SharedPreset(r.Id, r.Name, r.Description, r.Effect_id, data, r.Swatch, r.Downloads, r.Created_at, r.Author_id, r.Author_name, r.Author_supporter, r.Score, r.Nominations)
                 : null)
             .OfType<SharedPreset>()
             .ToList();
@@ -189,6 +195,18 @@ public sealed partial class SupabaseCloud : ICloud, IDisposable
 
     public Task ReportAsync(Guid id, string reason, CancellationToken ct) =>
         Send(HttpMethod.Post, "rest/v1/preset_reports", new { preset_id = id, reason = reason.Trim() }, ct, prefer: "return=minimal");
+
+    private sealed record VoteRow(Guid Preset_id, int Vote, bool Nominate);
+
+    public async Task<IReadOnlyDictionary<Guid, MyVote>> GetMyVotesAsync(CancellationToken ct)
+    {
+        if (User is null) return new Dictionary<Guid, MyVote>();
+        var rows = await Get<List<VoteRow>>("rest/v1/preset_votes?select=preset_id,vote,nominate", ct);
+        return rows.ToDictionary(r => r.Preset_id, r => new MyVote(r.Vote, r.Nominate));
+    }
+
+    public Task VoteAsync(Guid id, int vote, bool nominate, CancellationToken ct) =>
+        Send(HttpMethod.Post, "rest/v1/rpc/vote_preset", new { preset = id, value = Math.Clamp(vote, -1, 1), nominated = nominate }, ct);
 
     // ---- Supporters -------------------------------------------------------
 

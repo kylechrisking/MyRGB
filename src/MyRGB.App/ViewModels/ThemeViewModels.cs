@@ -27,7 +27,7 @@ public sealed partial class ThemeOptionViewModel : ObservableObject
         _pick = pick;
     }
 
-    /// <summary>"Match Windows": its thumbnail is half Notebook paper, half Chalkboard slate.</summary>
+    /// <summary>"Match Windows": its thumbnail is half plain Light, half plain Dark.</summary>
     public static ThemeOptionViewModel Auto(Action<string> pick)
     {
         var light = ThemeManager.Find(ThemeManager.AutoLight).Preview[0];
@@ -42,8 +42,8 @@ public sealed partial class ThemeOptionViewModel : ObservableObject
                 new GradientStop(Color.Parse(dark), 0.5), new GradientStop(Color.Parse(dark), 1),
             },
         };
-        return new(ThemeManager.AutoId, "Match Windows", "Notebook by day, Chalkboard when Windows goes dark.",
-            split, "#FBF8F0", "#22201C", "#F2D466", pick);
+        return new(ThemeManager.AutoId, "Match Windows", "Light or Dark, whichever Windows is using.",
+            split, "#FFFFFF", "#1B1B1B", "#005FB8", pick);
     }
 
     public string Id { get; }

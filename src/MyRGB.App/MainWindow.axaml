@@ -73,42 +73,6 @@
         </Grid>
       </Border>
 
-      <!-- Player bar: what's playing, preset transport, and how MyRGB reaches the hardware -->
-      <Border DockPanel.Dock="Bottom" Classes="playerbar">
-        <Grid ColumnDefinitions="*,Auto,*">
-          <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-            <Border Classes="swatch" Width="40" Height="40" Background="{Binding ActiveSwatch}" />
-            <StackPanel VerticalAlignment="Center" Spacing="1">
-              <TextBlock Classes="kicker" Text="{Binding PlayingLabel}" />
-              <TextBlock Classes="section" Text="{Binding ActivePresetName}" FontSize="14" MaxWidth="240" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-            <Button Classes="icon" Command="{Binding EditActiveCommand}" VerticalAlignment="Center" ToolTip.Tip="Edit this in the Studio">
-              <PathIcon Data="{x:Static ctl:NavIcons.Studio}" />
-            </Button>
-          </StackPanel>
-
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-            <Button Classes="icon" Command="{Binding PreviousPresetCommand}" ToolTip.Tip="Previous preset">
-              <PathIcon Data="{x:Static ctl:NavIcons.Previous}" />
-            </Button>
-            <Button Classes="play" Command="{Binding TogglePauseCommand}" ToolTip.Tip="{Binding PauseTip}">
-              <PathIcon Data="{Binding PauseIcon}" />
-            </Button>
-            <Button Classes="icon" Command="{Binding NextPresetCommand}" ToolTip.Tip="Next preset">
-              <PathIcon Data="{x:Static ctl:NavIcons.Next}" />
-            </Button>
-            <Button Classes="icon" Command="{Binding ShuffleCommand}" ToolTip.Tip="Random preset">
-              <PathIcon Data="{x:Static ctl:NavIcons.Shuffle}" />
-            </Button>
-          </StackPanel>
-
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center">
-            <Ellipse Width="7" Height="7" Fill="{DynamicResource RgbGradient}" VerticalAlignment="Center" />
-            <TextBlock Classes="muted" Text="{Binding ProviderStatus}" TextTrimming="CharacterEllipsis" MaxWidth="360" />
-          </StackPanel>
-        </Grid>
-      </Border>
-
       <TabControl Classes="nav" TabStripPlacement="Left" SelectedIndex="{Binding SelectedTab}" Padding="0">
 
         <!-- ===== Home ===== -->
@@ -162,7 +126,23 @@
                                          CornerRadius="{DynamicResource RadiusPreview}" IsVisible="{Binding ActiveHasEffect}" />
                       <Border Background="{Binding ActiveSwatch}" CornerRadius="{DynamicResource RadiusSmall}" IsVisible="{Binding !ActiveHasEffect}" />
                     </Panel>
-                    <TextBlock Grid.Row="2" Text="{Binding ActivePresetName}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding ActivePresetName}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="8,-6,-8,-6">
+                        <Button Classes="icon" Command="{Binding PreviousPresetCommand}" ToolTip.Tip="Previous preset">
+                          <PathIcon Data="{x:Static ctl:NavIcons.Previous}" />
+                        </Button>
+                        <Button Classes="icon" Command="{Binding TogglePauseCommand}" ToolTip.Tip="{Binding PauseTip}">
+                          <PathIcon Data="{Binding PauseIcon}" />
+                        </Button>
+                        <Button Classes="icon" Command="{Binding NextPresetCommand}" ToolTip.Tip="Next preset">
+                          <PathIcon Data="{x:Static ctl:NavIcons.Next}" />
+                        </Button>
+                        <Button Classes="icon" Command="{Binding ShuffleCommand}" ToolTip.Tip="Random preset">
+                          <PathIcon Data="{x:Static ctl:NavIcons.Shuffle}" />
+                        </Button>
+                      </StackPanel>
+                    </Grid>
                   </Grid>
                 </Border>
 
@@ -491,6 +471,20 @@
                                      IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
                           <TextBlock Classes="muted" Text="{Binding Unsupported}" Foreground="{DynamicResource WarningBrush}" IsVisible="{Binding !Supported}" />
                         </StackPanel>
+                        <!-- Votes: one up or down each, plus a suggestion for MyRGB's built-in presets. -->
+                        <Grid ColumnDefinitions="Auto,*" Margin="2,0" ToolTip.Tip="{Binding VoteTip}">
+                          <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                            <Button Classes="ghost" Classes.accent="{Binding VotedUp}" Content="▲" Padding="9,3" FontSize="11"
+                                    Command="{Binding UpVoteCommand}" IsEnabled="{Binding CanVote}" ToolTip.Tip="Vote up" />
+                            <TextBlock Text="{Binding ScoreText}" FontFamily="{DynamicResource NumberFont}" FontWeight="SemiBold"
+                                       MinWidth="26" TextAlignment="Center" VerticalAlignment="Center" />
+                            <Button Classes="ghost" Classes.accent="{Binding VotedDown}" Content="▼" Padding="9,3" FontSize="11"
+                                    Command="{Binding DownVoteCommand}" IsEnabled="{Binding CanVote}" ToolTip.Tip="Vote down" />
+                          </StackPanel>
+                          <Button Grid.Column="1" Classes="link" Content="{Binding NominateText}" Command="{Binding ToggleNominateCommand}"
+                                  IsEnabled="{Binding CanVote}" HorizontalAlignment="Right" FontSize="12"
+                                  ToolTip.Tip="Suggest this as one of the presets MyRGB comes with. The most suggested are considered for the next release." />
+                        </Grid>
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="2,0">
                           <Button Classes="accent" Content="Install" Command="{Binding InstallCommand}" />
                           <Button Classes="link" Content="Remove" Command="{Binding RemoveCommand}" IsVisible="{Binding IsMine}" />
@@ -535,7 +529,19 @@
             <Grid ColumnDefinitions="*,18,320">
               <!-- Left: the live preview, and the effects to pick from under it. -->
               <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Classes="kicker" Text="Live preview" Margin="0,0,0,8" />
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                  <TextBlock Classes="kicker" Text="Live preview" VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Classes="ghost" Content="Tidy up" Command="{Binding TidyLayoutCommand}" IsVisible="{Binding ArrangingLayout}"
+                            ToolTip.Tip="Nudge overlapping devices apart and leave the rest where they are" />
+                    <Button Classes="ghost" Content="Reset" Command="{Binding ResetLayoutCommand}" IsVisible="{Binding ArrangingLayout}"
+                            ToolTip.Tip="Put every device back in its default spot" />
+                    <ctl:Switch IsChecked="{Binding ArrangingLayout}" OnContent="Arrange devices" OffContent="Arrange devices"
+                                ToolTip.Tip="Drag each device to where it sits on your desk, and drag a corner to resize it" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock DockPanel.Dock="Top" Classes="muted" TextWrapping="Wrap" Margin="0,0,0,8" IsVisible="{Binding ArrangingLayout}"
+                           Text="This is your desk seen from the front. Drag each device to where it really sits and drag a corner to resize it, so waves flow from one device to the next." />
                 <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,16,0,0">
                   <TextBlock Classes="kicker" Text="Effect" />
                   <ListBox Classes="chips" ItemsSource="{Binding Studio.Effects}" SelectedItem="{Binding Studio.SelectedEffect}"
@@ -556,7 +562,8 @@
                     </ListBox.ItemTemplate>
                   </ListBox>
                 </StackPanel>
-                <ctl:LedCanvas Host="{Binding Host}" HighlightId="{Binding Studio.SelectedTarget.DeviceId}" MinHeight="180" />
+                <ctl:LedCanvas Host="{Binding Host}" HighlightId="{Binding Studio.SelectedTarget.DeviceId}" MinHeight="180"
+                               AllowEditing="{Binding ArrangingLayout}" />
               </DockPanel>
 
               <!-- Right: what's being edited, and its settings. -->
@@ -620,32 +627,6 @@
           </DockPanel>
         </TabItem>
 
-        <!-- ===== Layout ===== -->
-        <TabItem>
-          <TabItem.Header>
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{x:Static ctl:NavIcons.Layout}" />
-              <TextBlock Text="Layout" VerticalAlignment="Center" />
-            </StackPanel>
-          </TabItem.Header>
-          <DockPanel>
-            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
-              <StackPanel Spacing="4">
-                <TextBlock Classes="h1" Text="Layout" />
-                <TextBlock Classes="muted" TextWrapping="Wrap"
-                           Text="This rectangle is your desk seen from the front. Drag each device to where it really sits, and drag a corner to resize it. Effects sweep across the whole picture, so a good layout makes waves flow from one device to the next." />
-              </StackPanel>
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="16,0,0,0">
-                <Button Classes="ghost" Content="Tidy up" Command="{Binding TidyLayoutCommand}"
-                        ToolTip.Tip="Nudge overlapping devices apart and leave the rest where they are" />
-                <Button Classes="ghost" Content="Reset layout" Command="{Binding ResetLayoutCommand}"
-                        ToolTip.Tip="Put every device back in its default spot" />
-              </StackPanel>
-            </Grid>
-            <ctl:LedCanvas Host="{Binding Host}" AllowEditing="True" />
-          </DockPanel>
-        </TabItem>
-
         <!-- ===== Devices ===== -->
         <TabItem>
           <TabItem.Header>
@@ -659,12 +640,59 @@
               <StackPanel Spacing="4">
                 <TextBlock Classes="h1" Text="Devices" />
                 <TextBlock Classes="muted" TextWrapping="Wrap" Text="Everything MyRGB found. Switch a device off to leave it alone, for example so another app can light it." />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Ellipse Width="7" Height="7" Fill="{DynamicResource RgbGradient}" VerticalAlignment="Center" />
+                  <TextBlock Classes="muted" Text="{Binding ProviderStatus}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
               </StackPanel>
-              <Button Grid.Column="1" Classes="ghost" Content="Scan again" Command="{Binding RescanCommand}" IsEnabled="{Binding !IsScanning}" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Button Classes="ghost" Classes.accent="{Binding !DevicesGrid}" Content="List" Command="{Binding SetDevicesGridCommand}" CommandParameter="False" />
+                <Button Classes="ghost" Classes.accent="{Binding DevicesGrid}" Content="Grid" Command="{Binding SetDevicesGridCommand}" CommandParameter="True" />
+                <Button Classes="ghost" Content="Scan again" Command="{Binding RescanCommand}" IsEnabled="{Binding !IsScanning}" Margin="10,0,0,0" />
+              </StackPanel>
             </Grid>
             <ScrollViewer>
               <StackPanel Spacing="10" Margin="0,0,8,8">
-                <ItemsControl ItemsSource="{Binding Devices}">
+                <!-- Grid: a lit drawing of each device. Setting up zones and screens happens in the list. -->
+                <ItemsControl ItemsSource="{Binding Devices}" IsVisible="{Binding DevicesGrid}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DeviceRowViewModel">
+                      <Border Classes="panel" Width="236" Margin="0,0,12,12" Padding="14,12">
+                        <StackPanel Spacing="10">
+                          <ctl:DeviceThumb Host="{Binding $parent[Window].((vm:MainViewModel)DataContext).Host}" DeviceId="{Binding Id}" Kind="{Binding Kind}"
+                                           Height="96" Opacity="{Binding ThumbOpacity}" />
+                          <StackPanel Spacing="1">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+                            <TextBlock Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis">
+                              <Run Text="{Binding Vendor}" /><Run Text=" · " /><Run Text="{Binding Type}" />
+                            </TextBlock>
+                          </StackPanel>
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                              <Border Classes="badge"><TextBlock Text="{Binding LedBadge}" /></Border>
+                              <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding HasBattery}" ToolTip.Tip="{Binding BatteryTip}">
+                                <ctl:BatteryGauge Percent="{Binding BatteryPercent}" Charging="{Binding BatteryCharging}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding BatteryText}" FontSize="12" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="icon" Command="{Binding FlashCommand}" IsVisible="{Binding CanFlash}"
+                                    ToolTip.Tip="Flash: pulse this device white so you can spot it">
+                              <PathIcon Data="{x:Static ctl:NavIcons.Flash}" />
+                            </Button>
+                          </Grid>
+                          <ctl:Switch IsChecked="{Binding Included}" OnContent="MyRGB controls it" OffContent="Left alone" />
+                          <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding NeedsSetup}"
+                                     Text="Needs its LED count set: switch to List to set it up." />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ItemsControl ItemsSource="{Binding Devices}" IsVisible="{Binding !DevicesGrid}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:DeviceRowViewModel">
                       <Border Classes="panel" Margin="0,0,0,8" Padding="16,12">
@@ -755,29 +783,10 @@
                 <Border Classes="panel">
                   <StackPanel Spacing="8">
                     <TextBlock Classes="section" Text="Something missing?" />
-                    <TextBlock Classes="body" Text="• A brand app may be holding it. Corsair devices often vanish while iCUE runs. Quit the app (check the system tray too) and click Scan again. The Vendor apps page shows which ones are installed." />
+                    <TextBlock Classes="body" Text="• A brand app may be holding it. Corsair devices often vanish while iCUE runs. Quit the app (check the system tray too) and click Scan again. Settings lists the ones installed." />
                     <TextBlock Classes="body" Text="• Fan and LED-strip controllers can't tell how many LEDs are plugged in. Set each channel's count on the device above (LEDs per fan × number of fans, e.g. 16 for one LL120)." />
                     <TextBlock Classes="body" Text="• RGB RAM needs the optional SMBus driver. Run MyRGB setup again and tick “Enable RAM / SMBus lighting”." />
-                    <Button Classes="link" Content="Open Vendor apps ›" Command="{Binding NavigateCommand}" CommandParameter="vendors" HorizontalAlignment="Left" />
-                  </StackPanel>
-                </Border>
-
-                <!-- Will it work with my device? -->
-                <Border Classes="panel" DataContext="{Binding Supported}" x:DataType="vm:SupportedDevicesViewModel">
-                  <StackPanel Spacing="10">
-                    <TextBlock Classes="section" Text="Will MyRGB work with my device?" />
-                    <TextBox Text="{Binding Query}" PlaceholderText="Search, e.g. corsair k70 or rtx 4070" />
-                    <TextBlock Classes="muted" Text="{Binding Summary}" TextWrapping="Wrap" />
-                    <ItemsControl ItemsSource="{Binding Results}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:SupportedDevice">
-                          <Grid ColumnDefinitions="*,Auto" Margin="0,3">
-                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Connection}" Margin="12,0,0,0" />
-                          </Grid>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <Button Classes="link" Content="Vendor apps in Settings ›" Command="{Binding NavigateCommand}" CommandParameter="vendors" HorizontalAlignment="Left" IsVisible="{Binding Vendors.HasApps}" />
                   </StackPanel>
                 </Border>
               </StackPanel>
@@ -793,11 +802,20 @@
               <TextBlock Text="Monitoring" VerticalAlignment="Center" />
             </StackPanel>
           </TabItem.Header>
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+              <StackPanel Spacing="4">
+                <TextBlock Classes="h1" Text="Monitoring" />
+                <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding MonitoringIntro}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="16,0,0,0">
+                <Button Classes="ghost" Classes.accent="{Binding !ShowCooling}" Content="Readings" Command="{Binding SetShowCoolingCommand}" CommandParameter="False" />
+                <Button Classes="ghost" Classes.accent="{Binding ShowCooling}" Content="Cooling" Command="{Binding SetShowCoolingCommand}" CommandParameter="True" />
+              </StackPanel>
+            </Grid>
+            <Panel>
+          <Panel IsVisible="{Binding !ShowCooling}">
           <DockPanel DataContext="{Binding Monitoring}" x:DataType="vm:MonitoringViewModel">
-            <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,20">
-              <TextBlock Classes="h1" Text="Monitoring" />
-              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Live readings from your PC, once a second, with the last five minutes charted. Nothing leaves this computer." />
-            </StackPanel>
             <ScrollViewer>
               <StackPanel Spacing="14" Margin="0,0,8,8">
                 <Border Classes="panel" IsVisible="{Binding !HasReadings}">
@@ -905,21 +923,11 @@
               </StackPanel>
             </ScrollViewer>
           </DockPanel>
-        </TabItem>
+          </Panel>
 
-        <!-- ===== Cooling ===== -->
-        <TabItem>
-          <TabItem.Header>
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{x:Static ctl:NavIcons.Cooling}" />
-              <TextBlock Text="Cooling" VerticalAlignment="Center" />
-            </StackPanel>
-          </TabItem.Header>
+          <!-- Cooling: temperatures and the fans MyRGB drives -->
+          <Panel IsVisible="{Binding ShowCooling}">
           <DockPanel DataContext="{Binding Cooling}" x:DataType="vm:CoolingViewModel">
-            <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,20">
-              <TextBlock Classes="h1" Text="Cooling" />
-              <TextBlock Classes="muted" TextWrapping="Wrap" Text="Temperatures, and fans MyRGB drives for you. Give any fan a fixed speed or a curve; anything you leave on Automatic runs on its hardware default." />
-            </StackPanel>
             <ScrollViewer>
               <StackPanel Spacing="14" Margin="0,0,8,8">
                 <ItemsControl ItemsSource="{Binding Temps}">
@@ -1061,125 +1069,8 @@
               </StackPanel>
             </ScrollViewer>
           </DockPanel>
-        </TabItem>
-
-        <!-- ===== Vendor apps ===== -->
-        <TabItem>
-          <TabItem.Header>
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <PathIcon Data="{x:Static ctl:NavIcons.Vendors}" />
-              <TextBlock Text="Vendor apps" VerticalAlignment="Center" />
-            </StackPanel>
-          </TabItem.Header>
-          <DockPanel>
-            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
-              <StackPanel Spacing="4">
-                <TextBlock Classes="h1" Text="Vendor apps" />
-                <TextBlock Classes="muted" TextWrapping="Wrap" MaxWidth="820" HorizontalAlignment="Left"
-                           Text="Brand apps like iCUE, G HUB and Armoury Crate also try to control your lights, and they fight with MyRGB. Once MyRGB runs a brand's devices you can usually uninstall its app. Here's what's on this PC, and what each app does that MyRGB doesn't." />
-              </StackPanel>
-              <Button Grid.Column="1" Classes="ghost" Content="Check again" Command="{Binding Vendors.CheckCommand}" IsEnabled="{Binding !Vendors.IsChecking}" VerticalAlignment="Center" Margin="16,0,0,0" />
-            </Grid>
-            <ScrollViewer>
-              <StackPanel Spacing="14" Margin="0,0,8,8" MaxWidth="900" HorizontalAlignment="Left">
-                <Border Classes="panel" IsVisible="{Binding Vendors.NothingFound}">
-                  <StackPanel Orientation="Horizontal" Spacing="12">
-                    <PathIcon Data="{x:Static ctl:NavIcons.Check}" Foreground="{DynamicResource SuccessBrush}" Width="18" Height="18" />
-                    <TextBlock Classes="body" Text="No vendor lighting apps found. Nothing to clean up." VerticalAlignment="Center" />
-                  </StackPanel>
-                </Border>
-
-                <ItemsControl ItemsSource="{Binding Vendors.Apps}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:VendorAppViewModel">
-                      <Border Classes="panel" Margin="0,0,0,14" Padding="22,18">
-                        <StackPanel Spacing="12">
-                          <Grid ColumnDefinitions="*,Auto">
-                            <StackPanel Spacing="2">
-                              <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" />
-                              <TextBlock Classes="muted">
-                                <Run Text="{Binding Version}" />
-                                <Run Text="  ·  " />
-                                <Run Text="{Binding RunningText}" />
-                              </TextBlock>
-                            </StackPanel>
-                            <Border Grid.Column="1" Classes="badge" Padding="10,4" VerticalAlignment="Top">
-                              <StackPanel Orientation="Horizontal" Spacing="7">
-                                <Ellipse Width="8" Height="8" Fill="{Binding VerdictBrush}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding VerdictTitle}" FontSize="12" />
-                              </StackPanel>
-                            </Border>
-                          </Grid>
-
-                          <TextBlock Classes="body" Text="{Binding Verdict}" />
-
-                          <StackPanel Spacing="6" IsVisible="{Binding HasControlledDevices}">
-                            <TextBlock Classes="kicker" Text="MyRGB now runs" />
-                            <ItemsControl ItemsSource="{Binding ControlledDevices}">
-                              <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                              </ItemsControl.ItemsPanel>
-                              <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="x:String">
-                                  <Border Classes="badge" Margin="0,0,6,6"><TextBlock Text="{Binding}" /></Border>
-                                </DataTemplate>
-                              </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                          </StackPanel>
-
-                          <StackPanel Spacing="6" IsVisible="{Binding HasLosses}">
-                            <TextBlock Classes="kicker" Text="What MyRGB doesn't replace" />
-                            <ItemsControl ItemsSource="{Binding YouWouldLose}">
-                              <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="x:String">
-                                  <TextBlock Classes="body" Text="{Binding StringFormat='• {0}'}" Margin="0,1" />
-                                </DataTemplate>
-                              </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                          </StackPanel>
-
-                          <Border Background="{DynamicResource InfoWashBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="12,9" IsVisible="{Binding HasTip}">
-                            <Grid ColumnDefinitions="Auto,*">
-                              <PathIcon Data="{x:Static ctl:NavIcons.Info}" Foreground="{DynamicResource InfoBrush}" Width="14" Height="14" VerticalAlignment="Top" Margin="0,2,10,0" />
-                              <TextBlock Grid.Column="1" Classes="body" Text="{Binding Tip}" />
-                            </Grid>
-                          </Border>
-
-                          <StackPanel Spacing="6" IsVisible="{Binding HasComponents}">
-                            <TextBlock Classes="kicker" Text="Installed along with it" />
-                            <ItemsControl ItemsSource="{Binding Components}">
-                              <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ComponentViewModel">
-                                  <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                    <TextBlock Classes="body" Text="{Binding Name}" VerticalAlignment="Center" />
-                                    <Button Grid.Column="1" Classes="link" Content="Uninstall" Command="{Binding UninstallCommand}" IsVisible="{Binding CanUninstall}" />
-                                  </Grid>
-                                </DataTemplate>
-                              </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                          </StackPanel>
-
-                          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !Confirming}">
-                            <Button Classes="accent" Content="{Binding Name, StringFormat='Uninstall {0}…'}" Command="{Binding AskUninstallCommand}" IsVisible="{Binding CanUninstall}" />
-                          </StackPanel>
-                          <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource WarningBrush}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,12" IsVisible="{Binding Confirming}">
-                            <StackPanel Spacing="10">
-                              <TextBlock Classes="body" TextWrapping="Wrap"
-                                         Text="{Binding Name, StringFormat='This opens {0}’s own uninstaller. Windows will probably ask for permission. Your MyRGB presets and settings are not affected.'}" />
-                              <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Classes="accent" Content="Open uninstaller" Command="{Binding UninstallCommand}" />
-                                <Button Classes="ghost" Content="Cancel" Command="{Binding CancelUninstallCommand}" />
-                              </StackPanel>
-                            </StackPanel>
-                          </Border>
-                          <TextBlock Classes="muted" Text="{Binding Status}" TextWrapping="Wrap" />
-                        </StackPanel>
-                      </Border>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </ScrollViewer>
+          </Panel>
+            </Panel>
           </DockPanel>
         </TabItem>
 
@@ -1194,6 +1085,109 @@
           <ScrollViewer>
             <StackPanel Spacing="14" MaxWidth="760" HorizontalAlignment="Left">
               <TextBlock Classes="h1" Text="Settings" Margin="0,0,0,6" />
+
+              <!-- Vendor apps: only while one is installed; Home links here when one is running. -->
+              <Border Classes="panel" IsVisible="{Binding Vendors.HasApps}">
+                <StackPanel Spacing="12">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2">
+                      <TextBlock Classes="section" Text="Vendor apps" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap"
+                                 Text="Brand apps like iCUE, G HUB and Armoury Crate also try to control your lights, and they fight with MyRGB. Once MyRGB runs a brand's devices you can usually uninstall its app. Here's what's on this PC, and what each app does that MyRGB doesn't." />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="ghost" Content="Check again" Command="{Binding Vendors.CheckCommand}" IsEnabled="{Binding !Vendors.IsChecking}" VerticalAlignment="Top" Margin="16,0,0,0" />
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding Vendors.Apps}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:VendorAppViewModel">
+                        <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource RadiusSmall}" Margin="0,0,0,10" Padding="16,14">
+                          <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" />
+                                <TextBlock Classes="muted">
+                                  <Run Text="{Binding Version}" />
+                                  <Run Text="  ·  " />
+                                  <Run Text="{Binding RunningText}" />
+                                </TextBlock>
+                              </StackPanel>
+                              <Border Grid.Column="1" Classes="badge" Padding="10,4" VerticalAlignment="Top">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                  <Ellipse Width="8" Height="8" Fill="{Binding VerdictBrush}" VerticalAlignment="Center" />
+                                  <TextBlock Text="{Binding VerdictTitle}" FontSize="12" />
+                                </StackPanel>
+                              </Border>
+                            </Grid>
+        
+                            <TextBlock Classes="body" Text="{Binding Verdict}" />
+        
+                            <StackPanel Spacing="6" IsVisible="{Binding HasControlledDevices}">
+                              <TextBlock Classes="kicker" Text="MyRGB now runs" />
+                              <ItemsControl ItemsSource="{Binding ControlledDevices}">
+                                <ItemsControl.ItemsPanel>
+                                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="x:String">
+                                    <Border Classes="badge" Margin="0,0,6,6"><TextBlock Text="{Binding}" /></Border>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+        
+                            <StackPanel Spacing="6" IsVisible="{Binding HasLosses}">
+                              <TextBlock Classes="kicker" Text="What MyRGB doesn't replace" />
+                              <ItemsControl ItemsSource="{Binding YouWouldLose}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="x:String">
+                                    <TextBlock Classes="body" Text="{Binding StringFormat='• {0}'}" Margin="0,1" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+        
+                            <Border Background="{DynamicResource InfoWashBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="12,9" IsVisible="{Binding HasTip}">
+                              <Grid ColumnDefinitions="Auto,*">
+                                <PathIcon Data="{x:Static ctl:NavIcons.Info}" Foreground="{DynamicResource InfoBrush}" Width="14" Height="14" VerticalAlignment="Top" Margin="0,2,10,0" />
+                                <TextBlock Grid.Column="1" Classes="body" Text="{Binding Tip}" />
+                              </Grid>
+                            </Border>
+        
+                            <StackPanel Spacing="6" IsVisible="{Binding HasComponents}">
+                              <TextBlock Classes="kicker" Text="Installed along with it" />
+                              <ItemsControl ItemsSource="{Binding Components}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="vm:ComponentViewModel">
+                                    <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                      <TextBlock Classes="body" Text="{Binding Name}" VerticalAlignment="Center" />
+                                      <Button Grid.Column="1" Classes="link" Content="Uninstall" Command="{Binding UninstallCommand}" IsVisible="{Binding CanUninstall}" />
+                                    </Grid>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+        
+                            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !Confirming}">
+                              <Button Classes="accent" Content="{Binding Name, StringFormat='Uninstall {0}…'}" Command="{Binding AskUninstallCommand}" IsVisible="{Binding CanUninstall}" />
+                            </StackPanel>
+                            <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource WarningBrush}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,12" IsVisible="{Binding Confirming}">
+                              <StackPanel Spacing="10">
+                                <TextBlock Classes="body" TextWrapping="Wrap"
+                                           Text="{Binding Name, StringFormat='This opens {0}’s own uninstaller. Windows will probably ask for permission. Your MyRGB presets and settings are not affected.'}" />
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                  <Button Classes="accent" Content="Open uninstaller" Command="{Binding UninstallCommand}" />
+                                  <Button Classes="ghost" Content="Cancel" Command="{Binding CancelUninstallCommand}" />
+                                </StackPanel>
+                              </StackPanel>
+                            </Border>
+                            <TextBlock Classes="muted" Text="{Binding Status}" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
 
               <!-- Appearance: the whole look, switched live. -->
               <Border Classes="panel">
@@ -1571,8 +1565,8 @@
       </TabControl>
     </DockPanel>
 
-    <!-- ===== Support note: bottom right, above the player bar, after a week of use ===== -->
-    <Border IsVisible="{Binding SupportNudge.IsOpen}" Width="330" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,24,84" Classes="dialog">
+    <!-- ===== Support note: bottom right, after a week of use ===== -->
+    <Border IsVisible="{Binding SupportNudge.IsOpen}" Width="330" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,24,24" Classes="dialog">
       <StackPanel>
         <Border Classes="dialogstripe" />
         <StackPanel Margin="18,14,18,14" Spacing="6">
