@@ -5,7 +5,7 @@
   "Version": "0.3.0.0",
   "Author": "Root Labs",
   "URL": "https://www.rootlabs.us",
-  "Description": "Control MyRGB lighting: switch, shuffle and pause presets, toggle lights, and adjust brightness, including your monitors' through Twinkle Tray.",
+  "Description": "Control MyRGB lighting: switch, shuffle and pause presets, toggle lights, and adjust brightness, including your monitors'.",
   "Icon": "imgs/plugin",
   "Category": "MyRGB",
   "CategoryIcon": "imgs/category",
@@ -50,7 +50,7 @@
     {
       "UUID": "com.myrgb.streamdeck.monitors",
       "Name": "Screen Brightness",
-      "Tooltip": "Raise, lower, or set your monitors' brightness through Twinkle Tray (switch it on in MyRGB > Settings > Monitors). On Stream Deck +, turn the dial.",
+      "Tooltip": "Raise, lower, or set your monitors' brightness (switch it on in MyRGB > Settings > Monitors). On Stream Deck +, turn the dial.",
       "Icon": "imgs/actions/monitors",
       "Controllers": ["Keypad", "Encoder"],
       "Encoder": {

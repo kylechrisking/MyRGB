@@ -30,7 +30,7 @@
             </StackPanel>
           </Button>
           <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
-            <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowMonitorSlider}" ToolTip.Tip="Monitor brightness, through Twinkle Tray">
+            <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowMonitorSlider}" ToolTip.Tip="Your monitors' brightness">
               <TextBlock Classes="muted" Text="{Binding MonitorLevel, StringFormat='Screens {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <Slider Width="110" Minimum="0" Maximum="100" Value="{Binding MonitorLevel}" VerticalAlignment="Center" Margin="0,0,22,0" />
             </StackPanel>
@@ -1386,7 +1386,7 @@
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="Monitors" />
-                  <ctl:Switch IsChecked="{Binding TwinkleOn}" IsEnabled="{Binding TwinkleInstalled}" OnContent="Set monitor brightness with Twinkle Tray" OffContent="Set monitor brightness with Twinkle Tray" />
+                  <ctl:Switch IsChecked="{Binding MonitorsOn}" IsEnabled="{Binding MonitorsSupported}" OnContent="Set my monitors' brightness" OffContent="Set my monitors' brightness" />
                   <TextBlock Classes="muted" Text="{Binding MonitorStatus}" TextWrapping="Wrap" />
                   <StackPanel Spacing="10" IsEnabled="{Binding ShowMonitorSlider}">
                     <Grid ColumnDefinitions="200,*,60">
@@ -1421,7 +1421,7 @@
                     </ItemsControl>
                     <Button Classes="ghost" Content="Add a preset" Command="{Binding AddMonitorPresetLevelCommand}" IsEnabled="{Binding MonitorPresetLevelsOn}" />
                   </StackPanel>
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Night uses the times under Lights out. Night wins over the lights, which win over a preset's level, which wins over the slider. A change you make in Twinkle Tray itself stays until one of these has a reason to change it. The local API has the same control: GET or POST /api/monitors." />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Night uses the times under Lights out. Night wins over the lights, which win over a preset's level, which wins over the slider. A change you make with the monitor's own buttons stays until one of these has a reason to change it. The local API has the same control: GET or POST /api/monitors." />
                 </StackPanel>
               </Border>
 

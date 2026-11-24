@@ -32,10 +32,10 @@ public static class MonitorLevels
     public static int Clamp(int level) => Math.Clamp(level, 0, 100);
 }
 
-/// <summary>Monitor brightness as the local API sees it (Twinkle Tray in the app).</summary>
+/// <summary>Monitor brightness as the local API sees it (DDC/CI in the app).</summary>
 public interface IMonitorBrightness
 {
-    /// <summary>False when the program that drives the monitors isn't installed or is switched off in Settings.</summary>
+    /// <summary>False when it's switched off in Settings or this PC can't reach monitors.</summary>
     bool Available { get; }
 
     /// <summary>0..100, what MyRGB last set or read.</summary>

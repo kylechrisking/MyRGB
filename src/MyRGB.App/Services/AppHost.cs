@@ -60,7 +60,7 @@ public sealed class AppHostOptions
     /// <summary>Hears about sleep and wake from Windows. Off in snapshots and tests.</summary>
     public bool WatchPower { get; init; } = true;
 
-    /// <summary>Replaces Twinkle Tray (snapshots, tests).</summary>
+    /// <summary>Replaces the real monitors (snapshots, tests).</summary>
     public Func<IMonitorControl>? MonitorControl { get; init; }
 
     /// <summary>Registers the Ctrl+Alt+L toggle with Windows. Off in snapshots and tests.</summary>
@@ -112,7 +112,7 @@ public sealed class AppHost : IAsyncDisposable
         };
         Engine.ExcludedDevices = Settings.ExcludedDevices.ToHashSet();
         Lights = new LightingService(Engine, Presets, Effects, Devices);
-        Monitors = new MonitorSync(this, _options.MonitorControl?.Invoke() ?? new TwinkleTray(), _options.Clock, Logs.CreateLogger<MonitorSync>());
+        Monitors = new MonitorSync(this, _options.MonitorControl?.Invoke() ?? new NativeMonitors(), _options.Clock, Logs.CreateLogger<MonitorSync>());
         Batteries = new BatteryMonitor(
             _options.BatteryProviders?.Invoke() ?? [new RazerBatteryProvider(), new LogitechBatteryProvider()],
             Logs.CreateLogger<BatteryMonitor>());
@@ -163,7 +163,7 @@ public sealed class AppHost : IAsyncDisposable
     public LightingEngine Engine { get; }
     public LightingService Lights { get; }
 
-    /// <summary>Monitor brightness through Twinkle Tray (Settings > Monitors).</summary>
+    /// <summary>Monitor brightness over DDC/CI (Settings > Monitors).</summary>
     public MonitorSync Monitors { get; }
     public BatteryMonitor Batteries { get; }
     public SensorHub Sensors { get; }

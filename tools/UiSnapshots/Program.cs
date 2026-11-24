@@ -180,9 +180,9 @@ if (quick)
     Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Schedule").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
     Shoot($"{themeId}-schedule");
     vm.ScheduleOn = false;
-    // Monitors: Twinkle Tray's output parses; the rules move the (fake) monitors; the slider sets them.
-    var parsed = TwinkleTray.Parse("\n\x1b[36mMonitorNum:\x1b[0m 0\n\x1b[36mName:\x1b[0m DELL S3222DGM\n\x1b[36mBrightness:\x1b[0m 100\n\n\x1b[36mMonitorNum:\x1b[0m 1\n\x1b[36mName:\x1b[0m ASUS VG24VQ1B\n\x1b[36mBrightness:\x1b[0m 60\n");
-    Console.WriteLine($"parsed: {string.Join(", ", parsed.Select(m => $"{m.Name}={m.Brightness}"))}");
+    // Monitors: the real monitors are listed read-only (nothing is set); the rules move the fake ones; the slider sets them.
+    var real = new NativeMonitors().ListAsync(CancellationToken.None).GetAwaiter().GetResult();
+    Console.WriteLine($"real monitors (read only): {string.Join(", ", real.Select(m => $"{m.Name}={m.Brightness}"))}");
     void Mon(string what)
     {
         Thread.Sleep(300); host.Monitors.Update(); Thread.Sleep(300); Dispatcher.UIThread.RunJobs();
@@ -191,7 +191,7 @@ if (quick)
     fakeNow = new DateTime(2026, 11, 24, 12, 0, 0);
     host.Lights.SetEnabled(true); host.Lights.ActivatePreset("fire");
     Mon("before");
-    vm.TwinkleOn = true; Mon("switched on");
+    vm.MonitorsOn = true; Mon("switched on");
     vm.MonitorLevel = 80; Mon("slider 80");
     vm.MonitorsFollowLights = true; host.Lights.SetEnabled(false); Mon("lights off");
     host.Lights.SetEnabled(true); Mon("lights on");
@@ -204,7 +204,7 @@ if (quick)
     vm.SelectedTab = MainViewModel.SettingsTab; Dispatcher.UIThread.RunJobs();
     Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Monitors").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
     Shoot($"{themeId}-monitors");
-    Console.WriteLine($"saved monitors: on={host.Settings.TwinkleOn} level={host.Settings.MonitorLevel} follow={host.Settings.MonitorsFollowLights}/{host.Settings.MonitorsOffLevel} night={host.Settings.MonitorsNightOn}/{host.Settings.MonitorsNightLevel} presets={string.Join(",", host.Settings.MonitorPresetLevels.Select(p => $"{p.PresetId}={p.Level}"))}");
+    Console.WriteLine($"saved monitors: on={host.Settings.MonitorsOn} level={host.Settings.MonitorLevel} follow={host.Settings.MonitorsFollowLights}/{host.Settings.MonitorsOffLevel} night={host.Settings.MonitorsNightOn}/{host.Settings.MonitorsNightLevel} presets={string.Join(",", host.Settings.MonitorPresetLevels.Select(p => $"{p.PresetId}={p.Level}"))}");
     Console.WriteLine($"real session locked: {typeof(AppHost).Assembly.GetType("MyRGB.App.Services.LightsOffWatcher")!.GetMethod("SessionLocked")!.Invoke(null, null)}");
     Console.WriteLine($"saved: night={host.Settings.NightOn} {host.Settings.NightFrom}-{host.Settings.NightTo} locked={host.Settings.OffWhenLocked} enabled={host.Engine.Enabled}");
     window.AllowClose = true; window.Close(); host.Shutdown();
@@ -482,7 +482,7 @@ sealed class FakeScreenKeyboard(IReadOnlyList<LedInfo> leds) : IScreenDevice
     public ValueTask ApplyAsync(ReadOnlyMemory<Rgb> colors, CancellationToken ct = default) => ValueTask.CompletedTask;
 }
 
-/// <summary>Two monitors that remember what they were set to, in place of Twinkle Tray.</summary>
+/// <summary>Two monitors that remember what they were set to, in place of the real ones.</summary>
 sealed class FakeMonitors : IMonitorControl
 {
     public int Level = 70;

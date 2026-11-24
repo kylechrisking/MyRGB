@@ -79,8 +79,8 @@ public sealed class AppSettings
     public string NightFrom { get; set; } = "23:00";
     public string NightTo { get; set; } = "07:00";
 
-    /// <summary>Drive the monitors' brightness through Twinkle Tray.</summary>
-    public bool TwinkleOn { get; set; }
+    /// <summary>Set the monitors' brightness over DDC/CI.</summary>
+    public bool MonitorsOn { get; set; }
 
     /// <summary>The everyday monitor level, 0..100, as set with the slider; null until first read from the monitors.</summary>
     public int? MonitorLevel { get; set; }

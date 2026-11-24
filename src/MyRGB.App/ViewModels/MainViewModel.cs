@@ -113,7 +113,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var p in host.Settings.AppProfiles) AppProfileRows.Add(new AppProfileRow(host, p, this));
         _scheduleOn = host.Settings.ScheduleOn;
         foreach (var e in host.Settings.Schedule) ScheduleRows.Add(new ScheduleRow(e, this));
-        _twinkleOn = host.Settings.TwinkleOn;
+        _monitorsOn = host.Settings.MonitorsOn;
         _monitorLevel = host.Settings.MonitorLevel ?? host.Monitors.Level;
         _monitorsFollowLights = host.Settings.MonitorsFollowLights;
         _monitorsOffLevel = host.Settings.MonitorsOffLevel;
@@ -332,11 +332,11 @@ public sealed partial class MainViewModel : ObservableObject
         _host.CheckLightsOff();
     }
 
-    // ---- Monitors (Twinkle Tray) -------------------------------------------------------------------
+    // ---- Monitors (DDC/CI) -------------------------------------------------------------------------
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowMonitorSlider))]
-    private bool _twinkleOn;
+    private bool _monitorsOn;
     [ObservableProperty] private double _monitorLevel;
     [ObservableProperty] private bool _monitorsFollowLights;
     [ObservableProperty] private int _monitorsOffLevel;
@@ -348,13 +348,13 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _monitorStatus = "";
     public ObservableCollection<MonitorPresetRow> MonitorPresetRows { get; } = [];
     public IReadOnlyList<int> MonitorSteps => MonitorLevels.Steps;
-    public bool TwinkleInstalled => _host.Monitors.Installed;
-    public bool ShowMonitorSlider => TwinkleOn && TwinkleInstalled;
+    public bool MonitorsSupported => _host.Monitors.Installed;
+    public bool ShowMonitorSlider => MonitorsOn && MonitorsSupported;
     private bool _syncingMonitors;
 
-    partial void OnTwinkleOnChanged(bool value)
+    partial void OnMonitorsOnChanged(bool value)
     {
-        _host.Settings.TwinkleOn = value;
+        _host.Settings.MonitorsOn = value;
         _host.ScheduleSave();
         if (value) _ = _host.Monitors.RefreshAsync();
         else _host.Monitors.SettingsChanged();
@@ -410,8 +410,8 @@ public sealed partial class MainViewModel : ObservableObject
         _syncingMonitors = true;
         try { MonitorLevel = m.Level; }
         finally { _syncingMonitors = false; }
-        MonitorStatus = !m.Installed ? "Twinkle Tray isn't installed. Get it from the Microsoft Store or twinkletray.com, then come back here."
-            : !TwinkleOn ? "Twinkle Tray is installed. Switch this on to let MyRGB set your monitors' brightness."
+        MonitorStatus = !m.Installed ? "Monitor brightness needs Windows."
+            : !MonitorsOn ? "MyRGB talks to your monitors over DDC/CI, the control line in the display cable; nothing else to install. Switch this on to let it set their brightness."
             : m.Problem is { } p ? p
             : m.Monitors.Count == 0 ? "Looking for your monitors…"
             : $"Controlling {string.Join(" and ", m.Monitors)}.";

@@ -46,7 +46,7 @@ internal sealed class MyRgbClient : IDisposable
     public Task<bool> SetBrightnessAsync(double value) => PostAsync("brightness", new { value });
     public Task<bool> AdjustBrightnessAsync(double delta) => PostAsync("brightness", new { delta });
 
-    /// <summary>Monitor brightness through Twinkle Tray, or null when MyRGB can't be reached (older versions answer 404).</summary>
+    /// <summary>Monitor brightness, or null when MyRGB can't be reached (older versions answer 404).</summary>
     public async Task<MonitorsState?> GetMonitorsAsync()
     {
         try { return await _http.GetFromJsonAsync<MonitorsState>("monitors", Json); }

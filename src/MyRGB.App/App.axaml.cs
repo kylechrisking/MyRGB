@@ -188,7 +188,7 @@ public partial class App : Application
         _brightnessItem.Menu = sub;
     }
 
-    /// <summary>Monitor brightness through Twinkle Tray, only while that's switched on in Settings > Monitors.</summary>
+    /// <summary>Monitor brightness, only while it's switched on in Settings > Monitors.</summary>
     private void RebuildMonitorsMenu()
     {
         if (_monitorsItem is null || _host is null) return;

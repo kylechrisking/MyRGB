@@ -6,7 +6,7 @@ namespace MyRGB.App.Services;
 /// <summary>
 /// Keeps the monitors' brightness in step with the Monitors options: follow the lights, a level per
 /// preset, a night level, and the slider. It only sends a level when the rules' answer changes, so a
-/// change made in Twinkle Tray itself stays until something here has a reason to change it.
+/// change made with a monitor's own buttons stays until something here has a reason to change it.
 /// </summary>
 public sealed class MonitorSync : IMonitorBrightness, IDisposable
 {
@@ -33,11 +33,11 @@ public sealed class MonitorSync : IMonitorBrightness, IDisposable
     public event Action? Changed;
 
     public bool Installed => _control.Installed;
-    public bool Available => Installed && _host.Settings.TwinkleOn;
+    public bool Available => Installed && _host.Settings.MonitorsOn;
     public int Level { get; private set; } = 100;
     public IReadOnlyList<string> Monitors { get; private set; } = [];
 
-    /// <summary>The last problem talking to Twinkle Tray, or null.</summary>
+    /// <summary>The last problem talking to the monitors, or null.</summary>
     public string? Problem { get; private set; }
 
     public void Start()
@@ -66,14 +66,14 @@ public sealed class MonitorSync : IMonitorBrightness, IDisposable
                     _lastTarget ??= level;
                     _host.Settings.MonitorLevel ??= level;
                 }
-                Problem = list.Count == 0 ? "Twinkle Tray didn't list any monitors." : null;
+                Problem = list.Count == 0 ? "No monitor answered. Check that DDC/CI is on in each monitor's own menu." : null;
             }
-            _log.LogInformation("Twinkle Tray: {Count} monitor(s) at {Level}%", list.Count, level);
+            _log.LogInformation("Monitors: {Count} answering over DDC/CI, at {Level}%", list.Count, level);
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !_cts.IsCancellationRequested)
         {
-            Problem = $"Couldn't reach Twinkle Tray: {ex.Message}";
-            _log.LogWarning("Couldn't reach Twinkle Tray: {Reason}", ex.Message);
+            Problem = $"Couldn't reach the monitors: {ex.Message}";
+            _log.LogWarning("Couldn't reach the monitors: {Reason}", ex.Message);
         }
         Changed?.Invoke();
         Update();
@@ -144,7 +144,7 @@ public sealed class MonitorSync : IMonitorBrightness, IDisposable
         _ = Task.Run(PumpAsync);
     }
 
-    /// <summary>One Twinkle Tray call at a time; while one runs, only the newest level waits (a slider drag sends a few, not dozens).</summary>
+    /// <summary>One monitor command at a time; while one runs, only the newest level waits (a slider drag sends a few, not dozens).</summary>
     private async Task PumpAsync()
     {
         while (true)

@@ -11,8 +11,9 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 7, 4), ["Monitor brightness no longer needs Twinkle Tray: MyRGB talks to your monitors itself, over DDC/CI. Switch it on in Settings > Monitors."]),
         new(new(0, 7, 3), ["A Screen Brightness key for Stream Deck: brighter, dimmer or a set level for your monitors, or turn the dial on a Stream Deck +."]),
-        new(new(0, 7, 2), ["Monitor brightness through Twinkle Tray, in Settings > Monitors: a Screens slider up top and in the tray, dim the screens with the lights or at night, and a level per preset."]),
+        new(new(0, 7, 2), ["Monitor brightness in Settings > Monitors: a Screens slider up top and in the tray, dim the screens with the lights or at night, and a level per preset."]),
         new(new(0, 7, 1), ["Turn the lights off for 15 minutes to 2 hours from the tray; they come back on by themselves."]),
         new(new(0, 7, 0), ["Switching presets blends from one look to the next instead of cutting: from the app, the tray, a schedule, an app profile or a Stream Deck."]),
         new(new(0, 6, 9), ["The lights fade in and out instead of snapping: switching on or off, Lights out, and brightness changes."]),

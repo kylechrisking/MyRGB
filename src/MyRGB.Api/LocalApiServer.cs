@@ -20,7 +20,7 @@ namespace MyRGB.Api;
 /// POST /api/presets/next | /previous
 /// POST /api/power        {"on": true}  empty body toggles; {"on": false, "minutes": 30} turns off for a while
 /// POST /api/brightness   {"value": 0.8} or {"delta": -0.1}
-/// GET  /api/monitors                 monitor brightness (Twinkle Tray), 0..100
+/// GET  /api/monitors                 monitor brightness over DDC/CI, 0..100
 /// POST /api/monitors     {"value": 60} or {"delta": -10}
 /// GET  /api/events                     server-sent events, one "state" event per change
 /// POST /api/app/show                   bring the desktop window to the front
