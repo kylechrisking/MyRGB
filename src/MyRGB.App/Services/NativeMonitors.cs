@@ -13,7 +13,8 @@ public interface IMonitorControl
     /// <summary>Every monitor that answers a brightness query.</summary>
     Task<IReadOnlyList<MonitorInfo>> ListAsync(CancellationToken ct);
 
-    Task SetAllAsync(int level, CancellationToken ct);
+    /// <summary>Set every monitor that answers, each to <paramref name="levelFor"/>(its name), 0..100.</summary>
+    Task SetAllAsync(Func<string, int> levelFor, CancellationToken ct);
 }
 
 /// <summary>
@@ -55,27 +56,29 @@ public sealed class NativeMonitors : IMonitorControl
         }
     }
 
-    public async Task SetAllAsync(int level, CancellationToken ct)
+    public async Task SetAllAsync(Func<string, int> levelFor, CancellationToken ct)
     {
         if (!Installed) return;
-        level = Math.Clamp(level, 0, 100);
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             var failed = await Task.Run(() =>
             {
                 var misses = new List<string>();
+                var names = FriendlyNames();
                 ForEachMonitor((device, description, handle) =>
                 {
                     // Monitors don't all count to 100; scale to the range each one reports.
                     if (!TryRead(handle, out _, out uint max) || max == 0) return; // no DDC/CI: not ours to drive
+                    string name = names.TryGetValue(device, out var friendly) && friendly.Length > 0 ? friendly : description;
+                    int level = Math.Clamp(levelFor(name), 0, 100);
                     uint value = (uint)Math.Round(level * max / 100.0);
                     // DDC/CI wants ~50 ms between commands; the ASUS VG24VQ1B rejects a write sent straight after the read.
                     Thread.Sleep(50);
                     if (!SetVCPFeature(handle, VcpBrightness, value))
                     {
                         Thread.Sleep(50); // DDC/CI is fussy about pace; one retry covers a busy monitor
-                        if (!SetVCPFeature(handle, VcpBrightness, value)) misses.Add(device);
+                        if (!SetVCPFeature(handle, VcpBrightness, value)) misses.Add(name);
                     }
                 });
                 return misses;

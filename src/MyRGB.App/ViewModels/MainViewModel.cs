@@ -347,6 +347,8 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _monitorPresetLevelsOn;
     [ObservableProperty] private string _monitorStatus = "";
     public ObservableCollection<MonitorPresetRow> MonitorPresetRows { get; } = [];
+    public ObservableCollection<MonitorRangeRow> MonitorRangeRows { get; } = [];
+    public bool ShowMonitorRanges => MonitorRangeRows.Count > 0;
     public IReadOnlyList<int> MonitorSteps => MonitorLevels.Steps;
     public bool MonitorsSupported => _host.Monitors.Installed;
     public bool ShowMonitorSlider => MonitorsOn && MonitorsSupported;
@@ -404,12 +406,27 @@ public sealed partial class MainViewModel : ObservableObject
         SaveMonitors(_ => { });
     }
 
+    internal void UpdateMonitorRange(MonitorRange range)
+    {
+        var list = _host.Settings.MonitorRanges;
+        list.RemoveAll(r => string.Equals(r.Name, range.Name, StringComparison.OrdinalIgnoreCase));
+        if (range.Darkest != 0 || range.Brightest != 100) list.Add(range);
+        _host.ScheduleSave();
+        _host.Monitors.RangesChanged();
+    }
+
     private void SyncMonitors()
     {
         var m = _host.Monitors;
         _syncingMonitors = true;
         try { MonitorLevel = m.Level; }
         finally { _syncingMonitors = false; }
+        if (!m.Monitors.SequenceEqual(MonitorRangeRows.Select(r => r.Name)))
+        {
+            MonitorRangeRows.Clear();
+            foreach (var name in m.Monitors) MonitorRangeRows.Add(new MonitorRangeRow(m.RangeFor(name) ?? new MonitorRange(name), this));
+            OnPropertyChanged(nameof(ShowMonitorRanges));
+        }
         MonitorStatus = !m.Installed ? "Monitor brightness needs Windows."
             : !MonitorsOn ? "MyRGB talks to your monitors over DDC/CI, the control line in the display cable; nothing else to install. Switch this on to let it set their brightness."
             : m.Problem is { } p ? p
@@ -915,4 +932,30 @@ public sealed partial class MonitorPresetRow : ObservableObject
 
     [RelayCommand]
     private void Remove() => _owner.RemoveMonitorPresetLevel(this);
+}
+
+/// <summary>One monitor's own span for the shared level, so a brighter panel can be matched to a dimmer one.</summary>
+public sealed partial class MonitorRangeRow : ObservableObject
+{
+    private readonly MainViewModel _owner;
+
+    public MonitorRangeRow(MonitorRange range, MainViewModel owner)
+    {
+        _owner = owner;
+        Name = range.Name;
+        _darkest = range.Darkest;
+        _brightest = range.Brightest;
+    }
+
+    public string Name { get; }
+    public static IReadOnlyList<int> DarkestSteps { get; } = [0, 5, 10, 15, 20, 25, 30, 40, 50];
+    public static IReadOnlyList<int> BrightestSteps { get; } = [100, 95, 90, 85, 80, 75, 70, 60, 50];
+    public IReadOnlyList<int> DarkestChoices => DarkestSteps.Contains(Darkest) ? DarkestSteps : [.. DarkestSteps, Darkest];
+    public IReadOnlyList<int> BrightestChoices => BrightestSteps.Contains(Brightest) ? BrightestSteps : [.. BrightestSteps, Brightest];
+
+    [ObservableProperty] private int _darkest;
+    [ObservableProperty] private int _brightest;
+
+    partial void OnDarkestChanged(int value) => _owner.UpdateMonitorRange(new MonitorRange(Name, value, Brightest));
+    partial void OnBrightestChanged(int value) => _owner.UpdateMonitorRange(new MonitorRange(Name, Darkest, value));
 }

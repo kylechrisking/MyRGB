@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 7, 5), ["Match your monitors in Settings > Monitors: give each one its own darkest and brightest, and the Screens slider runs between them."]),
         new(new(0, 7, 4), ["Monitor brightness no longer needs Twinkle Tray: MyRGB talks to your monitors itself, over DDC/CI. Switch it on in Settings > Monitors."]),
         new(new(0, 7, 3), ["A Screen Brightness key for Stream Deck: brighter, dimmer or a set level for your monitors, or turn the dial on a Stream Deck +."]),
         new(new(0, 7, 2), ["Monitor brightness in Settings > Monitors: a Screens slider up top and in the tray, dim the screens with the lights or at night, and a level per preset."]),

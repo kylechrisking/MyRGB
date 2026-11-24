@@ -54,7 +54,7 @@ public sealed class MonitorSync : IMonitorBrightness, IDisposable
         try
         {
             var list = await _control.ListAsync(_cts.Token);
-            int level = list.Count > 0 ? (int)Math.Round(list.Average(m => m.Brightness)) : Level;
+            int level = list.Count > 0 ? (int)Math.Round(list.Average(m => MonitorLevels.Unmap(m.Brightness, RangeFor(m.Name)))) : Level;
             lock (_gate)
             {
                 Monitors = list.Select(m => m.Name).ToList();
@@ -84,6 +84,17 @@ public sealed class MonitorSync : IMonitorBrightness, IDisposable
     {
         Changed?.Invoke();
         Update();
+    }
+
+    /// <summary>A monitor's own darkest..brightest, if one was set in Settings.</summary>
+    public MonitorRange? RangeFor(string name) =>
+        _host.Settings.MonitorRanges.FirstOrDefault(r => string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>A monitor's range changed: send the current level again so the change shows at once.</summary>
+    public void RangesChanged()
+    {
+        if (!Available || !_read) return;
+        Send(Level);
     }
 
     /// <summary>The level the options call for right now.</summary>
@@ -158,7 +169,7 @@ public sealed class MonitorSync : IMonitorBrightness, IDisposable
             }
             try
             {
-                await _control.SetAllAsync(level, _cts.Token);
+                await _control.SetAllAsync(name => MonitorLevels.Map(level, RangeFor(name)), _cts.Token);
                 if (Problem is not null) { Problem = null; Changed?.Invoke(); }
             }
             catch (Exception ex) when (!_cts.IsCancellationRequested)

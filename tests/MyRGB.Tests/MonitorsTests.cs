@@ -42,4 +42,25 @@ public class MonitorsTests
         Assert.Equal(100, MonitorLevels.Target(new MonitorRules(), 150, true, false, null));
         Assert.Equal(0, MonitorLevels.Target(All with { OffLevel = -5 }, 50, false, false, null));
     }
+
+    [Fact]
+    public void A_monitor_range_spreads_the_shared_level_over_its_own_span()
+    {
+        var range = new MonitorRange("ASUS", Darkest: 10, Brightest: 80);
+        Assert.Equal(10, MonitorLevels.Map(0, range));
+        Assert.Equal(45, MonitorLevels.Map(50, range));
+        Assert.Equal(80, MonitorLevels.Map(100, range));
+        Assert.Equal(60, MonitorLevels.Map(60, null));
+        Assert.Equal(30, MonitorLevels.Map(50, range with { Darkest = 30, Brightest = 30 }));
+    }
+
+    [Fact]
+    public void Reading_a_monitor_back_undoes_its_range()
+    {
+        var range = new MonitorRange("ASUS", Darkest: 10, Brightest: 80);
+        foreach (int level in new[] { 0, 20, 50, 100 })
+            Assert.Equal(level, MonitorLevels.Unmap(MonitorLevels.Map(level, range), range));
+        Assert.Equal(0, MonitorLevels.Unmap(5, range));    // below its darkest, e.g. set with the monitor's buttons
+        Assert.Equal(100, MonitorLevels.Unmap(95, range));
+    }
 }

@@ -201,10 +201,12 @@ if (quick)
     host.Lights.ActivatePreset("fire"); Mon("back to fire");
     vm.MonitorsNightOn = true; vm.MonitorsNightLevel = 10; fakeNow = new DateTime(2026, 11, 24, 23, 30, 0); Mon("23:30 night");
     fakeNow = new DateTime(2026, 11, 25, 7, 30, 0); Mon("07:30 morning");
+    vm.MonitorRangeRows[0].Brightest = 80; vm.MonitorRangeRows[1].Darkest = 10; Mon("dell to 80, asus from 10");
+    vm.MonitorLevel = 50; Mon("slider 50, matched");
     vm.SelectedTab = MainViewModel.SettingsTab; Dispatcher.UIThread.RunJobs();
     Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Monitors").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
     Shoot($"{themeId}-monitors");
-    Console.WriteLine($"saved monitors: on={host.Settings.MonitorsOn} level={host.Settings.MonitorLevel} follow={host.Settings.MonitorsFollowLights}/{host.Settings.MonitorsOffLevel} night={host.Settings.MonitorsNightOn}/{host.Settings.MonitorsNightLevel} presets={string.Join(",", host.Settings.MonitorPresetLevels.Select(p => $"{p.PresetId}={p.Level}"))}");
+    Console.WriteLine($"saved monitors: on={host.Settings.MonitorsOn} level={host.Settings.MonitorLevel} follow={host.Settings.MonitorsFollowLights}/{host.Settings.MonitorsOffLevel} night={host.Settings.MonitorsNightOn}/{host.Settings.MonitorsNightLevel} presets={string.Join(",", host.Settings.MonitorPresetLevels.Select(p => $"{p.PresetId}={p.Level}"))} ranges={string.Join(",", host.Settings.MonitorRanges.Select(r => $"{r.Name}={r.Darkest}-{r.Brightest}"))}");
     Console.WriteLine($"real session locked: {typeof(AppHost).Assembly.GetType("MyRGB.App.Services.LightsOffWatcher")!.GetMethod("SessionLocked")!.Invoke(null, null)}");
     Console.WriteLine($"saved: night={host.Settings.NightOn} {host.Settings.NightFrom}-{host.Settings.NightTo} locked={host.Settings.OffWhenLocked} enabled={host.Engine.Enabled}");
     window.AllowClose = true; window.Close(); host.Shutdown();
@@ -485,10 +487,15 @@ sealed class FakeScreenKeyboard(IReadOnlyList<LedInfo> leds) : IScreenDevice
 /// <summary>Two monitors that remember what they were set to, in place of the real ones.</summary>
 sealed class FakeMonitors : IMonitorControl
 {
-    public int Level = 70;
+    public int Dell = 70, Asus = 70;
     public int Sets;
+    public string Level => Dell == Asus ? $"{Dell}" : $"{Dell}/{Asus}";
     public bool Installed => true;
     public Task<IReadOnlyList<MonitorInfo>> ListAsync(CancellationToken ct) =>
-        Task.FromResult<IReadOnlyList<MonitorInfo>>([new("DELL S3222DGM", Level), new("ASUS VG24VQ1B", Level)]);
-    public Task SetAllAsync(int level, CancellationToken ct) { Level = level; Sets++; return Task.CompletedTask; }
+        Task.FromResult<IReadOnlyList<MonitorInfo>>([new("DELL S3222DGM", Dell), new("ASUS VG24VQ1B", Asus)]);
+    public Task SetAllAsync(Func<string, int> levelFor, CancellationToken ct)
+    {
+        Dell = levelFor("DELL S3222DGM"); Asus = levelFor("ASUS VG24VQ1B"); Sets++;
+        return Task.CompletedTask;
+    }
 }

@@ -97,6 +97,9 @@ public sealed class AppSettings
     public bool MonitorPresetLevelsOn { get; set; }
     public List<PresetMonitorLevel> MonitorPresetLevels { get; set; } = [];
 
+    /// <summary>Each monitor's own span for the shared level, by EDID name; monitors not listed use 0..100.</summary>
+    public List<MonitorRange> MonitorRanges { get; set; } = [];
+
     /// <summary>Ctrl+Alt+L turns the lights on or off from anywhere.</summary>
     public bool GlobalHotkeyOn { get; set; }
 

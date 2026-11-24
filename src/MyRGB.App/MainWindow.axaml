@@ -1420,6 +1420,24 @@
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <Button Classes="ghost" Content="Add a preset" Command="{Binding AddMonitorPresetLevelCommand}" IsEnabled="{Binding MonitorPresetLevelsOn}" />
+                    <StackPanel Spacing="6" IsVisible="{Binding ShowMonitorRanges}" Margin="0,6,0,0">
+                      <TextBlock FontWeight="SemiBold" Text="Match your monitors" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Two monitors at the same number rarely look alike. Give each its own darkest and brightest, and the slider runs between them, so 0% is each one's darkest and 100% its brightest." />
+                      <ItemsControl ItemsSource="{Binding MonitorRangeRows}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:MonitorRangeRow">
+                            <Grid ColumnDefinitions="200,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,6">
+                              <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Grid.Column="1" Classes="muted" Text="from" VerticalAlignment="Center" />
+                              <ComboBox Grid.Column="2" ItemsSource="{Binding DarkestChoices}" SelectedItem="{Binding Darkest}" MinWidth="80" />
+                              <TextBlock Grid.Column="3" Classes="muted" Text="to" VerticalAlignment="Center" />
+                              <ComboBox Grid.Column="4" ItemsSource="{Binding BrightestChoices}" SelectedItem="{Binding Brightest}" MinWidth="80" />
+                              <TextBlock Grid.Column="5" Text="%" VerticalAlignment="Center" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
                   </StackPanel>
                   <TextBlock Classes="muted" TextWrapping="Wrap" Text="Night uses the times under Lights out. Night wins over the lights, which win over a preset's level, which wins over the slider. A change you make with the monitor's own buttons stays until one of these has a reason to change it. The local API has the same control: GET or POST /api/monitors." />
                 </StackPanel>
