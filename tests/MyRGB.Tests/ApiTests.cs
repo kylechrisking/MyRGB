@@ -110,6 +110,18 @@ public sealed class ApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Rescan_devices()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, (await _http.PostAsync("devices/rescan", null, ct)).StatusCode);
+
+        int scans = 0;
+        _server.Rescan = () => { scans++; return Task.CompletedTask; };
+        Assert.True((await _http.PostAsync("devices/rescan", null, ct)).IsSuccessStatusCode);
+        Assert.Equal(1, scans);
+    }
+
+    [Fact]
     public async Task Pause_shuffle_and_flash()
     {
         var ct = TestContext.Current.CancellationToken;

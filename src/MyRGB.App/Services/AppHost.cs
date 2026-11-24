@@ -275,6 +275,21 @@ public sealed class AppHost : IAsyncDisposable
     public string? SensorHelperVersion => SensorSource is PipeSensors { Connected: true } p ? p.HelperVersion : null;
     public LocalApiServer? Api { get; private set; }
 
+    /// <summary>Look for devices again: OpenRGB rescans its hardware, then every provider is asked for its list.</summary>
+    public async Task RescanDevicesAsync()
+    {
+        try
+        {
+            await Devices.RescanHardwareAsync();
+            await Devices.RefreshAsync();
+            await Batteries.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Scanning for devices failed");
+        }
+    }
+
     /// <summary>The user-writable OpenRGB the elevated task would run as administrator, or null when it's safe or absent.</summary>
     public string? UnsafeOpenRgbTask() => _options.UnsafeOpenRgbTask is { } fake ? fake() : MyRGB.Providers.OpenRgb.ElevatedTask.UnsafeExe();
 
@@ -461,7 +476,7 @@ public sealed class AppHost : IAsyncDisposable
     {
         try
         {
-            Api = new LocalApiServer(Lights, Settings.ApiPort, Logs.CreateLogger<LocalApiServer>(), () => ShowRequested?.Invoke()) { Monitors = Monitors };
+            Api = new LocalApiServer(Lights, Settings.ApiPort, Logs.CreateLogger<LocalApiServer>(), () => ShowRequested?.Invoke()) { Monitors = Monitors, Rescan = RescanDevicesAsync };
             await Api.StartAsync();
             _log.LogInformation("Local API on {Url}", Api.BaseUrl);
         }

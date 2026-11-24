@@ -28,7 +28,7 @@ public sealed class OpenRgbOptions
 /// OpenRGB supports (including SMBus RAM and GPUs) shows up here. Native providers, when added,
 /// get a higher <see cref="Priority"/> and take over the same hardware.
 /// </summary>
-public sealed class OpenRgbProvider : IDeviceProvider
+public sealed class OpenRgbProvider : IDeviceProvider, IHardwareRescan
 {
     public const string ProviderId = "openrgb";
 
@@ -58,6 +58,21 @@ public sealed class OpenRgbProvider : IDeviceProvider
     public string? StatusMessage { get; private set; }
 
     public event EventHandler? DevicesChanged;
+
+    /// <summary>OpenRGB scans once at start; a wireless headset switched on later only appears after this.</summary>
+    public async Task RescanHardwareAsync(CancellationToken ct = default)
+    {
+        if (_client is not { Connected: true } client) return; // DiscoverAsync connects and scans anyway
+        try
+        {
+            await client.RequestRescanAsync(ct);
+            _log.LogInformation("Asked OpenRGB to look for hardware again");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _log.LogWarning("Couldn't ask OpenRGB to rescan: {Reason}", ex.Message);
+        }
+    }
 
     public async Task<IReadOnlyList<IRgbDevice>> DiscoverAsync(CancellationToken ct = default)
     {

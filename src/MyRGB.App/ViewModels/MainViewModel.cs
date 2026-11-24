@@ -596,6 +596,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             await Task.Run(async () =>
             {
+                await _host.Devices.RescanHardwareAsync(); // OpenRGB looks again too, and reports back when done
                 await _host.Devices.RefreshAsync();
                 await _host.Batteries.RefreshAsync();
             });

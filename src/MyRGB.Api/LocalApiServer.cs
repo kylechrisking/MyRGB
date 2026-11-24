@@ -16,6 +16,7 @@ namespace MyRGB.Api;
 /// GET  /api/state                      power, brightness, active preset
 /// GET  /api/presets                    every preset with a color swatch
 /// GET  /api/devices                    connected devices
+/// POST /api/devices/rescan             look for devices again (OpenRGB too); the list updates over a few seconds
 /// POST /api/presets/{id}/activate
 /// POST /api/presets/next | /previous
 /// POST /api/power        {"on": true}  empty body toggles; {"on": false, "minutes": 30} turns off for a while
@@ -59,6 +60,9 @@ public sealed class LocalApiServer : IAsyncDisposable
 
     /// <summary>Monitor brightness for /api/monitors; null answers that no monitor control is set up.</summary>
     public IMonitorBrightness? Monitors { get; set; }
+
+    /// <summary>Looks for devices again, as the Devices page's Scan again does. Null: the route answers 404.</summary>
+    public Func<Task>? Rescan { get; set; }
 
     public int Port { get; }
     public string BaseUrl => $"http://localhost:{Port}/api";
@@ -121,6 +125,7 @@ public sealed class LocalApiServer : IAsyncDisposable
                 ("POST", "/api/pause") => Pause(await ReadBody<PauseRequest>(req)),
                 ("POST", "/api/presets/shuffle") => Do(_lights.Shuffle),
                 ("POST", "/api/flash") => Do(() => _lights.Flash(null)),
+                ("POST", "/api/devices/rescan") when Rescan is { } rescan => Do(() => _ = rescan()),
                 ("POST", _) when path.StartsWith("/api/devices/") && path.EndsWith("/flash") =>
                     FlashDevice(Uri.UnescapeDataString(path["/api/devices/".Length..^"/flash".Length])),
                 ("POST", _) when path.StartsWith("/api/presets/") && path.EndsWith("/activate") =>

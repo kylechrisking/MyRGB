@@ -99,6 +99,9 @@ internal sealed class OpenRgbClient : IAsyncDisposable
         }
     }
 
+    /// <summary>Ask OpenRGB to look for hardware again, e.g. a wireless headset switched on after it started. No reply: it sends DeviceListUpdated when done.</summary>
+    public ValueTask RequestRescanAsync(CancellationToken ct) => SendAsync(0, PacketId.RequestRescanDevices, [], ct);
+
     private ValueTask SendAsync(uint index, PacketId id, byte[] payload, CancellationToken ct) =>
         WriteAsync(Protocol.Packet(index, id, payload), ct);
 

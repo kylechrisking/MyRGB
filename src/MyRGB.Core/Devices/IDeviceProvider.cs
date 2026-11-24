@@ -27,3 +27,13 @@ public interface IDeviceProvider : IAsyncDisposable
     /// <summary>Connect if needed and return the devices currently available, already switched to direct control.</summary>
     Task<IReadOnlyList<IRgbDevice>> DiscoverAsync(CancellationToken ct = default);
 }
+
+/// <summary>
+/// A provider whose own backend scans hardware once and keeps that list (OpenRGB): asked to look again
+/// when the user presses Scan again, so a device switched on later can turn up without a restart.
+/// </summary>
+public interface IHardwareRescan
+{
+    /// <summary>Start the backend's own scan. Returns once asked; the provider raises DevicesChanged when it's done.</summary>
+    Task RescanHardwareAsync(CancellationToken ct = default);
+}

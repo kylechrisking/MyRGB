@@ -29,6 +29,19 @@ public sealed class DeviceManager : IAsyncDisposable
         };
     }
 
+    /// <summary>Ask providers that keep their own hardware list (OpenRGB) to scan again; they report back through DevicesChanged.</summary>
+    public async Task RescanHardwareAsync(CancellationToken ct = default)
+    {
+        foreach (var provider in _providers.OfType<IHardwareRescan>())
+        {
+            try { await provider.RescanHardwareAsync(ct); }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _log.LogWarning(ex, "Asking {Provider} to rescan failed", ((IDeviceProvider)provider).Id);
+            }
+        }
+    }
+
     public async Task RefreshAsync(CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);

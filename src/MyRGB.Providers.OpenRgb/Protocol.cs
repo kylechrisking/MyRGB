@@ -11,6 +11,7 @@ internal enum PacketId : uint
     RequestProtocolVersion = 40,
     SetClientName = 50,
     DeviceListUpdated = 100,
+    RequestRescanDevices = 140,
     ResizeZone = 1000,
     UpdateLeds = 1050,
     SetCustomMode = 1100,
