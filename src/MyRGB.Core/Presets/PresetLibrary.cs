@@ -41,10 +41,22 @@ public sealed class PresetLibrary
         return stored;
     }
 
+    /// <summary>Ids of user presets deleted since MyRGB started. Sync uses it to tell "deleted" from "lost".</summary>
+    public IReadOnlyCollection<string> DeletedThisSession
+    {
+        get { lock (_gate) return [.. _deleted]; }
+    }
+
+    private readonly HashSet<string> _deleted = new(StringComparer.OrdinalIgnoreCase);
+
     public bool Delete(string id)
     {
         bool removed;
-        lock (_gate) removed = _user.RemoveAll(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) > 0;
+        lock (_gate)
+        {
+            removed = _user.RemoveAll(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase)) > 0;
+            if (removed) _deleted.Add(id);
+        }
         if (removed) Changed?.Invoke(this, EventArgs.Empty);
         return removed;
     }

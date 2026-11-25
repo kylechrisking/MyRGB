@@ -27,6 +27,29 @@ foreach (var old in Directory.GetFiles(outDir, "*.png")) File.Delete(old);
 string data = Path.Combine(Path.GetTempPath(), "MyRGB-snapshots");
 if (Directory.Exists(data)) Directory.Delete(data, recursive: true);
 
+// Settings backups: one per day, a week kept, and an unreadable settings.json falls back to the newest.
+{
+    string dir = Path.Combine(Path.GetTempPath(), "MyRGB-settings-check");
+    if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+    var store = new SettingsStore(dir);
+    var day = new DateTime(2026, 11, 1, 9, 0, 0);
+    for (int i = 0; i < 10; i++)
+    {
+        var s = store.Load();
+        s.UserPresets = [new Preset { Id = $"user-{i}", Name = $"Day {i}", EffectId = "static" }];
+        store.Save(s, day.AddDays(i));
+        store.Save(s, day.AddDays(i).AddHours(3)); // a second save the same day keeps the first backup
+    }
+    var kept = Directory.GetFiles(store.BackupDirectory).Select(Path.GetFileName).Order().ToArray();
+    File.WriteAllText(Path.Combine(dir, "settings.json"), "{ not json");
+    var restored = store.Load();
+    bool ok = kept.Length == SettingsStore.BackupDays && kept[^1] == "settings-2026-11-10.json"
+        && restored.UserPresets.SingleOrDefault()?.Name == "Day 8" && File.Exists(Path.Combine(dir, "settings.json.broken"));
+    Console.WriteLine($"settings backups: {string.Join(", ", kept)}; restored '{restored.UserPresets.SingleOrDefault()?.Name}': {(ok ? "ok" : "FAILED")}");
+    Console.WriteLine($"settings note: {store.LoadNote}");
+    Directory.Delete(dir, recursive: true);
+}
+
 AppBuilder.Configure<App>()
     .UseSkia()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })

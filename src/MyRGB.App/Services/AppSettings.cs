@@ -122,20 +122,40 @@ public sealed class SettingsStore(string dataDirectory)
     private readonly string _path = Path.Combine(dataDirectory, "settings.json");
     private readonly object _gate = new();
 
+    /// <summary>One copy of settings.json per day, the last <see cref="BackupDays"/> days.</summary>
+    public string BackupDirectory => Path.Combine(DataDirectory, "backups");
+
+    public const int BackupDays = 7;
+
+    /// <summary>What Load had to do besides reading the file (restored a backup, started fresh); null when nothing. For the log.</summary>
+    public string? LoadNote { get; private set; }
+
     public AppSettings Load()
     {
+        LoadNote = null;
         AppSettings settings;
-        try
-        {
-            settings = File.Exists(_path)
-                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path), Json) ?? new()
-                : new();
-        }
-        catch (JsonException)
-        {
-            // Keep the broken file for inspection rather than silently overwriting it.
-            File.Copy(_path, _path + ".broken", overwrite: true);
+        if (!File.Exists(_path))
             settings = new();
+        else if (TryRead(_path, out var read, out var why))
+            settings = read;
+        else
+        {
+            // Keep the broken file for inspection, then fall back to the newest backup that reads.
+            // Starting empty would lose the user's presets, and the next cloud sync would take that
+            // for deleting them everywhere.
+            try { File.Copy(_path, _path + ".broken", overwrite: true); } catch (IOException) { }
+            var backup = Backups().Select(f => TryRead(f, out var b, out _) ? (File: f, Settings: b) : default)
+                .FirstOrDefault(r => r.Settings is not null);
+            if (backup.Settings is not null)
+            {
+                settings = backup.Settings;
+                LoadNote = $"settings.json could not be read ({why}); restored {Path.GetFileName(backup.File)}. The unreadable file is settings.json.broken.";
+            }
+            else
+            {
+                settings = new();
+                LoadNote = $"settings.json could not be read ({why}) and there is no usable backup; starting fresh. The unreadable file is settings.json.broken.";
+            }
         }
 
         // Re-find when the saved path is gone too, e.g. after reinstalling to another folder.
@@ -144,14 +164,64 @@ public sealed class SettingsStore(string dataDirectory)
         return settings;
     }
 
-    public void Save(AppSettings settings)
+    private static bool TryRead(string path, out AppSettings settings, out string? why)
+    {
+        why = null;
+        // Another program (a backup tool, an antivirus scan) can hold the file for a moment.
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path), Json)!;
+                if (settings is not null) return true;
+                why = "the file is empty";
+                break;
+            }
+            catch (JsonException ex) { why = ex.Message; break; }
+            catch (IOException ex) when (attempt < 4) { why = ex.Message; Thread.Sleep(250); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { why = ex.Message; break; }
+        }
+        settings = null!;
+        return false;
+    }
+
+    /// <summary>Backups, newest first.</summary>
+    private IEnumerable<string> Backups() =>
+        Directory.Exists(BackupDirectory)
+            ? Directory.GetFiles(BackupDirectory, "settings-*.json").OrderByDescending(f => f, StringComparer.Ordinal)
+            : [];
+
+    public void Save(AppSettings settings) => Save(settings, DateTime.Now);
+
+    public void Save(AppSettings settings, DateTime now)
     {
         lock (_gate)
         {
             Directory.CreateDirectory(DataDirectory);
             var tmp = _path + ".tmp";
             File.WriteAllText(tmp, JsonSerializer.Serialize(settings, Json));
+            BackUp(now);
             File.Move(tmp, _path, overwrite: true);
+        }
+    }
+
+    /// <summary>Before the first save of a day, keep the file as it was; drop backups past a week.</summary>
+    private void BackUp(DateTime now)
+    {
+        try
+        {
+            if (!File.Exists(_path)) return;
+            string today = Path.Combine(BackupDirectory, $"settings-{now:yyyy-MM-dd}.json");
+            if (File.Exists(today)) return;
+            // Only a file that reads back is worth keeping as a backup.
+            if (!TryRead(_path, out _, out _)) return;
+            Directory.CreateDirectory(BackupDirectory);
+            File.Copy(_path, today);
+            foreach (var old in Backups().Skip(BackupDays)) File.Delete(old);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A missed backup must never stop the save itself.
         }
     }
 

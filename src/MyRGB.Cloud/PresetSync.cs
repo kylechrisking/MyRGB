@@ -45,7 +45,7 @@ public sealed class PresetSync
         {
             var state = LoadState(user.Id);
             var remote = (await _cloud.GetSyncedPresetsAsync(ct)).ToDictionary(r => r.PresetId);
-            var plan = Plan(_library.UserPresets, remote, state, DateTimeOffset.UtcNow);
+            var plan = Plan(_library.UserPresets, remote, state, DateTimeOffset.UtcNow, _library.DeletedThisSession);
 
             await _cloud.PutSyncedPresetsAsync(plan.Upload, ct);
             foreach (var p in plan.SaveLocally) _library.Save(p);
@@ -75,15 +75,20 @@ public sealed class PresetSync
         Dictionary<string, string> NewState);
 
     /// <param name="lastSynced">Preset id → content hash at the last sync ("" for a known deletion).</param>
+    /// <param name="deletedHere">Presets the user deleted on this PC since MyRGB started.</param>
     internal static SyncPlan Plan(
         IReadOnlyList<Preset> local, IReadOnlyDictionary<string, RemotePreset> remote,
-        IReadOnlyDictionary<string, string> lastSynced, DateTimeOffset now)
+        IReadOnlyDictionary<string, string> lastSynced, DateTimeOffset now, IReadOnlyCollection<string>? deletedHere = null)
     {
         var upload = new List<RemotePreset>();
         var save = new List<Preset>();
         var delete = new List<string>();
         var state = new Dictionary<string, string>();
         var localById = local.ToDictionary(p => p.Id);
+        // No presets at all here while the last sync knew some: they were lost on this PC (a
+        // settings file that couldn't be read, a fresh Windows), not deleted one by one. Restore
+        // them rather than delete them from the cloud and from every other PC.
+        bool lostHere = local.Count == 0 && (deletedHere is null || deletedHere.Count == 0) && lastSynced.Values.Any(v => v.Length > 0);
 
         foreach (var id in localById.Keys.Union(remote.Keys).Union(lastSynced.Keys))
         {
@@ -92,7 +97,8 @@ public sealed class PresetSync
             string? baseline = lastSynced.GetValueOrDefault(id);
 
             // Each side's version: a content hash, "" for deleted, null for never existed.
-            string? here = mine is not null ? Hash(mine) : baseline is null ? null : "";
+            string? actual = mine is not null ? Hash(mine) : null;
+            string? here = actual ?? (baseline is null ? null : lostHere ? baseline : "");
             string? there = theirs is null ? baseline : theirs.Deleted ? "" : Hash(theirs.Data!);
 
             bool changedHere = here != baseline;
@@ -110,11 +116,8 @@ public sealed class PresetSync
 
             if (result != there)
                 upload.Add(result == "" ? new RemotePreset(id, null, true, now) : new RemotePreset(id, mine, false, now));
-            if (result != here)
-            {
-                if (result == "") { if (mine is not null) delete.Add(id); }
-                else save.Add(theirs!.Data! with { BuiltIn = false });
-            }
+            if (result == "") { if (mine is not null) delete.Add(id); }
+            else if (result != actual && theirs?.Data is { } data) save.Add(data with { BuiltIn = false });
             state[id] = result;
         }
         return new SyncPlan(upload, save, delete, state);

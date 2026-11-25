@@ -56,6 +56,16 @@ public class UpdateTests : IDisposable
     }
 
     [Fact]
+    public void Installers_only_come_from_GitHub_over_https()
+    {
+        Assert.True(UpdateFeed.IsGitHub(new Uri("https://github.com/kylechrisking/MyRGB/releases/download/v0.8.2-beta/MyRGB-Setup-0.8.2.exe")));
+        Assert.True(UpdateFeed.IsGitHub(new Uri("https://objects.githubusercontent.com/x")));
+        Assert.False(UpdateFeed.IsGitHub(new Uri("http://github.com/x")));
+        Assert.False(UpdateFeed.IsGitHub(new Uri("https://github.com.evil.example/x")));
+        Assert.False(UpdateFeed.IsGitHub(new Uri("https://evilgithubusercontent.com/x")));
+    }
+
+    [Fact]
     public void Drafts_are_skipped_and_a_release_without_a_checksum_still_counts()
     {
         var json = """

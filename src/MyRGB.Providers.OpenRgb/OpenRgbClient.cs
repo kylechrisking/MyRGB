@@ -142,6 +142,8 @@ internal sealed class OpenRgbClient : IAsyncDisposable
         }
     }
 
+    private const uint MaxPacket = 16 * 1024 * 1024;
+
     private async Task ReadLoopAsync()
     {
         Exception? error = null;
@@ -152,6 +154,9 @@ internal sealed class OpenRgbClient : IAsyncDisposable
             {
                 await _stream.ReadExactlyAsync(header, _cts.Token);
                 var (_, id, size) = Protocol.ReadHeader(header);
+                // The biggest real packet (a device with thousands of LEDs) is well under a megabyte. A
+                // size past this is a broken stream or not OpenRGB at all: drop the connection, don't allocate it.
+                if (size > MaxPacket) throw new InvalidDataException($"OpenRGB sent a {size}-byte packet.");
                 var payload = new byte[size];
                 if (size > 0) await _stream.ReadExactlyAsync(payload, _cts.Token);
 

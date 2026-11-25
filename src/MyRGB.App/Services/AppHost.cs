@@ -94,6 +94,7 @@ public sealed class AppHost : IAsyncDisposable
         _log.LogInformation("MyRGB {Version} starting from {Exe} ({Rights}); data in {Data}",
             typeof(AppHost).Assembly.GetName().Version?.ToString(3), Environment.ProcessPath,
             Environment.IsPrivilegedProcess ? "administrator" : "standard user", _options.DataDirectory);
+        if (_store.LoadNote is { } note) _log.LogWarning("{Note}", note);
 
         Devices = new DeviceManager(Logs.CreateLogger<DeviceManager>());
         var providers = _options.Providers?.Invoke(Settings, Logs) ??
@@ -564,22 +565,38 @@ public sealed class AppHost : IAsyncDisposable
 
     public void SaveNow()
     {
-        try
+        // Saving runs off the UI thread, which may be changing a list in Settings (saved curves,
+        // the schedule) at that moment; that reads as "collection was modified". Try again then.
+        for (int attempt = 1; ; attempt++)
         {
-            var active = Engine.ActivePreset;
-            if (active is not null && active.Id != DraftPresetId) Settings.ActivePresetId = active.Id;
-            Settings.Brightness = HeldBrightness ?? Engine.Brightness;
-            Settings.Enabled = Engine.Enabled;
-            Settings.UserPresets = [.. Presets.UserPresets];
-            Settings.Layout = [.. Layout.Placements];
-            _store.Save(Settings);
-            SetSaveError(null);
+            try
+            {
+                SaveOnce();
+                return;
+            }
+            catch (InvalidOperationException) when (attempt < 3)
+            {
+                Thread.Sleep(50);
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Saving settings failed");
+                SetSaveError(ex.Message);
+                return;
+            }
         }
-        catch (Exception ex)
-        {
-            _log.LogError(ex, "Saving settings failed");
-            SetSaveError(ex.Message);
-        }
+    }
+
+    private void SaveOnce()
+    {
+        var active = Engine.ActivePreset;
+        if (active is not null && active.Id != DraftPresetId) Settings.ActivePresetId = active.Id;
+        Settings.Brightness = HeldBrightness ?? Engine.Brightness;
+        Settings.Enabled = Engine.Enabled;
+        Settings.UserPresets = [.. Presets.UserPresets];
+        Settings.Layout = [.. Layout.Placements];
+        _store.Save(Settings);
+        SetSaveError(null);
     }
 
     /// <summary>Why settings couldn't be saved, while they can't. Home shows it: changes would be lost on exit.</summary>

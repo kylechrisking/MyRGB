@@ -47,6 +47,7 @@ public sealed class UpdateFeed : IDisposable
         response.EnsureSuccessStatusCode();
         await using var download = await response.Content.ReadAsStreamAsync(ct);
         await using var file = File.Create(path);
+        using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         long copied = 0;
         var total = response.Content.Headers.ContentLength ?? update.InstallerSize;
         var buffer = new byte[64 * 1024];
@@ -54,6 +55,7 @@ public sealed class UpdateFeed : IDisposable
         while ((read = await download.ReadAsync(buffer, ct)) > 0)
         {
             await file.WriteAsync(buffer.AsMemory(0, read), ct);
+            sha.AppendData(buffer, 0, read);
             copied += read;
             if (total > 0) progress?.Report(Math.Min(1d, (double)copied / total));
         }
@@ -62,7 +64,7 @@ public sealed class UpdateFeed : IDisposable
         // An installer MyRGB runs for the user has to be bit for bit what the release published.
         if (update.InstallerSha256 is not { } expected)
             throw new InvalidOperationException("The release publishes no checksum to verify the download against.");
-        var actual = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(path, ct)));
+        var actual = Convert.ToHexString(sha.GetHashAndReset());
         if (!string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase))
         {
             File.Delete(path);
@@ -110,7 +112,7 @@ public sealed class UpdateFeed : IDisposable
                 || !fileName.StartsWith("MyRGB-Setup-", StringComparison.Ordinal)
                 || !fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
             if (asset.TryGetProperty("browser_download_url", out var url) && url.GetString() is { } address
-                && Uri.TryCreate(address, UriKind.Absolute, out var uri))
+                && Uri.TryCreate(address, UriKind.Absolute, out var uri) && IsGitHub(uri))
             {
                 var size = asset.TryGetProperty("size", out var s) && s.ValueKind == JsonValueKind.Number ? s.GetInt64() : 0;
                 var sha = asset.TryGetProperty("digest", out var digest) && digest.GetString() is { } d
@@ -120,6 +122,12 @@ public sealed class UpdateFeed : IDisposable
         }
         return null;
     }
+
+    /// <summary>Installers only ever come from GitHub over https; anything else in the answer is ignored.</summary>
+    public static bool IsGitHub(Uri uri) =>
+        uri.Scheme == Uri.UriSchemeHttps
+        && (uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase));
 
     public void Dispose() => _http.Dispose();
 }

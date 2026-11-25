@@ -47,6 +47,29 @@ public class CloudTests
     }
 
     [Fact]
+    public void Presets_lost_on_this_pc_come_back_instead_of_being_deleted_everywhere()
+    {
+        var a = P("a"); var b = P("b");
+        var baseline = new Dictionary<string, string> { ["a"] = PresetSync.Hash(a), ["b"] = PresetSync.Hash(b) };
+        var plan = Plan([], [R(a), R(b)], baseline);
+
+        Assert.Empty(plan.Upload);
+        Assert.Equal(["a", "b"], plan.SaveLocally.Select(p => p.Id).Order());
+        Assert.Equal(PresetSync.Hash(a), plan.NewState["a"]);
+    }
+
+    [Fact]
+    public void Deleting_the_last_preset_by_hand_still_deletes_it()
+    {
+        var a = P("a");
+        var plan = PresetSync.Plan([], new Dictionary<string, RemotePreset> { ["a"] = R(a) },
+            new Dictionary<string, string> { ["a"] = PresetSync.Hash(a) }, Now, deletedHere: ["a"]);
+
+        Assert.True(plan.Upload.Single().Deleted);
+        Assert.Empty(plan.SaveLocally);
+    }
+
+    [Fact]
     public void Deleting_here_deletes_there_and_vice_versa()
     {
         var a = P("a"); var b = P("b");
