@@ -590,8 +590,9 @@ public sealed partial class MainViewModel : ObservableObject
             $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{script}\" " +
             $"-OpenRgbPath \"{source}\" -CopyTo \"{MyRGB.Providers.OpenRgb.ElevatedTask.SafeOpenRgbDir}\" -User \"{Environment.UserDomainName}\\{Environment.UserName}\"");
         if (!asked) return;
+        _host.ForgetOpenRgbTask();
         // The script takes a few seconds; look again so the alert goes once it's done.
-        _ = Task.Delay(TimeSpan.FromSeconds(10)).ContinueWith(_ => Dispatcher.UIThread.Post(RefreshAlerts));
+        _ = Task.Delay(TimeSpan.FromSeconds(10)).ContinueWith(_ => Dispatcher.UIThread.Post(() => { _host.ForgetOpenRgbTask(); RefreshAlerts(); }));
     }
 
     [RelayCommand]
@@ -876,6 +877,10 @@ public sealed partial class MainViewModel : ObservableObject
             Alerts.Add(new AlertViewModel(true,
                 "The task that runs OpenRGB as administrator for your RAM lighting starts it from your own user folder, where any program could swap it. One Windows prompt moves it into Program Files, where only administrators can change it.",
                 "Fix it", FixOpenRgbTaskCommand));
+        else if (_host.OpenRgbTask() is { ViaVbScript: true })
+            Alerts.Add(new AlertViewModel(false,
+                "The task that starts OpenRGB for your RAM lighting still goes through a VBScript file, and Windows is removing VBScript. One Windows prompt switches it to start OpenRGB directly, in the background.",
+                "Update it", FixOpenRgbTaskCommand));
 
         if (_host.DynamicLightingOn() == true)
             Alerts.Add(new AlertViewModel(true,

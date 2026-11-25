@@ -37,8 +37,8 @@ public sealed class AppHostOptions
     /// <summary>Replaces the hardware sensors (CPU, GPU, fans).</summary>
     public Func<ISensorSource>? Sensors { get; init; }
 
-    /// <summary>Replaces checking the elevated OpenRGB task for a user-writable exe.</summary>
-    public Func<string?>? UnsafeOpenRgbTask { get; init; }
+    /// <summary>Replaces reading what the elevated OpenRGB task starts.</summary>
+    public Func<MyRGB.Providers.OpenRgb.TaskLaunch?>? OpenRgbTask { get; init; }
 
     /// <summary>Replaces reading whether Windows Dynamic Lighting is on.</summary>
     public Func<bool?>? DynamicLightingOn { get; init; }
@@ -310,8 +310,23 @@ public sealed class AppHost : IAsyncDisposable
         }
     }
 
+    private (MyRGB.Providers.OpenRgb.TaskLaunch? Launch, DateTime At)? _openRgbTask;
+
+    /// <summary>What the elevated OpenRGB task starts (null when there is none). Read through schtasks, so kept for 5 minutes.</summary>
+    public MyRGB.Providers.OpenRgb.TaskLaunch? OpenRgbTask()
+    {
+        if (_options.OpenRgbTask is { } fake) return fake();
+        if (_openRgbTask is { } cached && DateTime.UtcNow - cached.At < TimeSpan.FromMinutes(5)) return cached.Launch;
+        var launch = MyRGB.Providers.OpenRgb.ElevatedTask.Read();
+        _openRgbTask = (launch, DateTime.UtcNow);
+        return launch;
+    }
+
+    /// <summary>Read the task again next time, e.g. after the setup script changed it.</summary>
+    public void ForgetOpenRgbTask() => _openRgbTask = null;
+
     /// <summary>The user-writable OpenRGB the elevated task would run as administrator, or null when it's safe or absent.</summary>
-    public string? UnsafeOpenRgbTask() => _options.UnsafeOpenRgbTask is { } fake ? fake() : MyRGB.Providers.OpenRgb.ElevatedTask.UnsafeExe();
+    public string? UnsafeOpenRgbTask() => MyRGB.Providers.OpenRgb.ElevatedTask.UnsafeExe(OpenRgbTask());
 
     /// <summary>Whether Windows Dynamic Lighting is switched on (null if this Windows has none).</summary>
     public bool? DynamicLightingOn() => _options.DynamicLightingOn is { } fake ? fake() : DynamicLighting.IsOn();

@@ -1,4 +1,4 @@
-# Registers the scheduled task MyRGB uses to start OpenRGB with admin rights, hidden.
+# Registers the scheduled task MyRGB uses to start OpenRGB with admin rights, in the background.
 # RGB RAM and other SMBus devices are only reachable through the PawnIO driver, which OpenRGB can
 # open only when elevated. A task set to "run with highest privileges" lets MyRGB start it on demand
 # (schtasks /run) without a UAC prompt every time. Run this once, elevated; -Remove undoes it.
@@ -33,8 +33,9 @@ $machineDir = Join-Path $programFiles 'MyRGB'
 # Where an earlier build of this script put its files by mistake; cleaned up below.
 $strayDir = if (${env:ProgramFiles(x86)}) { Join-Path ${env:ProgramFiles(x86)} 'MyRGB' }
 # Everything the elevated task touches lives in Program Files, which only administrators can change:
-# the launcher, and OpenRGB's config folder. OpenRGB loads plugin DLLs from its config folder, so with
+# OpenRGB itself and its config folder. OpenRGB loads plugin DLLs from its config folder, so with
 # the default one (the user's AppData) any program could get its code run as administrator through the task.
+# The VBScript launcher tasks used up to 0.8.1; re-registering removes it.
 $launcher = Join-Path $machineDir 'openrgb-hidden.vbs'
 $configDir = Join-Path $machineDir 'config'
 # The sensor helper lives beside it, equally admin-only: a task must never run an exe a user could swap.
@@ -152,10 +153,15 @@ try {
         $CopyTo = Join-Path $machineDir 'OpenRGB'
     }
     # The OpenRGB the old launcher started, so it can be stopped and MyRGB restarts it through the new task.
+    # Older tasks ran it through the .vbs launcher; newer ones run it directly.
     $previousExe = $null
     if (Test-Path $launcher) {
         $m = [regex]::Match((Get-Content $launcher -Raw), 'sh\.Run """(.+?)""')
         if ($m.Success) { $previousExe = $m.Groups[1].Value }
+    }
+    $oldTask = Get-ScheduledTask -TaskPath $taskPath -TaskName $taskName -ErrorAction SilentlyContinue
+    if (-not $previousExe -and $oldTask -and $oldTask.Actions[0].Execute -notlike '*wscript*') {
+        $previousExe = $oldTask.Actions[0].Execute.Trim('"')
     }
     if ($InstallPawnIO) { Install-PawnIO }
     if (-not (Get-Service PawnIO -ErrorAction SilentlyContinue)) {
@@ -179,13 +185,9 @@ try {
         Log "Copied OpenRGB settings from $userConfig"
     }
 
-    # wscript runs the launcher without a console window; window style 0 keeps OpenRGB hidden too.
-    $vbs = @"
-Set sh = CreateObject("WScript.Shell")
-sh.CurrentDirectory = "$(Split-Path $OpenRgbPath)"
-sh.Run """$OpenRgbPath"" --server --server-host 127.0.0.1 --server-port $Port --config ""$configDir""", 0, False
-"@
-    Set-Content -Path $launcher -Value $vbs -Encoding ASCII
+    # No launcher script any more (VBScript is leaving Windows): the task runs OpenRGB itself, as
+    # "S4U", i.e. in the background session with no desktop, so it has no window to show at all.
+    Remove-Item $launcher -ErrorAction SilentlyContinue
     Remove-Item $oldLauncher -ErrorAction SilentlyContinue
     Remove-Item (Split-Path $oldLauncher) -ErrorAction SilentlyContinue # only if empty
 
@@ -194,17 +196,22 @@ sh.Run """$OpenRgbPath"" --server --server-host 127.0.0.1 --server-port $Port --
         Copy-Item $PSCommandPath (Join-Path $machineDir 'setup-openrgb-admin.ps1') -Force
     }
 
-    $action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$launcher`""
-    $principal = New-ScheduledTaskPrincipal -UserId $User -LogonType Interactive -RunLevel Highest
+    # S4U: run as the user, elevated, whether or not they are signed in, and without their desktop. No
+    # password is stored. Same OpenRGB, same config folder; only the session changes.
+    $action = New-ScheduledTaskAction -Execute $OpenRgbPath -WorkingDirectory (Split-Path $OpenRgbPath) `
+        -Argument "--server --server-host 127.0.0.1 --server-port $Port --config `"$configDir`""
+    $principal = New-ScheduledTaskPrincipal -UserId $User -LogonType S4U -RunLevel Highest
+    if ($oldTask) { Stop-ScheduledTask -TaskPath $taskPath -TaskName $taskName -ErrorAction SilentlyContinue }
     $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
         -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
     Register-ScheduledTask -TaskPath $taskPath -TaskName $taskName -Action $action -Principal $principal `
-        -Settings $settings -Description 'Starts OpenRGB elevated and hidden for MyRGB (SMBus devices such as RGB RAM).' -Force | Out-Null
+        -Settings $settings -Description 'Starts OpenRGB elevated in the background for MyRGB (SMBus devices such as RGB RAM).' -Force | Out-Null
     if ($strayDir -and $strayDir -ne $machineDir) { Remove-Item $strayDir -Recurse -Force -ErrorAction SilentlyContinue }
 
     # An unelevated OpenRGB that MyRGB started earlier can't see SMBus; stop it so MyRGB relaunches through the task.
     Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $sourceExe } | Stop-Process -Force
-    if ($previousExe -and $previousExe -ne $OpenRgbPath) {
+    # The old task's OpenRGB too, even from the same path: it runs on the desktop, the new one in the background.
+    if ($previousExe) {
         Get-Process OpenRGB -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $previousExe } | Stop-Process -Force
     }
     Log "Registered $taskPath$taskName for $User."

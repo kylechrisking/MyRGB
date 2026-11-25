@@ -35,7 +35,8 @@ Ticking this option shows one UAC prompt, then:
    rights silently.
 3. Registers the scheduled task \MyRGB\OpenRGB ("run with highest privileges", only for your
    account). MyRGB starts OpenRGB through this task, so there is no UAC prompt each time.
-   The task's launcher script is C:\Program Files\MyRGB\openrgb-hidden.vbs.
+   The task starts OpenRGB in the background, with no window, whether or not you are signed in.
+   No password is stored.
 
 Your account must be an administrator for this to work. If you skip it now, run setup again later
 and tick the option. Upgrading MyRGB doesn't prompt again unless the bundled OpenRGB changed.

@@ -131,11 +131,14 @@ var
 begin
   Bundled := ExpandConstant('{app}\OpenRGB\OpenRGB.exe');
   Machine := ExpandConstant('{commonpf64}\MyRGB\OpenRGB\OpenRGB.exe');
-  { The launcher in Program Files marks a setup from after the elevated task's files moved out of
-    user-writable places; anything older is redone. }
+  { OpenRGB's config folder in Program Files (or the .vbs launcher of setups up to 0.8.1, which the
+    newer task no longer needs) marks a setup from after the elevated task's files moved out of
+    user-writable places; anything older is redone. A task still on the .vbs is left alone here:
+    the app offers to update it, so an update never asks for permission by itself. }
   Result := RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\PawnIO') and TaskExists
     and FileExists(Machine) and (GetSHA256OfFile(Bundled) = GetSHA256OfFile(Machine))
-    and FileExists(ExpandConstant('{commonpf64}\MyRGB\openrgb-hidden.vbs'));
+    and (DirExists(ExpandConstant('{commonpf64}\MyRGB\config'))
+      or FileExists(ExpandConstant('{commonpf64}\MyRGB\openrgb-hidden.vbs')));
 end;
 
 { Runs setup-openrgb-admin.ps1 elevated and hidden. False if UAC was declined. Setting up runs the
