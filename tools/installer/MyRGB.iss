@@ -81,6 +81,7 @@ Type: dirifempty; Name: "{app}"
 const
   RunKey = 'Software\Microsoft\Windows\CurrentVersion\Run';
   TaskName = '\MyRGB\OpenRGB';
+  SensorsTaskName = '\MyRGB\Sensors';
 
 function StreamDeckExeExists: Boolean;
 begin
@@ -122,6 +123,11 @@ end;
 function TaskExists: Boolean;
 begin
   Result := RunHidden(ExpandConstant('{sys}\schtasks.exe'), '/query /tn "' + TaskName + '"') = 0;
+end;
+
+function SensorsTaskExists: Boolean;
+begin
+  Result := RunHidden(ExpandConstant('{sys}\schtasks.exe'), '/query /tn "' + SensorsTaskName + '"') = 0;
 end;
 
 { True when the elevated part is already done for this OpenRGB build, so an upgrade needs no UAC prompt. }
@@ -208,10 +214,18 @@ begin
       StopProcessesIn(ExpandConstant('{#PluginDir}'));
     { Undo the elevated part (one UAC prompt), only if this install set it up: a task registered by hand
       (tools\setup-openrgb-admin.ps1) is left alone. PawnIO stays: other apps share it, and it has its own uninstaller. }
-    if (GetIniString('Tasks', 'Smbus', '', Ini) = '1') and (TaskExists or DirExists(ExpandConstant('{commonpf64}\MyRGB'))) then
+    if (GetIniString('Tasks', 'Smbus', '', Ini) = '1') and (TaskExists or DirExists(ExpandConstant('{commonpf64}\MyRGB'))) then begin
       if not RunAdminScript('-Remove', ExitCode) then
         SuppressibleMsgBox('The MyRGB scheduled task and ' + ExpandConstant('{commonpf64}\MyRGB') +
           ' were left in place because administrator permission was declined.', mbInformation, MB_OK, IDOK);
+    end
+    { The temperature and fan helper is turned on from inside the app, not by setup, so setup has no
+      note of it; without MyRGB it has no reason to keep starting elevated at every sign-in. }
+    else if SensorsTaskExists then begin
+      if not RunAdminScript('-RemoveSensors', ExitCode) then
+        SuppressibleMsgBox('The MyRGB temperature and fan helper (scheduled task ' + SensorsTaskName +
+          ') was left in place because administrator permission was declined.', mbInformation, MB_OK, IDOK);
+    end;
     if RegQueryStringValue(HKCU, RunKey, 'MyRGB', Value) and
        (Pos(Lowercase(AddBackslash(ExpandConstant('{app}'))), Lowercase(Value)) > 0) then
       RegDeleteValue(HKCU, RunKey, 'MyRGB');

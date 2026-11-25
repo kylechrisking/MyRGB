@@ -461,6 +461,8 @@ public sealed class LightingEngine : IDisposable
                 _loggedFailure = true;
                 Disconnects.Warn(log, _inflight.Exception, "Writing to {Device} failed", device.Name);
             }
+            // Working again: the next failure (tomorrow's USB drop, say) is news and gets logged.
+            else if (_inflight is { IsCompletedSuccessfully: true }) _loggedFailure = false;
 
             if (colors.AsSpan().SequenceEqual(_sent) && now - _sentAt < KeepAliveSeconds) return;
             colors.CopyTo(_sent, 0);
@@ -469,6 +471,7 @@ public sealed class LightingEngine : IDisposable
             try
             {
                 var pending = device.ApplyAsync(_sent);
+                if (pending.IsCompletedSuccessfully) _loggedFailure = false;
                 _inflight = pending.IsCompletedSuccessfully ? null : pending.AsTask();
             }
             catch (Exception ex)
