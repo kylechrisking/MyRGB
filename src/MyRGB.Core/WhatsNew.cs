@@ -11,6 +11,8 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 9, 0), ["New Wallpapers page: MyRGB can play a moving wallpaper behind your desktop icons, across all your screens. Show whatever your lights play, one preset you pick, or a picture. It pauses while a game or full-screen video covers the screen.",
+                           "New Match Wallpaper preset: each light takes its colors from the part of the screen it sits by, from MyRGB's wallpaper or your usual Windows one."]),
         new(new(0, 8, 4), ["Uninstalling MyRGB now also removes the temperature and fan helper if you turned it on, instead of leaving it to start at every sign-in."]),
         new(new(0, 8, 3), ["Safer settings: MyRGB keeps a daily backup of its settings for a week and restores the newest one if the file is ever damaged. A PC that lost its presets now gets them back from your account instead of deleting them on your other PCs."]),
         new(new(0, 8, 2), ["RAM lighting no longer depends on VBScript, which Windows is removing: OpenRGB now starts straight from its task, in the background. If yours still uses the old way, Home offers to update it with one Windows prompt."]),
