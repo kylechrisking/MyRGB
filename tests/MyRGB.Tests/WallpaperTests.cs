@@ -52,3 +52,39 @@ public class WallpaperTests
         Assert.Equal(dull, WallpaperEffect.Vivid(dull, 1));
     }
 }
+
+public class VideoDecoderTests
+{
+    /// <summary>Set MYRGB_TEST_VIDEO to any MP4 to run this; it reads the file only.</summary>
+    [Fact]
+    public void Decodes_scaled_frames_and_loops()
+    {
+        string? path = Environment.GetEnvironmentVariable("MYRGB_TEST_VIDEO");
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) Assert.Skip("MYRGB_TEST_VIDEO isn't set to a video file.");
+        if (!OperatingSystem.IsWindows()) Assert.Skip("Media Foundation is Windows only.");
+
+        using var video = new VideoDecoder(path, 640, 360);
+        Assert.InRange(video.Width, 2, 640);
+        Assert.InRange(video.Height, 2, 360);
+        var frame = new byte[video.Width * video.Height * 4];
+        TimeSpan? first = video.ReadFrame(frame), later = null;
+        for (int i = 0; i < 10; i++) later = video.ReadFrame(frame);
+        Assert.NotNull(first);
+        Assert.True(later > first, $"frames should move forward: {first} then {later}");
+        Assert.Contains(frame, b => b != 0); // a picture, not a black buffer
+
+        video.Rewind();
+        Assert.True(video.ReadFrame(frame) < TimeSpan.FromSeconds(1));
+        Console.WriteLine($"{video.Width}x{video.Height}, {video.Duration}");
+    }
+
+    [Fact]
+    public void A_file_that_is_not_a_video_says_so()
+    {
+        if (!OperatingSystem.IsWindows()) Assert.Skip("Media Foundation is Windows only.");
+        string path = Path.Combine(Path.GetTempPath(), $"myrgb-not-a-video-{Guid.NewGuid():N}.mp4");
+        File.WriteAllText(path, "hello");
+        try { Assert.Throws<VideoException>(() => new VideoDecoder(path, 640, 360)); }
+        finally { File.Delete(path); }
+    }
+}

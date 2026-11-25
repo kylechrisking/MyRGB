@@ -301,6 +301,16 @@ vm.SelectedTab = MainViewModel.StudioTab; vm.ArrangingLayout = true; Shoot("05-l
 vm.SelectedTab = MainViewModel.WallpapersTab; Shoot("05b-wallpapers");
 vm.Wallpapers.On = true; vm.Wallpapers.SetSourceCommand.Execute("Preset"); Thread.Sleep(200); Dispatcher.UIThread.RunJobs(); Shoot("05c-wallpapers-preset");
 Console.WriteLine($"wallpaper: {vm.Wallpapers.Status} | frame {host.Wallpaper.Latest?.Width}x{host.Wallpaper.Latest?.Height} | scenes {vm.Wallpapers.Scenes.Count}");
+if (Environment.GetEnvironmentVariable("MYRGB_TEST_VIDEO") is { Length: > 0 } testVideo)
+{
+    vm.Wallpapers.Video = testVideo; vm.Wallpapers.SetSourceCommand.Execute("Video");
+    Thread.Sleep(1500); Dispatcher.UIThread.RunJobs(); Shoot("05d-wallpapers-video");
+    var feed = MyRGB.Core.Wallpaper.WallpaperFeed.Peek();
+    Console.WriteLine($"video: {host.Wallpaper.VideoSize} frames {host.Wallpaper.VideoFrameNumber} feed {feed?.Width}x{feed?.Height} problem {host.Wallpaper.Problem ?? "none"} | {vm.Wallpapers.Status}");
+    vm.Wallpapers.Video = Path.Combine(Path.GetTempPath(), "missing.mp4"); Thread.Sleep(500); Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"missing video: {host.Wallpaper.Problem}");
+    vm.Wallpapers.Video = null;
+}
 vm.Wallpapers.On = false; vm.Wallpapers.SetSourceCommand.Execute("Lights");
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
 vm.DevicesGrid = true; Shoot("06a-devices-grid"); vm.DevicesGrid = false;

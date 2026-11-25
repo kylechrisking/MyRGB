@@ -79,8 +79,18 @@ public sealed class WallpaperDisplay : IDisposable
         StatusChanged?.Invoke();
     }
 
-    internal IImage? Image => _renderer.Source == WallpaperSource.Picture ? _renderer.Picture : _bitmap;
-    internal bool IsPicture => _renderer.Source == WallpaperSource.Picture;
+    internal IImage? Image => _renderer.Source switch
+    {
+        WallpaperSource.Picture => _renderer.Picture,
+        WallpaperSource.Video => _videoBitmap,
+        _ => _bitmap,
+    };
+
+    /// <summary>Pictures and videos fill each screen whole; effects span all the screens as one canvas.</summary>
+    internal bool FillsScreen => _renderer.Source is WallpaperSource.Picture or WallpaperSource.Video;
+
+    private WriteableBitmap? _videoBitmap;
+    private int _videoShown = -1;
 
     private void OnFrame()
     {
@@ -89,10 +99,38 @@ public sealed class WallpaperDisplay : IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             Interlocked.Exchange(ref _posted, 0);
-            if (_renderer.Latest is not { } frame || _windows.Count == 0) return;
-            Copy(frame);
+            if (_windows.Count == 0 || _windows.TrueForAll(w => w.Hidden)) return;
+            if (_renderer.Source == WallpaperSource.Video)
+            {
+                if (!CopyVideo()) return;
+            }
+            else if (_renderer.Latest is { } frame) Copy(frame);
+            else return;
             foreach (var w in _windows) w.Redraw();
         }, DispatcherPriority.Render);
+    }
+
+    /// <summary>Copy the decoder's newest frame into the bitmap the screens draw; false if there's nothing new.</summary>
+    private bool CopyVideo()
+    {
+        int number = _renderer.VideoFrameNumber;
+        var size = _renderer.VideoSize;
+        if (number == _videoShown || size.Width <= 0) return false;
+        _videoShown = number;
+        if (_videoBitmap is null || _videoBitmap.PixelSize != size)
+        {
+            _videoBitmap?.Dispose();
+            _videoBitmap = new WriteableBitmap(size, new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+        }
+        using var target = _videoBitmap.Lock();
+        _renderer.CopyVideoFrame(bgra =>
+        {
+            int rowBytes = size.Width * 4;
+            if (bgra.Length < rowBytes * size.Height) return; // a frame of the previous video
+            if (target.RowBytes == rowBytes) Marshal.Copy(bgra, 0, target.Address, rowBytes * size.Height);
+            else for (int y = 0; y < size.Height; y++) Marshal.Copy(bgra, y * rowBytes, target.Address + y * target.RowBytes, rowBytes);
+        });
+        return true;
     }
 
     private void Copy(WallpaperFrame frame)
@@ -147,6 +185,7 @@ public sealed class WallpaperDisplay : IDisposable
         _renderer.FrameReady -= OnFrame;
         Close();
         _bitmap?.Dispose();
+        _videoBitmap?.Dispose();
     }
 
     /// <summary>One screen's wallpaper window.</summary>
@@ -210,9 +249,9 @@ public sealed class WallpaperDisplay : IDisposable
                 if (owner._display.Image is not { } image) return;
                 var size = image.Size;
                 Rect source;
-                if (owner._display.IsPicture)
+                if (owner._display.FillsScreen)
                 {
-                    // Fill the screen, cropping the picture's longer side evenly.
+                    // Fill the screen, cropping the picture or video evenly on its longer side.
                     double scale = Math.Max(bounds.Width / size.Width, bounds.Height / size.Height);
                     double w = bounds.Width / scale, h = bounds.Height / scale;
                     source = new Rect((size.Width - w) / 2, (size.Height - h) / 2, w, h);

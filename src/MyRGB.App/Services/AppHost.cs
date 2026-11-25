@@ -181,12 +181,13 @@ public sealed class AppHost : IAsyncDisposable
     public MyRGB.App.Services.Wallpaper.WallpaperRenderer Wallpaper { get; }
 
     private LocalApiServer.WallpaperState WallpaperState() =>
-        new(Settings.WallpaperOn, Settings.WallpaperSource.ToString().ToLowerInvariant(), Settings.WallpaperPresetId, Settings.WallpaperPicture);
+        new(Settings.WallpaperOn, Settings.WallpaperSource.ToString().ToLowerInvariant(), Settings.WallpaperPresetId, Settings.WallpaperPicture, Settings.WallpaperVideo);
 
     /// <summary>The API's way to change the wallpaper; the Wallpapers page follows through <see cref="Services.Wallpaper.WallpaperRenderer.Changed"/>.</summary>
     private LocalApiServer.WallpaperState SetWallpaper(LocalApiServer.WallpaperRequest? body)
     {
         if (body?.PresetId is { } id && Presets.Find(id) is not null) Settings.WallpaperPresetId = id;
+        if (body?.Video is { } video && File.Exists(video)) Settings.WallpaperVideo = video;
         if (body?.Source is { } s && Enum.TryParse<Services.Wallpaper.WallpaperSource>(s, ignoreCase: true, out var source)) Settings.WallpaperSource = source;
         Settings.WallpaperOn = body is null ? !Settings.WallpaperOn : body.On ?? Settings.WallpaperOn;
         Wallpaper.Refresh();

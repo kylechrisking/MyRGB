@@ -20,6 +20,8 @@ public enum WallpaperSource
     Preset,
     /// <summary>A still picture from a file.</summary>
     Picture,
+    /// <summary>A video file, looping, without sound.</summary>
+    Video,
 }
 
 /// <summary>
@@ -54,6 +56,19 @@ public sealed class WallpaperRenderer : IDisposable
     private DateTime _windowsCheckedAt;
     private volatile bool _windowsStale = true;
 
+    // Video: decoded on this thread into the back buffer, then swapped to the front under the lock,
+    // where the display copies it out. Two buffers, reused, so playing makes no garbage.
+    private VideoDecoder? _video;
+    private string? _videoFor;
+    private byte[] _videoFront = [], _videoBack = [];
+    private readonly object _videoGate = new();
+    private double _videoClock;
+    private TimeSpan _videoNext;
+    private int _videoFrames;
+
+    /// <summary>Biggest frame asked of the decoder: full HD keeps copying cheap; Windows scales it to the screen.</summary>
+    private const int VideoMaxWidth = 1920, VideoMaxHeight = 1080;
+
     public WallpaperRenderer(Func<Preset?> lightsPreset, PresetLibrary presets, EffectRegistry effects, AppSettings settings, ILogger log)
     {
         _lightsPreset = lightsPreset;
@@ -73,6 +88,18 @@ public sealed class WallpaperRenderer : IDisposable
 
     /// <summary>The latest frame drawn for the screens; null while there is none (off, or a picture).</summary>
     public WallpaperFrame? Latest { get; private set; }
+
+    /// <summary>Size of the current video frame (0 when no video plays).</summary>
+    public PixelSize VideoSize { get; private set; }
+
+    /// <summary>Count of video frames decoded so far; the display copies a new one when it changes.</summary>
+    public int VideoFrameNumber => Volatile.Read(ref _videoFrames);
+
+    /// <summary>Copy the newest video frame (BGRA) out, under the lock that keeps the decoder off it.</summary>
+    public void CopyVideoFrame(Action<byte[]> copy)
+    {
+        lock (_videoGate) if (_videoFront.Length > 0) copy(_videoFront);
+    }
 
     /// <summary>The picture to show full size, while the source is a picture.</summary>
     public Bitmap? Picture { get; private set; }
@@ -140,6 +167,7 @@ public sealed class WallpaperRenderer : IDisposable
             double interval = 1.0 / 30;
             try
             {
+                if (_settings.WallpaperSource != WallpaperSource.Video || !_settings.WallpaperOn) CloseVideo();
                 if (!_settings.WallpaperOn)
                 {
                     Latest = null;
@@ -151,6 +179,13 @@ public sealed class WallpaperRenderer : IDisposable
                     Latest = null;
                     WallpaperFeed.Publish(_pictureFrame);
                     interval = 0.5;
+                }
+                else if (_settings.WallpaperSource == WallpaperSource.Video)
+                {
+                    Latest = null;
+                    // Hidden by a game and no lights following: the video waits where it is.
+                    if (!Hidden || WallpaperFeed.Wanted(TimeSpan.FromSeconds(2))) PlayVideo(dt);
+                    interval = 1.0 / 60; // check often; frames are only decoded when they're due
                 }
                 else if (Hidden && !WallpaperFeed.Wanted(TimeSpan.FromSeconds(2)))
                 {
@@ -171,6 +206,89 @@ public sealed class WallpaperRenderer : IDisposable
             double sleep = interval - (clock.Elapsed.TotalSeconds - started);
             if (sleep > 0) _wake.WaitOne(TimeSpan.FromSeconds(sleep));
         }
+    }
+
+    private void PlayVideo(double dt)
+    {
+        string? path = _settings.WallpaperVideo;
+        if (path != _videoFor)
+        {
+            CloseVideo();
+            _videoFor = path;
+            if (path is null) { Problem = "Choose a video to play."; return; }
+            try
+            {
+                _video = new VideoDecoder(path, VideoMaxWidth, VideoMaxHeight);
+                int bytes = _video.Width * _video.Height * 4;
+                lock (_videoGate) { _videoFront = new byte[bytes]; _videoBack = new byte[bytes]; }
+                VideoSize = new PixelSize(_video.Width, _video.Height);
+                (_videoClock, _videoNext) = (0, TimeSpan.Zero);
+                Problem = null;
+                _log.LogInformation("Wallpaper video {Name}: {Width}x{Height}, {Duration}", Path.GetFileName(path), _video.Width, _video.Height, _video.Duration);
+            }
+            catch (Exception ex) when (ex is VideoException or COMException or FileNotFoundException or UnauthorizedAccessException)
+            {
+                _log.LogWarning("Couldn't play the wallpaper video {Path}: {Reason}", path, ex.Message);
+                Problem = ex is VideoException ? $"{Path.GetFileName(path)}: {ex.Message}" : $"Couldn't open {Path.GetFileName(path)}.";
+                CloseVideo(keepPath: true);
+                return;
+            }
+        }
+        if (_video is not { } video) return;
+
+        _videoClock += dt;
+        // Decode up to the frame that's due now; at most a few per tick, so a slow PC skips rather than stalls.
+        bool fresh = false;
+        for (int i = 0; i < 4 && _videoNext.TotalSeconds <= _videoClock; i++)
+        {
+            var at = video.ReadFrame(_videoBack);
+            if (at is null)
+            {
+                video.Rewind(); // loop
+                _videoClock = 0;
+                _videoNext = TimeSpan.Zero;
+                continue;
+            }
+            _videoNext = at.Value;
+            fresh = true;
+        }
+        if (!fresh) return;
+        lock (_videoGate) (_videoFront, _videoBack) = (_videoBack, _videoFront);
+        Interlocked.Increment(ref _videoFrames);
+        lock (_videoGate) WallpaperFeed.Publish(ShrinkBgra(_videoFront, video.Width, video.Height, 64));
+        FrameReady?.Invoke();
+    }
+
+    private void CloseVideo(bool keepPath = false)
+    {
+        if (_video is null && _videoFor is null) return;
+        _video?.Dispose();
+        _video = null;
+        if (!keepPath) _videoFor = null;
+        VideoSize = default;
+        lock (_videoGate) { _videoFront = []; _videoBack = []; }
+    }
+
+    /// <summary>A BGRA frame cut down to <paramref name="width"/> cells across, for the lights: each cell averages a few pixels.</summary>
+    internal static WallpaperFrame ShrinkBgra(byte[] bgra, int w, int h, int width)
+    {
+        int height = Math.Max(1, (int)Math.Round(width * h / (double)w));
+        var pixels = new Rgb[width * height];
+        for (int cy = 0; cy < height; cy++)
+            for (int cx = 0; cx < width; cx++)
+            {
+                // Four samples per cell, spread inside it.
+                int r = 0, g = 0, b = 0;
+                for (int s = 0; s < 4; s++)
+                {
+                    int x = Math.Min(w - 1, (int)((cx + 0.25 + 0.5 * (s & 1)) * w / width));
+                    int y = Math.Min(h - 1, (int)((cy + 0.25 + 0.5 * (s >> 1)) * h / height));
+                    int o = (y * w + x) * 4;
+                    b += bgra[o]; g += bgra[o + 1]; r += bgra[o + 2];
+                }
+                pixels[cy * width + cx] = new Rgb((byte)(r / 4), (byte)(g / 4), (byte)(b / 4));
+            }
+        return new WallpaperFrame(width, height, pixels);
     }
 
     private void DrawEffect(double time, double dt)
@@ -266,6 +384,7 @@ public sealed class WallpaperRenderer : IDisposable
         _running = false;
         _wake.Set();
         _thread.Join(TimeSpan.FromSeconds(2));
+        CloseVideo();
         WallpaperFeed.Publish(null);
         Picture?.Dispose();
         _wake.Dispose();

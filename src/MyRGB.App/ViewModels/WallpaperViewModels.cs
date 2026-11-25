@@ -39,6 +39,7 @@ public sealed partial class WallpapersViewModel : ObservableObject
         _on = host.Settings.WallpaperOn;
         _source = host.Settings.WallpaperSource;
         _picture = host.Settings.WallpaperPicture;
+        _video = host.Settings.WallpaperVideo;
         RefreshScenes();
         host.Presets.Changed += (_, _) => Dispatcher.UIThread.Post(RefreshScenes);
         host.Lights.StateChanged += (_, _) => Dispatcher.UIThread.Post(() =>
@@ -61,6 +62,7 @@ public sealed partial class WallpapersViewModel : ObservableObject
             OnPropertyChanged(nameof(FromLights));
             OnPropertyChanged(nameof(FromPreset));
             OnPropertyChanged(nameof(FromPicture));
+            OnPropertyChanged(nameof(FromVideo));
         }
         foreach (var s in Scenes) s.IsSelected = s.Id == _host.Settings.WallpaperPresetId;
         OnPropertyChanged(nameof(Status));
@@ -79,8 +81,13 @@ public sealed partial class WallpapersViewModel : ObservableObject
     public bool FromLights { get => Source == WallpaperSource.Lights; set { if (value) Source = WallpaperSource.Lights; } }
     public bool FromPreset { get => Source == WallpaperSource.Preset; set { if (value) Source = WallpaperSource.Preset; } }
     public bool FromPicture { get => Source == WallpaperSource.Picture; set { if (value) Source = WallpaperSource.Picture; } }
+    public bool FromVideo { get => Source == WallpaperSource.Video; set { if (value) Source = WallpaperSource.Video; } }
 
     public string PictureName => Picture is { } p ? Path.GetFileName(p) : "No picture chosen";
+
+    [ObservableProperty] private string? _video;
+
+    public string VideoName => Video is { } v ? Path.GetFileName(v) : "No video chosen";
 
     /// <summary>True while the lights play Match Wallpaper.</summary>
     public bool LightsMatch => _host.Engine.ActivePreset?.EffectId == WallpaperFeed.EffectId;
@@ -104,6 +111,7 @@ public sealed partial class WallpapersViewModel : ObservableObject
             {
                 WallpaperSource.Lights => $"whatever your lights play ({_host.Engine.ActivePreset?.Name ?? "nothing yet"})",
                 WallpaperSource.Picture => PictureName,
+                WallpaperSource.Video => VideoName,
                 _ => Scenes.FirstOrDefault(s => s.IsSelected)?.Name ?? "a preset",
             };
             return screens > 0 ? $"Showing {what} behind your desktop icons." : $"Set to show {what}.";
@@ -124,6 +132,14 @@ public sealed partial class WallpapersViewModel : ObservableObject
         OnPropertyChanged(nameof(FromLights));
         OnPropertyChanged(nameof(FromPreset));
         OnPropertyChanged(nameof(FromPicture));
+        OnPropertyChanged(nameof(FromVideo));
+        Apply();
+    }
+
+    partial void OnVideoChanged(string? value)
+    {
+        _host.Settings.WallpaperVideo = value;
+        OnPropertyChanged(nameof(VideoName));
         Apply();
     }
 
@@ -166,6 +182,22 @@ public sealed partial class WallpapersViewModel : ObservableObject
 
     [RelayCommand]
     private void MatchLights() => _host.Lights.ActivatePreset("wallpaper");
+
+    [RelayCommand]
+    private async Task ChooseVideo()
+    {
+        var window = (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+        if (window is null) return;
+        var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose a wallpaper video",
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("Videos") { Patterns = ["*.mp4", "*.m4v", "*.mov", "*.wmv", "*.avi", "*.webm", "*.mkv"] }],
+        });
+        if (files.FirstOrDefault()?.TryGetLocalPath() is not { } path) return;
+        Video = path;
+        Source = WallpaperSource.Video;
+    }
 
     [RelayCommand]
     private async Task ChoosePicture()

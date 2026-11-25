@@ -660,6 +660,8 @@
                               ToolTip.Tip="The wallpaper plays one preset, whatever your lights do" />
                       <Button Classes="ghost" Classes.accent="{Binding Wallpapers.FromPicture}" Content="A picture" Command="{Binding Wallpapers.SetSourceCommand}" CommandParameter="Picture"
                               ToolTip.Tip="A still picture from a file" />
+                      <Button Classes="ghost" Classes.accent="{Binding Wallpapers.FromVideo}" Content="A video" Command="{Binding Wallpapers.SetSourceCommand}" CommandParameter="Video"
+                              ToolTip.Tip="A video file, looping, without sound" />
                     </StackPanel>
 
                     <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Wallpapers.FromLights}"
@@ -670,6 +672,15 @@
                         <Button Classes="accent" Content="Choose a picture" Command="{Binding Wallpapers.ChoosePictureCommand}" />
                         <TextBlock Classes="muted" Text="{Binding Wallpapers.PictureName}" VerticalAlignment="Center" />
                       </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="10" IsVisible="{Binding Wallpapers.FromVideo}">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="accent" Content="Choose a video" Command="{Binding Wallpapers.ChooseVideoCommand}" />
+                        <TextBlock Classes="muted" Text="{Binding Wallpapers.VideoName}" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Classes="muted" TextWrapping="Wrap"
+                                 Text="Plays on a loop, without sound, filling each screen. MP4 (H.264) always works; HEVC, VP9 and AV1 videos need Microsoft's free video extensions from the Store." />
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding Wallpapers.Scenes}" IsVisible="{Binding Wallpapers.FromPreset}">

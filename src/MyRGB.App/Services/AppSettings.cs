@@ -117,6 +117,9 @@ public sealed class AppSettings
     /// <summary>The picture file when the source is a picture.</summary>
     public string? WallpaperPicture { get; set; }
 
+    /// <summary>The video file when the source is a video.</summary>
+    public string? WallpaperVideo { get; set; }
+
     /// <summary>The look, by <see cref="ThemeManager"/> id. Notebook unless picked otherwise.</summary>
     public string Theme { get; set; } = ThemeManager.DefaultId;
     public OpenRgbOptions OpenRgb { get; set; } = new();

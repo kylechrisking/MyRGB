@@ -25,8 +25,8 @@ namespace MyRGB.Api;
 /// POST /api/monitors     {"value": 60} or {"delta": -10}
 /// GET  /api/events                     server-sent events, one "state" event per change
 /// POST /api/app/show                   bring the desktop window to the front
-/// GET  /api/wallpaper                  MyRGB's desktop wallpaper: on, source (lights, preset, picture), preset id
-/// POST /api/wallpaper    {"on": true, "source": "preset", "presetId": "lava-lamp"}  any subset; empty body toggles
+/// GET  /api/wallpaper                  MyRGB's desktop wallpaper: on, source (lights, preset, picture, video), preset id
+/// POST /api/wallpaper    {"on": true, "source": "preset", "presetId": "lava-lamp"} or {"source": "video", "video": "C:\path.mp4"}; any subset, empty body toggles
 /// Every POST must carry an "X-MyRGB" header (any value).
 /// </remarks>
 public sealed class LocalApiServer : IAsyncDisposable
@@ -261,8 +261,8 @@ public sealed class LocalApiServer : IAsyncDisposable
     public sealed record MonitorRequest(int? Value, int? Delta);
     public sealed record MonitorsState(bool Available, int Level, IReadOnlyList<string> Monitors);
     public sealed record PauseRequest(bool? Paused);
-    public sealed record WallpaperRequest(bool? On, string? Source, string? PresetId);
-    public sealed record WallpaperState(bool On, string Source, string? PresetId, string? Picture);
+    public sealed record WallpaperRequest(bool? On, string? Source, string? PresetId, string? Video = null);
+    public sealed record WallpaperState(bool On, string Source, string? PresetId, string? Picture, string? Video = null);
 
     private sealed record NotFound(string? Message)
     {
