@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 8, 3), ["Safer settings: MyRGB keeps a daily backup of its settings for a week and restores the newest one if the file is ever damaged. A PC that lost its presets now gets them back from your account instead of deleting them on your other PCs."]),
         new(new(0, 8, 2), ["RAM lighting no longer depends on VBScript, which Windows is removing: OpenRGB now starts straight from its task, in the background. If yours still uses the old way, Home offers to update it with one Windows prompt."]),
         new(new(0, 8, 1), ["MyRGB no longer asks to update the temperature and fan helper after every update, only when the helper itself changes. The \"Restart as administrator\" button is gone: the helper does that job with one permission prompt."]),
         new(new(0, 8, 0), ["A tidier window: Layout is part of the Studio (switch on Arrange devices), Cooling is part of Monitoring, and Vendor apps sit in Settings, only while one is installed.",
