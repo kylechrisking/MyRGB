@@ -106,6 +106,17 @@ public sealed class AppSettings
     /// <summary>Devices page shows tiles with a drawing of each device instead of the detailed list.</summary>
     public bool DevicesGrid { get; set; }
 
+    /// <summary>MyRGB draws the desktop wallpaper (behind the icons) while it runs.</summary>
+    public bool WallpaperOn { get; set; }
+
+    public MyRGB.App.Services.Wallpaper.WallpaperSource WallpaperSource { get; set; } = MyRGB.App.Services.Wallpaper.WallpaperSource.Lights;
+
+    /// <summary>The preset the wallpaper plays when its source is <see cref="MyRGB.App.Services.Wallpaper.WallpaperSource.Preset"/>.</summary>
+    public string? WallpaperPresetId { get; set; } = "lava-lamp";
+
+    /// <summary>The picture file when the source is a picture.</summary>
+    public string? WallpaperPicture { get; set; }
+
     /// <summary>The look, by <see cref="ThemeManager"/> id. Notebook unless picked otherwise.</summary>
     public string Theme { get; set; } = ThemeManager.DefaultId;
     public OpenRgbOptions OpenRgb { get; set; } = new();

@@ -25,6 +25,8 @@ namespace MyRGB.Api;
 /// POST /api/monitors     {"value": 60} or {"delta": -10}
 /// GET  /api/events                     server-sent events, one "state" event per change
 /// POST /api/app/show                   bring the desktop window to the front
+/// GET  /api/wallpaper                  MyRGB's desktop wallpaper: on, source (lights, preset, picture), preset id
+/// POST /api/wallpaper    {"on": true, "source": "preset", "presetId": "lava-lamp"}  any subset; empty body toggles
 /// Every POST must carry an "X-MyRGB" header (any value).
 /// </remarks>
 public sealed class LocalApiServer : IAsyncDisposable
@@ -63,6 +65,12 @@ public sealed class LocalApiServer : IAsyncDisposable
 
     /// <summary>Looks for devices again, as the Devices page's Scan again does. Null: the route answers 404.</summary>
     public Func<Task>? Rescan { get; set; }
+
+    /// <summary>Reads MyRGB's wallpaper settings for /api/wallpaper. Null: the route answers 404.</summary>
+    public Func<WallpaperState>? Wallpaper { get; set; }
+
+    /// <summary>Changes them; returns the new state.</summary>
+    public Func<WallpaperRequest?, WallpaperState>? SetWallpaper { get; set; }
 
     public int Port { get; }
     public string BaseUrl => $"http://localhost:{Port}/api";
@@ -126,6 +134,8 @@ public sealed class LocalApiServer : IAsyncDisposable
                 ("POST", "/api/presets/shuffle") => Do(_lights.Shuffle),
                 ("POST", "/api/flash") => Do(() => _lights.Flash(null)),
                 ("POST", "/api/devices/rescan") when Rescan is { } rescan => Do(() => _ = rescan()),
+                ("GET", "/api/wallpaper") when Wallpaper is { } wallpaper => wallpaper(),
+                ("POST", "/api/wallpaper") when SetWallpaper is { } setWallpaper => setWallpaper(await ReadBody<WallpaperRequest>(req)),
                 ("POST", _) when path.StartsWith("/api/devices/") && path.EndsWith("/flash") =>
                     FlashDevice(Uri.UnescapeDataString(path["/api/devices/".Length..^"/flash".Length])),
                 ("POST", _) when path.StartsWith("/api/presets/") && path.EndsWith("/activate") =>
@@ -251,6 +261,8 @@ public sealed class LocalApiServer : IAsyncDisposable
     public sealed record MonitorRequest(int? Value, int? Delta);
     public sealed record MonitorsState(bool Available, int Level, IReadOnlyList<string> Monitors);
     public sealed record PauseRequest(bool? Paused);
+    public sealed record WallpaperRequest(bool? On, string? Source, string? PresetId);
+    public sealed record WallpaperState(bool On, string Source, string? PresetId, string? Picture);
 
     private sealed record NotFound(string? Message)
     {

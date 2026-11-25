@@ -9,6 +9,8 @@ public static class NavIcons
     public static Geometry Presets { get; } = StreamGeometry.Parse("M3,3 H10 V10 H3 Z M14,3 H21 V10 H14 Z M3,14 H10 V21 H3 Z M14,14 H21 V21 H14 Z");
     public static Geometry Community { get; } = StreamGeometry.Parse("M9,4 A3.5,3.5 0 1 1 8.99,4 Z M3,19 C3,15.5 5.7,13 9,13 C12.3,13 15,15.5 15,19 V20 H3 Z M16.5,6 A3,3 0 1 1 16.49,6 Z M16,12.3 C19,12.3 21,14.5 21,17.5 V18.5 H16.6 C16.5,16.2 15.6,14.3 14.1,12.9 C14.7,12.5 15.3,12.3 16,12.3 Z");
     public static Geometry Studio { get; } = StreamGeometry.Parse("M12,2 L14.4,9.6 L22,12 L14.4,14.4 L12,22 L9.6,14.4 L2,12 L9.6,9.6 Z");
+    // A screen showing hills under a sun: the desktop wallpaper.
+    public static Geometry Wallpapers { get; } = StreamGeometry.Parse("F0 M2,4 H22 V18 H2 Z M3.6,5.6 V16.4 H20.4 V5.6 Z M16,7.5 A1.8,1.8 0 1 1 15.99,7.5 Z M4.5,15 L9,9.5 L12.5,13.5 L14.5,11.5 L19.5,15 Z M8,20 H16 V21.5 H8 Z");
     public static Geometry Layout { get; } = StreamGeometry.Parse("M3,3 H14 V11 H3 Z M16,3 H21 V11 H16 Z M3,13 H9 V21 H3 Z M11,13 H21 V21 H11 Z");
     public static Geometry Devices { get; } = StreamGeometry.Parse("F0 M2,6 H22 V18 H2 Z M3.5,7.5 V16.5 H20.5 V7.5 Z M5,9 H7 V11 H5 Z M8.5,9 H10.5 V11 H8.5 Z M12,9 H14 V11 H12 Z M15.5,9 H17.5 V11 H15.5 Z M7,13 H17 V15 H7 Z");
     public static Geometry Monitoring { get; } = StreamGeometry.Parse("M1,11 L5.3,11 L9,2.6 L14,16.4 L16.3,11 L23,11 L23,13 L17.7,13 L14,21.4 L9,7.4 L6.7,13 L1,13 Z");

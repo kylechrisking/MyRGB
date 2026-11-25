@@ -132,6 +132,9 @@ public sealed class AppHost : IAsyncDisposable
         Sensors.SetFanSettings(Settings.Fans);
         SensorFeed.Use(Sensors.Get);
         if (_options.ListenToAudio) Audio = new AudioListener(Logs.CreateLogger<AudioListener>());
+        Wallpaper = new MyRGB.App.Services.Wallpaper.WallpaperRenderer(() => Engine.ActivePreset, Presets, Effects, Settings,
+            Logs.CreateLogger<MyRGB.App.Services.Wallpaper.WallpaperRenderer>());
+        Wallpaper.Refresh();
 
         Devices.DevicesChanged += (_, _) => { WatchDeviceCommands(); ApplyScreenFirst(); };
         Lights.StateChanged += (_, _) => ScheduleSave();
@@ -173,6 +176,23 @@ public sealed class AppHost : IAsyncDisposable
     public BatteryMonitor Batteries { get; }
     public SensorHub Sensors { get; }
     public AudioListener? Audio { get; }
+
+    /// <summary>Draws MyRGB's desktop wallpaper, and feeds the Match Wallpaper effect.</summary>
+    public MyRGB.App.Services.Wallpaper.WallpaperRenderer Wallpaper { get; }
+
+    private LocalApiServer.WallpaperState WallpaperState() =>
+        new(Settings.WallpaperOn, Settings.WallpaperSource.ToString().ToLowerInvariant(), Settings.WallpaperPresetId, Settings.WallpaperPicture);
+
+    /// <summary>The API's way to change the wallpaper; the Wallpapers page follows through <see cref="Services.Wallpaper.WallpaperRenderer.Changed"/>.</summary>
+    private LocalApiServer.WallpaperState SetWallpaper(LocalApiServer.WallpaperRequest? body)
+    {
+        if (body?.PresetId is { } id && Presets.Find(id) is not null) Settings.WallpaperPresetId = id;
+        if (body?.Source is { } s && Enum.TryParse<Services.Wallpaper.WallpaperSource>(s, ignoreCase: true, out var source)) Settings.WallpaperSource = source;
+        Settings.WallpaperOn = body is null ? !Settings.WallpaperOn : body.On ?? Settings.WallpaperOn;
+        Wallpaper.Refresh();
+        ScheduleSave();
+        return WallpaperState();
+    }
 
     private readonly HashSet<IDeviceCommands> _commandSources = [];
 
@@ -512,7 +532,7 @@ public sealed class AppHost : IAsyncDisposable
     {
         try
         {
-            Api = new LocalApiServer(Lights, Settings.ApiPort, Logs.CreateLogger<LocalApiServer>(), () => ShowRequested?.Invoke()) { Monitors = Monitors, Rescan = RescanDevicesAsync };
+            Api = new LocalApiServer(Lights, Settings.ApiPort, Logs.CreateLogger<LocalApiServer>(), () => ShowRequested?.Invoke()) { Monitors = Monitors, Rescan = RescanDevicesAsync, Wallpaper = WallpaperState, SetWallpaper = SetWallpaper };
             await Api.StartAsync();
             _log.LogInformation("Local API on {Url}", Api.BaseUrl);
         }
@@ -641,6 +661,7 @@ public sealed class AppHost : IAsyncDisposable
         if (Api is not null) await Api.DisposeAsync();
         await Devices.DisposeAsync();
         Updates.Dispose();
+        Wallpaper.Dispose();
         Logs.Dispose();
     }
 }

@@ -627,6 +627,99 @@
           </DockPanel>
         </TabItem>
 
+        <!-- ===== Wallpapers ===== -->
+        <TabItem>
+          <TabItem.Header>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <PathIcon Data="{x:Static ctl:NavIcons.Wallpapers}" />
+              <TextBlock Text="Wallpapers" VerticalAlignment="Center" />
+            </StackPanel>
+          </TabItem.Header>
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+              <StackPanel Spacing="4">
+                <TextBlock Classes="h1" Text="Wallpapers" />
+                <TextBlock Classes="muted" TextWrapping="Wrap"
+                           Text="MyRGB can play a moving wallpaper behind your desktop icons, and your lights can take their colors from it. It pauses by itself while a game or full-screen video covers the screen." />
+              </StackPanel>
+              <ctl:Switch Grid.Column="1" IsChecked="{Binding Wallpapers.On}" OnContent="Wallpaper on" OffContent="Wallpaper off" VerticalAlignment="Top" Margin="16,4,0,0" />
+            </Grid>
+            <Border DockPanel.Dock="Top" Classes="panel" Padding="16,12" Margin="0,0,0,16">
+              <TextBlock Classes="body" TextWrapping="Wrap" Text="{Binding Wallpapers.Status}" />
+            </Border>
+
+            <ScrollViewer>
+              <StackPanel Spacing="16">
+                <Border Classes="panel" Padding="18,16">
+                  <StackPanel Spacing="12">
+                    <TextBlock Classes="section" Text="What the wallpaper shows" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Classes="ghost" Classes.accent="{Binding Wallpapers.FromLights}" Content="Your lights" Command="{Binding Wallpapers.SetSourceCommand}" CommandParameter="Lights"
+                              ToolTip.Tip="The wallpaper plays whatever preset your lights play, and changes with them" />
+                      <Button Classes="ghost" Classes.accent="{Binding Wallpapers.FromPreset}" Content="A preset" Command="{Binding Wallpapers.SetSourceCommand}" CommandParameter="Preset"
+                              ToolTip.Tip="The wallpaper plays one preset, whatever your lights do" />
+                      <Button Classes="ghost" Classes.accent="{Binding Wallpapers.FromPicture}" Content="A picture" Command="{Binding Wallpapers.SetSourceCommand}" CommandParameter="Picture"
+                              ToolTip.Tip="A still picture from a file" />
+                    </StackPanel>
+
+                    <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Wallpapers.FromLights}"
+                               Text="Switch presets from Presets, the tray, a hotkey or a Stream Deck, and the wallpaper follows along." />
+
+                    <StackPanel Spacing="10" IsVisible="{Binding Wallpapers.FromPicture}">
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="accent" Content="Choose a picture" Command="{Binding Wallpapers.ChoosePictureCommand}" />
+                        <TextBlock Classes="muted" Text="{Binding Wallpapers.PictureName}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Wallpapers.Scenes}" IsVisible="{Binding Wallpapers.FromPreset}">
+                      <ItemsControl.Styles>
+                        <Style Selector="Button.card.active">
+                          <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                          <Setter Property="BorderThickness" Value="2" />
+                        </Style>
+                      </ItemsControl.Styles>
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:WallpaperSceneViewModel">
+                          <Button Classes="card" Classes.active="{Binding IsSelected}" Command="{Binding ChooseCommand}" Width="200" Height="146">
+                            <Grid RowDefinitions="*,Auto" Margin="8">
+                              <ctl:EffectPreview Definition="{Binding Effect}" Settings="{Binding Settings}" CornerRadius="{DynamicResource RadiusPreview}">
+                                <ctl:EffectPreview.Animate>
+                                  <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                    <Binding Path="IsSelected" />
+                                    <Binding Path="IsPointerOver" RelativeSource="{RelativeSource AncestorType=Button}" />
+                                  </MultiBinding>
+                                </ctl:EffectPreview.Animate>
+                              </ctl:EffectPreview>
+                              <TextBlock Grid.Row="1" Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="4,9,4,1" />
+                            </Grid>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+
+                <Border Classes="panel" Padding="18,16">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="4">
+                      <TextBlock Classes="section" Text="Lights that match" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap"
+                                 Text="The Match Wallpaper preset lights each device from the part of the screen it sits by on your layout (Studio, Arrange devices). With MyRGB's wallpaper off, it matches Windows' own wallpaper picture." />
+                      <TextBlock Classes="body" Text="{Binding Wallpapers.LightsLabel}" Margin="0,6,0,0" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="accent" Content="Match my lights" Command="{Binding Wallpapers.MatchLightsCommand}"
+                            IsVisible="{Binding !Wallpapers.LightsMatch}" VerticalAlignment="Top" Margin="16,0,0,0" />
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </TabItem>
+
         <!-- ===== Devices ===== -->
         <TabItem>
           <TabItem.Header>

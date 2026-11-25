@@ -29,6 +29,7 @@ public sealed class EffectRegistry
             MusicPulseEffect.Definition,
             VisualizerEffect.Definition,
             MusicWavesEffect.Definition,
+            WallpaperEffect.Definition,
         })
             r.Register(d);
         return r;

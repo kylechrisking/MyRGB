@@ -122,6 +122,24 @@ public sealed class ApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Wallpaper_reads_and_changes()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, (await _http.GetAsync("wallpaper", ct)).StatusCode);
+
+        var state = new LocalApiServer.WallpaperState(false, "lights", "lava-lamp", null);
+        LocalApiServer.WallpaperRequest? asked = null;
+        _server.Wallpaper = () => state;
+        _server.SetWallpaper = body => { asked = body; return state = state with { On = body?.On ?? !state.On, Source = body?.Source ?? state.Source }; };
+
+        var read = await (await _http.GetAsync("wallpaper", ct)).Content.ReadFromJsonAsync<LocalApiServer.WallpaperState>(Json, ct);
+        Assert.Equal("lava-lamp", read!.PresetId);
+        var changed = await (await _http.PostAsJsonAsync("wallpaper", new { on = true, source = "preset" }, ct)).Content.ReadFromJsonAsync<LocalApiServer.WallpaperState>(Json, ct);
+        Assert.True(changed!.On);
+        Assert.Equal("preset", asked!.Source);
+    }
+
+    [Fact]
     public async Task Pause_shuffle_and_flash()
     {
         var ct = TestContext.Current.CancellationToken;

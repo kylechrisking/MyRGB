@@ -29,6 +29,9 @@ public partial class App : Application
     private static readonly (string Label, int Minutes)[] OffForSteps = [("15 minutes", 15), ("30 minutes", 30), ("1 hour", 60), ("2 hours", 120)];
     private MainViewModel? _vm;
 
+    /// <summary>The desktop wallpaper's windows, once the app is up; null in tools that render pages headless.</summary>
+    public static Services.Wallpaper.WallpaperDisplay? Wallpaper { get; private set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -55,8 +58,19 @@ public partial class App : Application
             bool minimized = Program.StartMinimized || _host.Settings.StartMinimized;
             if (!minimized) _window.Show();
 
+            // The wallpaper's windows live on the desktop, not in the main window, so the main window's
+            // screens (which it knows even while hidden in the tray) say where they go.
+            var wallpaper = Wallpaper = new Services.Wallpaper.WallpaperDisplay(_host.Wallpaper, () => _window.Screens.All,
+                _host.Logs.CreateLogger<Services.Wallpaper.WallpaperDisplay>());
+            _window.Screens.Changed += (_, _) => Dispatcher.UIThread.Post(wallpaper.Update);
+            vm.Wallpapers.Attach(wallpaper);
+
             desktop.ShutdownRequested += (_, _) => _window.AllowClose = true;
-            desktop.Exit += (_, _) => _host.Shutdown();
+            desktop.Exit += (_, _) =>
+            {
+                wallpaper.Dispose(); // hand the desktop back to Windows' own wallpaper
+                _host.Shutdown();
+            };
             WatchForHandover(desktop);
 
             // A failure here used to vanish into a discarded task; at least put it in the log.

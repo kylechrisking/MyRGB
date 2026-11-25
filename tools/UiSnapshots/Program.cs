@@ -298,6 +298,10 @@ AudioFeed.Publish(new AudioFrame(0.8f, song, 3, song));
 vm.EditPreset("visualizer"); Shoot("04c-visualizer");
 AudioFeed.Publish(AudioFrame.Silent);
 vm.SelectedTab = MainViewModel.StudioTab; vm.ArrangingLayout = true; Shoot("05-layout"); vm.ArrangingLayout = false;
+vm.SelectedTab = MainViewModel.WallpapersTab; Shoot("05b-wallpapers");
+vm.Wallpapers.On = true; vm.Wallpapers.SetSourceCommand.Execute("Preset"); Thread.Sleep(200); Dispatcher.UIThread.RunJobs(); Shoot("05c-wallpapers-preset");
+Console.WriteLine($"wallpaper: {vm.Wallpapers.Status} | frame {host.Wallpaper.Latest?.Width}x{host.Wallpaper.Latest?.Height} | scenes {vm.Wallpapers.Scenes.Count}");
+vm.Wallpapers.On = false; vm.Wallpapers.SetSourceCommand.Execute("Lights");
 vm.SelectedTab = MainViewModel.DevicesTab; Shoot("06-devices");
 vm.DevicesGrid = true; Shoot("06a-devices-grid"); vm.DevicesGrid = false;
 {

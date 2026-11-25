@@ -77,7 +77,7 @@ public sealed record AlertViewModel(bool Warning, string Text, string? ActionLab
 public sealed partial class MainViewModel : ObservableObject
 {
     // Sidebar order. Keep in sync with the TabItems in MainWindow.axaml.
-    public const int HomeTab = 0, PresetsTab = 1, CommunityTab = 2, StudioTab = 3, DevicesTab = 4, MonitoringTab = 5, SettingsTab = 6;
+    public const int HomeTab = 0, PresetsTab = 1, CommunityTab = 2, StudioTab = 3, WallpapersTab = 4, DevicesTab = 5, MonitoringTab = 6, SettingsTab = 7;
 
     private const int LowBattery = 20;
 
@@ -95,6 +95,7 @@ public sealed partial class MainViewModel : ObservableObject
         Cooling = new CoolingViewModel(host);
         SupportNudge = new SupportNudgeViewModel(host, Account);
         Update = new UpdateViewModel(host);
+        Wallpapers = new WallpapersViewModel(host);
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
         _checkForUpdates = host.Settings.CheckForUpdates;
@@ -176,6 +177,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public AppHost Host => _host;
     public StudioViewModel Studio { get; }
+    public WallpapersViewModel Wallpapers { get; }
     public VendorAppsViewModel Vendors { get; }
     public AccountViewModel Account { get; }
     public CommunityViewModel Community { get; }
@@ -511,6 +513,7 @@ public sealed partial class MainViewModel : ObservableObject
             "home" => HomeTab,
             "presets" => PresetsTab,
             "studio" or "layout" => StudioTab,
+            "wallpapers" or "wallpaper" => WallpapersTab,
             "devices" => DevicesTab,
             "monitoring" or "cooling" => MonitoringTab,
             "community" => CommunityTab,
