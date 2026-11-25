@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 9, 2), ["Video wallpapers now play on your graphics card, which takes most of the work off your processor. If one ever flickers or won't play, turn off \"Use the graphics card\" in Settings > Video wallpapers."]),
         new(new(0, 9, 1), ["Video wallpapers: pick \"A video\" on the Wallpapers page and MyRGB loops it behind your desktop icons, without sound. Match Wallpaper lights follow the video too."]),
         new(new(0, 9, 0), ["New Wallpapers page: MyRGB can play a moving wallpaper behind your desktop icons, across all your screens. Show whatever your lights play, one preset you pick, or a picture. It pauses while a game or full-screen video covers the screen.",
                            "New Match Wallpaper preset: each light takes its colors from the part of the screen it sits by, from MyRGB's wallpaper or your usual Windows one."]),
