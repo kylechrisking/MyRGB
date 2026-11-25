@@ -40,6 +40,8 @@ public sealed partial class WallpapersViewModel : ObservableObject
         _source = host.Settings.WallpaperSource;
         _picture = host.Settings.WallpaperPicture;
         _video = host.Settings.WallpaperVideo;
+        _videoUseGpu = host.Settings.VideoUseGpu;
+        host.Wallpaper.StatusChanged += () => Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(DecodingNote)));
         RefreshScenes();
         host.Presets.Changed += (_, _) => Dispatcher.UIThread.Post(RefreshScenes);
         host.Lights.StateChanged += (_, _) => Dispatcher.UIThread.Post(() =>
@@ -88,6 +90,31 @@ public sealed partial class WallpapersViewModel : ObservableObject
     [ObservableProperty] private string? _video;
 
     public string VideoName => Video is { } v ? Path.GetFileName(v) : "No video chosen";
+
+    /// <summary>Settings: video wallpapers decoded by the graphics card.</summary>
+    [ObservableProperty] private bool _videoUseGpu;
+
+    partial void OnVideoUseGpuChanged(bool value)
+    {
+        _host.Settings.VideoUseGpu = value;
+        _host.ScheduleSave();
+        OnPropertyChanged(nameof(DecodingNote)); // the playing video reopens with the new choice on its next frame
+    }
+
+    /// <summary>How the video wallpaper is being decoded right now, in a sentence.</summary>
+    public string DecodingNote
+    {
+        get
+        {
+            var w = _host.Wallpaper;
+            if (!On || Source != WallpaperSource.Video || w.VideoSize.Width == 0)
+                return VideoUseGpu ? "No video is playing right now. When one is, your graphics card will play it." : "No video is playing right now. When one is, your processor will play it.";
+            if (w.VideoOnGpu) return "Right now: your graphics card is playing the video.";
+            return VideoUseGpu && w.VideoGpuProblem is { } why
+                ? $"Right now: your processor is playing the video, because the graphics card couldn't ({why.TrimEnd('.')})."
+                : "Right now: your processor is playing the video.";
+        }
+    }
 
     /// <summary>True while the lights play Match Wallpaper.</summary>
     public bool LightsMatch => _host.Engine.ActivePreset?.EffectId == WallpaperFeed.EffectId;
@@ -163,6 +190,7 @@ public sealed partial class WallpapersViewModel : ObservableObject
         _host.Wallpaper.Refresh();
         _host.ScheduleSave();
         OnPropertyChanged(nameof(Status));
+        OnPropertyChanged(nameof(DecodingNote));
     }
 
     private void RefreshScenes()

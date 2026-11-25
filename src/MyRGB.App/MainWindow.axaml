@@ -1620,6 +1620,18 @@
               </Border>
 
               <Border Classes="panel">
+                <StackPanel Spacing="10">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Classes="section" Text="Video wallpapers" VerticalAlignment="Center" />
+                    <ctl:Switch Grid.Column="1" IsChecked="{Binding Wallpapers.VideoUseGpu}" OnContent="Use the graphics card" OffContent="Use the graphics card" />
+                  </Grid>
+                  <TextBlock Classes="muted" TextWrapping="Wrap"
+                             Text="Your graphics card has a small part built just for playing video. With this on, it does the hard work of a video wallpaper, the same way it does when you watch a video in your browser, and your processor stays free for everything else (it usually takes most of the work off it). Leave it on unless a video wallpaper flickers, shows the wrong colors or won't play; then turn it off and your processor plays it instead. If the graphics card can't handle a video, MyRGB switches to the processor by itself." />
+                  <TextBlock Classes="body" TextWrapping="Wrap" Text="{Binding Wallpapers.DecodingNote}" />
+                </StackPanel>
+              </Border>
+
+              <Border Classes="panel">
                 <StackPanel Spacing="8">
                   <TextBlock Classes="section" Text="Stream Deck" />
                   <TextBlock Classes="body" Text="{Binding StreamDeckStatus}" />

@@ -307,6 +307,14 @@ if (Environment.GetEnvironmentVariable("MYRGB_TEST_VIDEO") is { Length: > 0 } te
     Thread.Sleep(1500); Dispatcher.UIThread.RunJobs(); Shoot("05d-wallpapers-video");
     var feed = MyRGB.Core.Wallpaper.WallpaperFeed.Peek();
     Console.WriteLine($"video: {host.Wallpaper.VideoSize} frames {host.Wallpaper.VideoFrameNumber} feed {feed?.Width}x{feed?.Height} problem {host.Wallpaper.Problem ?? "none"} | {vm.Wallpapers.Status}");
+    Console.WriteLine($"decoding: gpu={host.Wallpaper.VideoOnGpu} | {vm.Wallpapers.DecodingNote}");
+    vm.Wallpapers.VideoUseGpu = false; Thread.Sleep(1200); Dispatcher.UIThread.RunJobs();
+    Console.WriteLine($"decoding with the switch off: gpu={host.Wallpaper.VideoOnGpu} frames {host.Wallpaper.VideoFrameNumber} | {vm.Wallpapers.DecodingNote}");
+    vm.Wallpapers.VideoUseGpu = true;
+    vm.SelectedTab = MainViewModel.SettingsTab; Dispatcher.UIThread.RunJobs();
+    Avalonia.Controls.ControlExtensions.BringIntoView(window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>().First(t => t.Text == "Video wallpapers").Parent!.Parent as Avalonia.Controls.Control ?? throw new InvalidOperationException());
+    Thread.Sleep(200); Dispatcher.UIThread.RunJobs(); Shoot("09c-settings-video");
+    vm.SelectedTab = MainViewModel.WallpapersTab;
     vm.Wallpapers.Video = Path.Combine(Path.GetTempPath(), "missing.mp4"); Thread.Sleep(500); Dispatcher.UIThread.RunJobs();
     Console.WriteLine($"missing video: {host.Wallpaper.Problem}");
     vm.Wallpapers.Video = null;

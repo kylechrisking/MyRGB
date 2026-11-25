@@ -88,3 +88,37 @@ public class VideoDecoderTests
         finally { File.Delete(path); }
     }
 }
+
+public class VideoGpuTests
+{
+    /// <summary>With MYRGB_TEST_VIDEO set: the graphics card decodes the same frames as the processor, for a fraction of the processor time.</summary>
+    [Fact]
+    public void The_graphics_card_decodes_and_the_processor_is_the_fallback()
+    {
+        string? path = Environment.GetEnvironmentVariable("MYRGB_TEST_VIDEO");
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) Assert.Skip("MYRGB_TEST_VIDEO isn't set to a video file.");
+        if (!OperatingSystem.IsWindows()) Assert.Skip("Media Foundation is Windows only.");
+
+        (TimeSpan Cpu, bool OnGpu, string? Why, byte[] Frame, int W, int H) Run(bool gpu)
+        {
+            using var video = new VideoDecoder(path, 1920, 1080, gpu);
+            var frame = new byte[video.Width * video.Height * 4];
+            var before = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime;
+            for (int i = 0; i < 300; i++) if (video.ReadFrame(frame) is null) video.Rewind();
+            var used = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime - before;
+            return (used, video.OnGpu, video.GpuProblem, frame, video.Width, video.Height);
+        }
+
+        var cpu = Run(gpu: false);
+        var gpu = Run(gpu: true);
+        Console.WriteLine($"processor: {cpu.Cpu.TotalMilliseconds:N0} ms for 300 frames at {cpu.W}x{cpu.H}");
+        Console.WriteLine($"graphics card: {gpu.Cpu.TotalMilliseconds:N0} ms, on GPU {gpu.OnGpu}, problem {gpu.Why ?? "none"}, {gpu.W}x{gpu.H}");
+
+        Assert.False(cpu.OnGpu);
+        Assert.Equal((cpu.W, cpu.H), (gpu.W, gpu.H));
+        Assert.Contains(gpu.Frame, b => b != 0);
+        // Same frame both ways, give or take colour rounding: compare the average brightness.
+        double Mean(byte[] f) { long s = 0; for (int i = 0; i < f.Length; i += 4) s += f[i] + f[i + 1] + f[i + 2]; return s / (f.Length / 4.0 * 3); }
+        Assert.InRange(Mean(gpu.Frame) - Mean(cpu.Frame), -12, 12);
+    }
+}

@@ -120,6 +120,9 @@ public sealed class AppSettings
     /// <summary>The video file when the source is a video.</summary>
     public string? WallpaperVideo { get; set; }
 
+    /// <summary>Video wallpapers are decoded by the graphics card (falls back to the processor by itself).</summary>
+    public bool VideoUseGpu { get; set; } = true;
+
     /// <summary>The look, by <see cref="ThemeManager"/> id. Notebook unless picked otherwise.</summary>
     public string Theme { get; set; } = ThemeManager.DefaultId;
     public OpenRgbOptions OpenRgb { get; set; } = new();

@@ -65,6 +65,7 @@ public sealed class WallpaperRenderer : IDisposable
     private double _videoClock;
     private TimeSpan _videoNext;
     private int _videoFrames;
+    private bool _videoGpu;
 
     /// <summary>Biggest frame asked of the decoder: full HD keeps copying cheap; Windows scales it to the screen.</summary>
     private const int VideoMaxWidth = 1920, VideoMaxHeight = 1080;
@@ -88,6 +89,15 @@ public sealed class WallpaperRenderer : IDisposable
 
     /// <summary>The latest frame drawn for the screens; null while there is none (off, or a picture).</summary>
     public WallpaperFrame? Latest { get; private set; }
+
+    /// <summary>True while the playing video is decoded by the graphics card.</summary>
+    public bool VideoOnGpu { get; private set; }
+
+    /// <summary>Why the graphics card couldn't decode the playing video, when it was asked to.</summary>
+    public string? VideoGpuProblem { get; private set; }
+
+    /// <summary>Raised (on the wallpaper thread) when a video starts, so pages can say how it's decoded.</summary>
+    public event Action? StatusChanged;
 
     /// <summary>Size of the current video frame (0 when no video plays).</summary>
     public PixelSize VideoSize { get; private set; }
@@ -211,20 +221,26 @@ public sealed class WallpaperRenderer : IDisposable
     private void PlayVideo(double dt)
     {
         string? path = _settings.WallpaperVideo;
-        if (path != _videoFor)
+        bool gpu = _settings.VideoUseGpu;
+        if (path != _videoFor || gpu != _videoGpu)
         {
             CloseVideo();
             _videoFor = path;
+            _videoGpu = gpu;
             if (path is null) { Problem = "Choose a video to play."; return; }
             try
             {
-                _video = new VideoDecoder(path, VideoMaxWidth, VideoMaxHeight);
+                _video = new VideoDecoder(path, VideoMaxWidth, VideoMaxHeight, gpu);
+                VideoOnGpu = _video.OnGpu;
+                VideoGpuProblem = _video.GpuProblem;
                 int bytes = _video.Width * _video.Height * 4;
                 lock (_videoGate) { _videoFront = new byte[bytes]; _videoBack = new byte[bytes]; }
                 VideoSize = new PixelSize(_video.Width, _video.Height);
                 (_videoClock, _videoNext) = (0, TimeSpan.Zero);
                 Problem = null;
-                _log.LogInformation("Wallpaper video {Name}: {Width}x{Height}, {Duration}", Path.GetFileName(path), _video.Width, _video.Height, _video.Duration);
+                _log.LogInformation("Wallpaper video {Name}: {Width}x{Height}, {Duration}, decoded by the {Where}{Why}", Path.GetFileName(path), _video.Width, _video.Height, _video.Duration,
+                    _video.OnGpu ? "graphics card" : "processor", _video.GpuProblem is { } why ? $" (graphics card refused: {why})" : "");
+                StatusChanged?.Invoke();
             }
             catch (Exception ex) when (ex is VideoException or COMException or FileNotFoundException or UnauthorizedAccessException)
             {
@@ -266,6 +282,8 @@ public sealed class WallpaperRenderer : IDisposable
         _video = null;
         if (!keepPath) _videoFor = null;
         VideoSize = default;
+        VideoOnGpu = false;
+        VideoGpuProblem = null;
         lock (_videoGate) { _videoFront = []; _videoBack = []; }
     }
 

@@ -17,25 +17,61 @@ public sealed class VideoDecoder : IDisposable
     private static int _started;
 
     private IMFSourceReader? _reader;
+    private IMFDXGIDeviceManager? _gpuManager;
+    private IntPtr _gpuDevice;
 
-    public int Width { get; }
-    public int Height { get; }
+    public int Width { get; private set; }
+    public int Height { get; private set; }
 
     /// <summary>How long the video runs; zero when Windows doesn't say.</summary>
-    public TimeSpan Duration { get; }
+    public TimeSpan Duration { get; private set; }
 
-    /// <summary>Open <paramref name="path"/>, with frames no bigger than <paramref name="maxWidth"/> by <paramref name="maxHeight"/>.</summary>
+    /// <summary>True when the graphics card decodes and scales the frames; false when the processor does.</summary>
+    public bool OnGpu { get; private set; }
+
+    /// <summary>Why the graphics card wasn't used although it was asked for; null when it was, or wasn't asked.</summary>
+    public string? GpuProblem { get; private set; }
+
+    /// <summary>
+    /// Open <paramref name="path"/>, with frames no bigger than <paramref name="maxWidth"/> by <paramref name="maxHeight"/>.
+    /// With <paramref name="useGpu"/>, the graphics card decodes and scales when it can (much less work for
+    /// the processor); if any part of that fails, the processor does it instead, and <see cref="GpuProblem"/> says why.
+    /// </summary>
     /// <exception cref="VideoException">Windows can't open or decode the file.</exception>
-    public VideoDecoder(string path, int maxWidth, int maxHeight)
+    public VideoDecoder(string path, int maxWidth, int maxHeight, bool useGpu = true)
     {
         if (Interlocked.Exchange(ref _started, 1) == 0) Check(MFStartup(0x00020070, 0), "start Media Foundation");
+        if (useGpu)
+        {
+            try
+            {
+                Open(path, maxWidth, maxHeight, gpu: true);
+                OnGpu = true;
+                return;
+            }
+            catch (Exception ex) when (ex is VideoException or COMException or DllNotFoundException or EntryPointNotFoundException or InvalidCastException)
+            {
+                GpuProblem = ex.Message;
+                Close();
+            }
+        }
+        Open(path, maxWidth, maxHeight, gpu: false);
+    }
 
-        Check(MFCreateAttributes(out var attrs, 3), "set up the reader");
+    private void Open(string path, int maxWidth, int maxHeight, bool gpu)
+    {
+        Check(MFCreateAttributes(out var attrs, 4), "set up the reader");
         try
         {
-            // Let Windows convert to RGB and resize, using the graphics card's decoder where it can.
+            // Let Windows convert to RGB and resize. With a Direct3D device handed over, the graphics
+            // card's own video engine decodes, converts and scales; only the finished frame comes back.
             attrs.SetUINT32(EnableAdvancedVideoProcessing, 1);
             attrs.SetUINT32(EnableHardwareTransforms, 1);
+            if (gpu)
+            {
+                _gpuManager = CreateGpuManager(out _gpuDevice);
+                Check(attrs.SetUnknown(D3DManager, _gpuManager), "hand the graphics card to the decoder");
+            }
             int hr = MFCreateSourceReaderFromURL(path, attrs, out var reader);
             if (hr < 0) throw new VideoException("Windows couldn't open this file as a video.", hr);
             _reader = reader;
@@ -135,10 +171,47 @@ public sealed class VideoDecoder : IDisposable
         Check(_reader!.SetCurrentPosition(Guid.Empty, ref pv), "go back to the start");
     }
 
-    public void Dispose()
+    public void Dispose() => Close();
+
+    private void Close()
     {
         if (_reader is { } r) Marshal.ReleaseComObject(r);
         _reader = null;
+        if (_gpuManager is { } m) Marshal.ReleaseComObject(m);
+        _gpuManager = null;
+        if (_gpuDevice != IntPtr.Zero) Marshal.Release(_gpuDevice);
+        _gpuDevice = IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// A Direct3D 11 device on the main graphics card, with video support, wrapped in the device manager
+    /// Media Foundation takes. Multithread protection is on: the decoder calls it from its own threads.
+    /// </summary>
+    private static IMFDXGIDeviceManager CreateGpuManager(out IntPtr device)
+    {
+        const int Hardware = 1;
+        const uint VideoSupport = 0x800, BgraSupport = 0x20;
+        int hr = D3D11CreateDevice(IntPtr.Zero, Hardware, IntPtr.Zero, VideoSupport | BgraSupport, IntPtr.Zero, 0, 7, out device, out _, out var context);
+        if (hr < 0) throw new VideoException($"The graphics card has no video decoder Windows can use (0x{hr:X8}).", hr);
+        Marshal.Release(context);
+
+        var iid = typeof(ID3D10Multithread).GUID;
+        if (Marshal.QueryInterface(device, ref iid, out var mtPtr) >= 0)
+        {
+            var mt = (ID3D10Multithread)Marshal.GetObjectForIUnknown(mtPtr);
+            mt.SetMultithreadProtected(1);
+            Marshal.ReleaseComObject(mt);
+            Marshal.Release(mtPtr);
+        }
+
+        Check(MFCreateDXGIDeviceManager(out uint token, out var manager), "set up the graphics card for video");
+        int reset = manager.ResetDevice(device, token);
+        if (reset < 0)
+        {
+            Marshal.ReleaseComObject(manager);
+            throw new VideoException($"The graphics card wouldn't take on video decoding (0x{reset:X8}).", reset);
+        }
+        return manager;
     }
 
     private static void Check(int hr, string doing)
@@ -154,6 +227,7 @@ public sealed class VideoDecoder : IDisposable
     private static readonly Guid EnableAdvancedVideoProcessing = new("0f81da2c-b537-4672-a8b2-a681b17307a3");
     private static readonly Guid EnableHardwareTransforms = new("a634a91c-822b-41b9-a494-4de4643612b0");
     private static readonly Guid PresentationDuration = new("6c990d33-bb8e-477a-8598-0d5d96fcd88a");
+    private static readonly Guid D3DManager = new("ec822da2-e1e9-4b29-a0d8-563c719f5269");
     private const uint MediaSource = 0xFFFFFFFF;
 
     [StructLayout(LayoutKind.Sequential)]
@@ -167,6 +241,10 @@ public sealed class VideoDecoder : IDisposable
 
     [DllImport("mfplat.dll")] private static extern int MFStartup(uint version, uint flags);
     [DllImport("mfplat.dll")] private static extern int MFCreateAttributes(out IMFAttributes attributes, uint size);
+    [DllImport("mfplat.dll")] private static extern int MFCreateDXGIDeviceManager(out uint resetToken, out IMFDXGIDeviceManager manager);
+    [DllImport("d3d11.dll")]
+    private static extern int D3D11CreateDevice(IntPtr adapter, int driverType, IntPtr software, uint flags, IntPtr featureLevels, uint levels, uint sdkVersion,
+        out IntPtr device, out int featureLevel, out IntPtr context);
     [DllImport("mfplat.dll")] private static extern int MFCreateMediaType(out IMFMediaType type);
     [DllImport("mfreadwrite.dll", CharSet = CharSet.Unicode)]
     private static extern int MFCreateSourceReaderFromURL(string url, IMFAttributes attributes, out IMFSourceReader reader);
@@ -182,7 +260,8 @@ public sealed class VideoDecoder : IDisposable
         void GetAllocatedString(); void GetBlobSize(); void GetBlob(); void GetAllocatedBlob(); void GetUnknown();
         void SetItem(); void DeleteItem(); void DeleteAllItems();
         [PreserveSig] int SetUINT32(in Guid key, uint value);
-        void SetUINT64(); void SetDouble(); void SetGUID(); void SetString(); void SetBlob(); void SetUnknown();
+        void SetUINT64(); void SetDouble(); void SetGUID(); void SetString(); void SetBlob();
+        [PreserveSig] int SetUnknown(in Guid key, [MarshalAs(UnmanagedType.IUnknown)] object value);
         void LockStore(); void UnlockStore(); void GetCount(); void GetItemByIndex(); void CopyAllItems();
     }
 
@@ -200,6 +279,22 @@ public sealed class VideoDecoder : IDisposable
         void SetString(); void SetBlob(); void SetUnknown();
         void LockStore(); void UnlockStore(); void GetCount(); void GetItemByIndex(); void CopyAllItems();
         void GetMajorType(); void IsCompressedFormat(); void IsEqual(); void GetRepresentation(); void FreeRepresentation();
+    }
+
+    [ComImport, Guid("eb533d5d-2db6-40f8-97a9-494692014f07"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IMFDXGIDeviceManager
+    {
+        void CloseDeviceHandle(); void GetVideoService(); void LockDevice(); void OpenDeviceHandle();
+        [PreserveSig] int ResetDevice(IntPtr device, uint resetToken);
+        void TestDevice(); void UnlockDevice();
+    }
+
+    [ComImport, Guid("9B7E4E00-342C-4106-A19F-4F2704F689F0"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface ID3D10Multithread
+    {
+        void Enter(); void Leave();
+        [PreserveSig] int SetMultithreadProtected(int on);
+        [PreserveSig] int GetMultithreadProtected();
     }
 
     [ComImport, Guid("70ae66f2-c809-4e4f-8915-bdcb406b7993"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
