@@ -11,6 +11,7 @@ public static class WhatsNew
     /// <summary>Newest first.</summary>
     public static IReadOnlyList<Release> Releases { get; } =
     [
+        new(new(0, 8, 1), ["MyRGB no longer asks to update the temperature and fan helper after every update, only when the helper itself changes. The \"Restart as administrator\" button is gone: the helper does that job with one permission prompt."]),
         new(new(0, 8, 0), ["A tidier window: Layout is part of the Studio (switch on Arrange devices), Cooling is part of Monitoring, and Vendor apps sit in Settings, only while one is installed.",
                            "Home's Lighting card has the preset buttons; the music-player bar is gone.",
                            "Devices can show as a grid, with a drawing of each device lit the way it is right now.",

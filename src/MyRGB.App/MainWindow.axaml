@@ -956,8 +956,6 @@
                     <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !HelperConnected}">
                       <Button Classes="accent" Content="Enable CPU temperatures and fans" Command="{Binding EnableHelperCommand}"
                               ToolTip.Tip="Windows asks for permission once. MyRGB keeps running; temperatures appear within a few seconds." />
-                      <Button Classes="ghost" Content="Restart as administrator" Command="{Binding RestartAsAdminCommand}"
-                              ToolTip.Tip="Windows asks for permission, then MyRGB reopens with admin rights and takes over from this one." />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HelperConnected}">
                       <PathIcon Data="{x:Static ctl:NavIcons.Check}" Width="16" Height="16" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
@@ -967,7 +965,7 @@
                     </StackPanel>
                     <StackPanel Spacing="10" IsVisible="{Binding HelperOutdated}">
                       <TextBlock Classes="body" TextWrapping="Wrap"
-                                 Text="The helper is an older version than this MyRGB. One more permission prompt brings it up to date; your fan settings stay as they are." />
+                                 Text="This MyRGB needs a newer helper. One permission prompt updates it; your fan settings stay as they are. Ordinary MyRGB updates don't need this." />
                       <Button Classes="ghost" Content="Update the helper" Command="{Binding EnableHelperCommand}" HorizontalAlignment="Left" />
                     </StackPanel>
                     <TextBlock Classes="muted" Text="{Binding AdminStatus}" TextWrapping="Wrap"

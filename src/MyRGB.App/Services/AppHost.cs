@@ -274,6 +274,9 @@ public sealed class AppHost : IAsyncDisposable
 
     /// <summary>The helper's version, when it's connected; an older one than the app deserves a re-enable.</summary>
     public string? SensorHelperVersion => SensorSource is PipeSensors { Connected: true } p ? p.HelperVersion : null;
+
+    /// <summary>The connected helper's revision; behind <see cref="SensorPipe.HelperRevision"/> means it needs reinstalling.</summary>
+    public int? SensorHelperRevision => SensorSource is PipeSensors { Connected: true } p ? p.HelperRevision : null;
     public LocalApiServer? Api { get; private set; }
 
     private DateTime _lastWakeRescan = DateTime.MinValue;

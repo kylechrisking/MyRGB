@@ -76,20 +76,6 @@ class Program
         }
     }
 
-    /// <summary>Start MyRGB again as administrator; the new one takes over from this one. False if Windows was told no.</summary>
-    public static bool RestartElevated()
-    {
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = true, Verb = "runas" });
-            return true;
-        }
-        catch (System.ComponentModel.Win32Exception)
-        {
-            return false; // the user said no to the Windows prompt
-        }
-    }
-
     /// <summary>Run one program elevated and hidden, e.g. the setup script behind a single Windows prompt. False if Windows was told no.</summary>
     public static bool Elevate(string fileName, string arguments)
     {

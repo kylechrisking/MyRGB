@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyRGB.App.Services;
 using MyRGB.Core.Sensors;
+using MyRGB.Sensors;
 
 namespace MyRGB.App.ViewModels;
 
@@ -503,10 +504,6 @@ public sealed partial class CoolingViewModel : ObservableObject
     /// <summary>The helper is connected but older than this MyRGB; one more prompt brings it current.</summary>
     [ObservableProperty] private bool _helperOutdated;
 
-    [RelayCommand]
-    private void RestartAsAdmin() =>
-        AdminStatus = Program.RestartElevated() ? "Opening MyRGB as administrator…" : "Windows didn't give permission, so MyRGB is still running without it.";
-
     /// <summary>
     /// One Windows prompt installs and starts the sensor helper: a tiny service that runs as
     /// administrator and reads temperatures for MyRGB, which carries on without any. It comes
@@ -548,9 +545,8 @@ public sealed partial class CoolingViewModel : ObservableObject
     {
         var hub = _host.Sensors;
         HelperConnected = _host.SensorHelperConnected;
-        HelperOutdated = HelperConnected
-            && Version.TryParse(_host.SensorHelperVersion ?? "", out var helperVersion)
-            && helperVersion < UpdateViewModel.CurrentVersion;
+        // Only a helper whose own code is behind needs the permission prompt, not every MyRGB update.
+        HelperOutdated = HelperConnected && _host.SensorHelperRevision is { } revision && revision < SensorPipe.HelperRevision;
         Builder.Tick();
         foreach (var t in Temps)
         {

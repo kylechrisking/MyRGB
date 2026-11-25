@@ -47,12 +47,20 @@ public static class SensorPipe
         [property: JsonPropertyName("r")] double? Rpm,
         [property: JsonPropertyName("p")] double? Percent);
 
+    /// <summary>
+    /// What the helper in Program Files must be at least. Bump it only when the helper itself changes
+    /// (its protocol or what it does); updating it costs the user a Windows permission prompt, so an
+    /// ordinary MyRGB release must not ask for one. Helpers from 0.4.x until this existed are revision 1.
+    /// </summary>
+    public const int HelperRevision = 1;
+
     /// <summary>Answers carry ok; failures carry what went wrong in error. Extra fields per op. v is the helper's version.</summary>
     public sealed class Response
     {
         [JsonPropertyName("ok")] public bool Ok { get; set; }
         [JsonPropertyName("error")] public string? Error { get; set; }
         [JsonPropertyName("v")] public string? Version { get; set; }
+        [JsonPropertyName("hr")] public int? Revision { get; set; }
         [JsonPropertyName("r")] public List<ReadingDto>? Readings { get; set; }
         [JsonPropertyName("f")] public List<FanDto>? Fans { get; set; }
     }
@@ -223,7 +231,7 @@ public sealed class SensorPipeServer : IDisposable
             switch (request.Op)
             {
                 case "ping":
-                    return new SensorPipe.Response { Ok = true, Version = version };
+                    return new SensorPipe.Response { Ok = true, Version = version, Revision = SensorPipe.HelperRevision };
                 case "readings":
                 {
                     var readings = _source.Read();
@@ -231,6 +239,7 @@ public sealed class SensorPipeServer : IDisposable
                     {
                         Ok = true,
                         Version = version,
+                        Revision = SensorPipe.HelperRevision,
                         Readings = [.. readings.Select(r => new SensorPipe.ReadingDto(r.Id, r.Category, r.Hardware, r.Name, r.Kind, r.Value, r.Key))],
                         Fans = [.. _source.Fans.Select(f => new SensorPipe.FanDto(f.Id, f.Name, f.GuardKey, f.Rpm, f.Percent))],
                     };
@@ -318,6 +327,9 @@ public sealed class PipeSensors : ISensorSource
     /// <summary>The helper's version, from its last answer; null while it isn't connected.</summary>
     public string? HelperVersion { get; private set; }
 
+    /// <summary>The helper's <see cref="SensorPipe.HelperRevision"/>, from its last answer; null while it isn't connected.</summary>
+    public int? HelperRevision { get; private set; }
+
     /// <summary>Never blocks on the pipe: the helper's fans while it answers, the fallback's otherwise.</summary>
     public IReadOnlyList<IFanChannel> Fans => _connected ? _fansSnapshot : _fallback.Fans;
 
@@ -359,6 +371,8 @@ public sealed class PipeSensors : ISensorSource
             var reply = ReadReply();
             if (reply is not { Ok: true } or { Readings: null }) return false;
             HelperVersion = reply.Version;
+            // Helpers older than the revision number carry only a version: any with one is revision 1.
+            HelperRevision = reply.Revision ?? (reply.Version is null ? 0 : 1);
             readings = [.. reply.Readings.Select(r => new SensorReading(r.Id, r.Category, r.Hardware, r.Name, r.Kind, r.Value, r.Key))];
             RefreshFans(reply.Fans ?? []);
             return true;
@@ -443,6 +457,7 @@ public sealed class PipeSensors : ISensorSource
     {
         _connected = false;
         HelperVersion = null;
+        HelperRevision = null;
         _pipe?.Dispose();
         _pipe = null;
         _fans.Clear();
