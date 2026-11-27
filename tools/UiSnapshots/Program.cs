@@ -70,9 +70,13 @@ bool fakeLocked = false;
 var fakeMonitors = new FakeMonitors();
 MyRGB.Providers.OpenRgb.TaskLaunch? fakeTask = null;
 var fakeNow = new DateTime(2026, 11, 22, 21, 0, 0);
+// The user's own effects folder, with the examples in it, so the Studio shows them.
+string effectsDir = Path.Combine(data, "effects");
+new MyRGB.Scripting.EffectFolder(new MyRGB.Core.Effects.EffectRegistry(), effectsDir).Create();
 var host = new AppHost(new AppHostOptions
 {
     DataDirectory = data,
+    EffectsDirectory = effectsDir,
     EnableApi = false,
     EnableGlobalHotkey = true, // registers nothing until the switch is on
     OpenRgbTask = () => fakeTask,
@@ -297,6 +301,15 @@ var song = Enumerable.Range(0, AudioFrame.BandCount).Select(b => (float)Math.Cla
 AudioFeed.Publish(new AudioFrame(0.8f, song, 3, song));
 vm.EditPreset("visualizer"); Shoot("04c-visualizer");
 AudioFeed.Publish(AudioFrame.Silent);
+// Effects from the user's own folder: one that works, then a file with a mistake and one that breaks while running.
+vm.EditPreset("ocean");
+vm.Studio.SelectedEffect = vm.Studio.Effects.First(e => e.Definition.Id == "script:northern-lights"); Shoot("04d-your-effect");
+File.WriteAllText(Path.Combine(effectsDir, "Half Done.js"), "effect({ name: \"Half Done\",\n  light(p) { return 0 }\n  settings: {} });");
+File.WriteAllText(Path.Combine(effectsDir, "Oops.js"), "effect({ name: \"Oops\", light(p, time) {\n  return colour(p.x); } });");
+vm.Studio.ReloadEffectsCommand.Execute(null); Dispatcher.UIThread.RunJobs();
+vm.Studio.SelectedEffect = vm.Studio.Effects.First(e => e.Definition.Id == "script:oops"); Thread.Sleep(300); Dispatcher.UIThread.RunJobs();
+Console.WriteLine($"your effects: {vm.Studio.EffectFolderStatus} | {vm.Studio.EffectProblem}");
+Shoot("04e-effect-problem");
 vm.SelectedTab = MainViewModel.StudioTab; vm.ArrangingLayout = true; Shoot("05-layout"); vm.ArrangingLayout = false;
 vm.SelectedTab = MainViewModel.WallpapersTab; Shoot("05b-wallpapers");
 vm.Wallpapers.On = true; vm.Wallpapers.SetSourceCommand.Execute("Preset"); Thread.Sleep(200); Dispatcher.UIThread.RunJobs(); Shoot("05c-wallpapers-preset");

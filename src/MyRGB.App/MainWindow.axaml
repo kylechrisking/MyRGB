@@ -562,6 +562,15 @@
                       </DataTemplate>
                     </ListBox.ItemTemplate>
                   </ListBox>
+                  <!-- Effects people write themselves, from Documents\MyRGB Effects. -->
+                  <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,2,0,0">
+                    <TextBlock Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+                               Text="{Binding Studio.EffectFolderStatus}" />
+                    <Button Grid.Column="1" Classes="ghost" Content="Your effects folder" Command="{Binding Studio.OpenEffectsFolderCommand}"
+                            ToolTip.Tip="Every .js file in this folder shows up in the list above. Opening it the first time adds a few examples and a short guide." />
+                    <Button Grid.Column="2" Classes="ghost" Content="Reload" Margin="6,0,0,0" Command="{Binding Studio.ReloadEffectsCommand}"
+                            ToolTip.Tip="Read the folder again after you add, change or delete an effect file" />
+                  </Grid>
                 </StackPanel>
                 <ctl:LedCanvas Host="{Binding Host}" HighlightId="{Binding Studio.SelectedTarget.DeviceId}" MinHeight="180"
                                AllowEditing="{Binding ArrangingLayout}" />
@@ -586,6 +595,9 @@
                       <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding Studio.SettingsDescription}"
                                  IsVisible="{Binding Studio.SettingsDescription, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
+                    <TextBlock DockPanel.Dock="Top" Classes="body" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,0,0,12"
+                               Text="{Binding Studio.EffectProblem}"
+                               IsVisible="{Binding Studio.EffectProblem, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <TextBlock DockPanel.Dock="Top" Classes="body" Foreground="{DynamicResource MutedBrush}" Text="{Binding Studio.SettingsHint}"
                                IsVisible="{Binding !Studio.HasParameters}" />
                     <ScrollViewer>

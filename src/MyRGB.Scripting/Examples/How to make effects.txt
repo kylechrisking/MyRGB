@@ -1,0 +1,103 @@
+MAKING YOUR OWN EFFECTS FOR MYRGB
+=================================
+
+Every .js file in this folder becomes an effect in MyRGB, under "Your effects".
+After you add, change or delete a file, press Reload in MyRGB.
+
+Effects are written in JavaScript. They can only work out colors. They can't open
+files, use the internet or touch anything else on your PC, so it is safe to try
+effects other people share. If an effect breaks or runs too slowly, MyRGB stops it
+and your lights show a dim red glow. MyRGB tells you what went wrong.
+
+The quickest start: copy "Northern Lights.js", rename the copy and change it.
+
+
+THE SHAPE OF AN EFFECT
+----------------------
+
+effect({
+  name: "My Effect",                  // shown in the list (required)
+  description: "What it looks like.", // shown when you point at it
+  author: "Your name",
+
+  settings: { ... },                  // the controls people can change (see below)
+
+  frame(time, delta, count) { ... },  // optional: runs once per frame, first
+  light(p, time) { return color; },   // required: runs once for every light
+});
+
+light(p, time) is where the colors come from. It gets:
+  p.x, p.y          where the light is on your desk, 0 to 1
+                    (x: left to right, y: top to bottom)
+  p.localX, p.localY  where the light is on its own device, 0 to 1
+  p.index           which light this is, counting from 0
+  time              seconds since the effect started
+
+frame(time, delta, count) runs before the lights are colored. delta is how many
+seconds passed since the last frame, and count is how many lights there are. Use
+it to move things around, and keep what you need in variables outside effect().
+
+
+COLORS
+------
+
+A color is a number. Make one with:
+  rgb(255, 120, 0)        red, green, blue, each 0 to 255
+  hsv(30, 1, 1)           hue in degrees (0 red, 120 green, 240 blue),
+                          saturation 0 to 1, brightness 0 to 1
+  0xff7800                the same orange, written out
+  black, white
+
+You can also return "#ff7800" or [255, 120, 0].
+
+Helpers for colors:
+  mix(a, b, t)     blend from color a to color b, t from 0 to 1
+  dim(c, amount)   make c darker, amount from 0 (off) to 1 (unchanged)
+  red(c), green(c), blue(c)   take one part of a color back out
+
+Helpers for numbers:
+  clamp(v, lo, hi)     keep v between lo and hi
+  lerp(a, b, t)        a number t of the way from a to b
+  fract(v)             the part after the decimal point
+  smooth(e0, e1, v)    0 below e0, 1 above e1, a smooth ramp between
+  noise(x, y, z)       a smooth value from 0 to 1 that drifts as the inputs change;
+                       pass time as z to make it move
+
+All of JavaScript's Math works too, like Math.sin and Math.random.
+
+
+SETTINGS
+--------
+
+Each setting becomes a control in MyRGB. Read the current value from
+settings.<name> inside frame() and light().
+
+  speed:  { type: "number", label: "Speed", min: 1, max: 10, default: 3, step: 1 }
+  color:  { type: "color",  label: "Color", default: "#00e08a" }
+  style:  { type: "choice", label: "Style", options: ["Soft", "Sharp"], default: "Soft" }
+  mirror: { type: "switch", label: "Mirror", default: false }
+
+Up to 16 settings. A color setting is read as a color number, ready for mix() or dim().
+
+
+MUSIC
+-----
+
+An effect that uses music gets a "music" object, updated every frame:
+  music.level              how loud it is overall, 0 to 1
+  music.bass, music.mid, music.treble   0 to 1
+  music.bands              32 numbers from bass to treble, each 0 to 1
+  music.beats              counts up by one on every kick
+
+Using music makes MyRGB listen to what your PC plays, like its own music effects.
+Nothing is recorded or sent anywhere.
+
+
+LIMITS
+------
+
+- A frame has to finish quickly. Effects that keep the lights waiting are stopped.
+- A file can be up to 256 KB.
+- One file holds one effect.
+- Effects in this folder are only on this PC. Sharing presets that use them
+  won't work for other people unless they have the same file.

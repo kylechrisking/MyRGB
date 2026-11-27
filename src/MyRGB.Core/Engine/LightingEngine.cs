@@ -94,6 +94,9 @@ public sealed class LightingEngine : IDisposable
         Rebuild(keepEffects: false);
     }
 
+    /// <summary>Start the running effects over from their definitions, e.g. after an effect file was edited.</summary>
+    public void RestartEffects() => Rebuild(keepEffects: false);
+
     /// <summary>Freeze the animation where it is. Devices keep showing the frozen frame.</summary>
     public bool Paused
     {

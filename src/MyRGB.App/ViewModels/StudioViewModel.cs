@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyRGB.App.Services;
 using MyRGB.Core.Effects;
 using MyRGB.Core.Presets;
+using MyRGB.Scripting;
 
 namespace MyRGB.App.ViewModels;
 
@@ -41,9 +44,91 @@ public sealed partial class StudioViewModel : ObservableObject
     public StudioViewModel(AppHost host)
     {
         _host = host;
-        Effects = new(host.Effects.All.OrderBy(e => e.Category).ThenBy(e => e.Name).Select(e => new EffectItem(e)));
+        Effects = new(SortedEffects());
         Targets.Add(new TargetItem(null, "All devices"));
         _selectedTarget = Targets[0];
+        host.Effects.Changed += (_, _) => Dispatcher.UIThread.Post(RefreshEffectList);
+        host.EffectFiles.EffectStopped += (_, _) => Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(EffectProblem)));
+    }
+
+    private IEnumerable<EffectItem> SortedEffects() =>
+        _host.Effects.All.OrderBy(e => e.Category).ThenBy(e => e.Name).Select(e => new EffectItem(e));
+
+    /// <summary>The effect list changed (the effects folder was reloaded): show the new list, keep the selection.</summary>
+    private void RefreshEffectList()
+    {
+        _loading = true;
+        try
+        {
+            Effects.Clear();
+            foreach (var e in SortedEffects()) Effects.Add(e);
+            SelectedEffect = Effects.FirstOrDefault(e => e.Definition.Id == CurrentEffectId());
+        }
+        finally { _loading = false; }
+        RebuildParameters();
+        OnPropertyChanged(nameof(EffectFolderStatus));
+    }
+
+    /// <summary>What the last Reload or open did, shown ahead of <see cref="EffectFolderStatus"/>.</summary>
+    private string _folderNote = "";
+
+    /// <summary>One line under the effect list about the user's own effects.</summary>
+    public string EffectFolderStatus => (_folderNote + " " + FolderSummary()).Trim();
+
+    private string FolderSummary()
+    {
+        var f = _host.EffectFiles;
+        var problems = f.Problems;
+        string loaded = f.Loaded switch
+        {
+            0 when !Directory.Exists(f.Path) => "Make your own effects, or add ones other people made.",
+            0 => "No effects in your folder yet.",
+            1 => "1 effect from your folder.",
+            var n => $"{n} effects from your folder.",
+        };
+        if (problems.Count == 0) return loaded;
+        var first = problems[0];
+        string more = problems.Count > 1 ? $" {problems.Count - 1} more file(s) have problems too, see the log." : "";
+        return $"{loaded} \"{first.File}\" wasn't added. {first.Problem}{more}";
+    }
+
+    /// <summary>Why the selected effect stopped, for effects from the user's folder. Empty when it's fine.</summary>
+    public string EffectProblem =>
+        ShowEffectEditor && _host.EffectFiles.ProblemFor(CurrentEffectId()) is { } why
+            ? $"This effect stopped. {why} Fix the file and press Reload to try again."
+            : "";
+
+    [RelayCommand]
+    private void OpenEffectsFolder()
+    {
+        try
+        {
+            bool fresh = !Directory.Exists(_host.EffectFiles.Path);
+            _host.EffectFiles.Create();
+            Process.Start(new ProcessStartInfo(_host.EffectFiles.Path) { UseShellExecute = true })?.Dispose();
+            if (fresh)
+            {
+                ReloadEffects();
+                _folderNote = "Added a few examples to start from.";
+                OnPropertyChanged(nameof(EffectFolderStatus));
+            }
+        }
+        catch (Exception ex)
+        {
+            _folderNote = $"Couldn't open the effects folder: {ex.Message}";
+            OnPropertyChanged(nameof(EffectFolderStatus));
+        }
+    }
+
+    [RelayCommand]
+    private void ReloadEffects()
+    {
+        _host.LoadEffectFiles();
+        // Start running effects over, so an edited file shows its new version straight away.
+        _host.Engine.RestartEffects();
+        _folderNote = "Reloaded.";
+        OnPropertyChanged(nameof(EffectFolderStatus));
+        OnPropertyChanged(nameof(EffectProblem));
     }
 
     public ObservableCollection<EffectItem> Effects { get; }
@@ -196,6 +281,7 @@ public sealed partial class StudioViewModel : ObservableObject
         OnPropertyChanged(nameof(SettingsDescription));
         OnPropertyChanged(nameof(HasParameters));
         OnPropertyChanged(nameof(SettingsHint));
+        OnPropertyChanged(nameof(EffectProblem));
     }
 
     /// <summary>The settings panel's heading: the effect being tuned.</summary>

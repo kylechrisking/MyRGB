@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\MyRGB.Core\MyRGB.Core.csproj" />
+    <!-- BSD-2-Clause. Runs effects people write in JavaScript, with no access to files, network or the rest of the PC. -->
+    <PackageReference Include="Jint" Version="4.17.0" />
+    <InternalsVisibleTo Include="MyRGB.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Examples\*.js" LogicalName="Examples.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Examples\*.txt" LogicalName="Examples.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -38,6 +38,7 @@
     <ProjectReference Include="..\MyRGB.Cloud\MyRGB.Cloud.csproj" />
     <ProjectReference Include="..\MyRGB.Sensors\MyRGB.Sensors.csproj" />
     <ProjectReference Include="..\MyRGB.Audio\MyRGB.Audio.csproj" />
+    <ProjectReference Include="..\MyRGB.Scripting\MyRGB.Scripting.csproj" />
     <!-- Build-order only: the helper's files are staged into helper\ below, not referenced. -->
     <ProjectReference Include="..\MyRGB.Sensors.Helper\MyRGB.Sensors.Helper.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>

@@ -14,6 +14,7 @@ using MyRGB.Core.Sensors;
 using MyRGB.Core.Vendors;
 using MyRGB.Providers.Corsair;
 using MyRGB.Providers.OpenRgb;
+using MyRGB.Scripting;
 using MyRGB.Sensors;
 
 namespace MyRGB.App.Services;
@@ -22,6 +23,9 @@ public sealed class AppHostOptions
 {
     /// <summary>Where settings and logs live. Defaults to %APPDATA%\MyRGB.</summary>
     public string DataDirectory { get; init; } = SettingsStore.DefaultDataDirectory;
+
+    /// <summary>Where effects people write live. Defaults to Documents\MyRGB Effects.</summary>
+    public string? EffectsDirectory { get; init; }
 
     /// <summary>Replaces the real device providers (used by UI snapshots and tests).</summary>
     public Func<AppSettings, ILoggerFactory, IEnumerable<IDeviceProvider>>? Providers { get; init; }
@@ -111,6 +115,9 @@ public sealed class AppHost : IAsyncDisposable
         foreach (var p in providers) Devices.AddProvider(p);
 
         Effects = EffectRegistry.CreateDefault();
+        EffectFiles = new EffectFolder(Effects, _options.EffectsDirectory);
+        LoadEffectFiles();
+        EffectFiles.EffectStopped += (id, why) => _log.LogWarning("Effect {Id} stopped: {Why}", id, why);
         Presets = new PresetLibrary(Settings.UserPresets);
         Layout = new CanvasLayout(Settings.Layout);
         Engine = new LightingEngine(Devices, Effects, Layout, Logs.CreateLogger<LightingEngine>())
@@ -171,6 +178,24 @@ public sealed class AppHost : IAsyncDisposable
     public ILoggerFactory Logs { get; }
     public DeviceManager Devices { get; }
     public EffectRegistry Effects { get; }
+
+    /// <summary>Effects from the user's own folder (Documents\MyRGB Effects).</summary>
+    public EffectFolder EffectFiles { get; }
+
+    /// <summary>Read the effects folder again, e.g. after the user edited a file, and restart what's running.</summary>
+    public void LoadEffectFiles()
+    {
+        try
+        {
+            EffectFiles.Load();
+            if (EffectFiles.Loaded > 0) _log.LogInformation("Loaded {Count} effect(s) from {Folder}", EffectFiles.Loaded, EffectFiles.Path);
+            foreach (var p in EffectFiles.Problems) _log.LogWarning("Effect file {File} wasn't loaded: {Why}", p.File, p.Problem);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Reading the effects folder failed");
+        }
+    }
     public PresetLibrary Presets { get; }
     public CanvasLayout Layout { get; }
     public LightingEngine Engine { get; }
