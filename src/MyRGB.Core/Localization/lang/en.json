@@ -1,0 +1,18 @@
+{
+  "_language": "English",
+
+  "top.tourTip": "A quick tour of how MyRGB works",
+  "top.howItWorks": "How it works",
+  "top.screensTip": "Your monitors' brightness",
+  "top.screens": "Screens {0:0}%",
+  "top.brightness": "Brightness {0:0}%",
+  "top.lightsOn": "Lights on",
+  "top.lightsOff": "Lights off",
+  "top.accountTip": "Your MyRGB account",
+  "top.signIn": "Sign in",
+
+  "update.available": "MyRGB {0} is available",
+  "update.install": "Download and install",
+  "update.whatsNew": "What's new",
+  "update.dismiss": "Dismiss"
+}

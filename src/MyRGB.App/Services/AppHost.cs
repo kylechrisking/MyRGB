@@ -8,6 +8,7 @@ using MyRGB.Core.Devices;
 using MyRGB.Core.Effects;
 using MyRGB.Core.Engine;
 using MyRGB.Core.Layout;
+using MyRGB.Core.Localization;
 using MyRGB.Core.Presets;
 using MyRGB.Core.Sensors;
 using MyRGB.Core.Vendors;
@@ -95,6 +96,10 @@ public sealed class AppHost : IAsyncDisposable
             typeof(AppHost).Assembly.GetName().Version?.ToString(3), Environment.ProcessPath,
             Environment.IsPrivilegedProcess ? "administrator" : "standard user", _options.DataDirectory);
         if (_store.LoadNote is { } note) _log.LogWarning("{Note}", note);
+
+        // Before any page is built: the words are looked up as each page loads.
+        Strings.Use(Settings.Language, Path.Combine(_options.DataDirectory, "lang"));
+        _log.LogInformation("Showing MyRGB in {Language}", Strings.Current);
 
         Devices = new DeviceManager(Logs.CreateLogger<DeviceManager>());
         var providers = _options.Providers?.Invoke(Settings, Logs) ??

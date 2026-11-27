@@ -6,6 +6,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
   </ItemGroup>
   <ItemGroup>
+    <!-- One file per language; a fixed name so "pt-BR.json" isn't taken for a satellite assembly. -->
+    <EmbeddedResource Include="Localization\lang\*.json" WithCulture="false"
+                      LogicalName="MyRGB.Core.Localization.lang.%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="MyRGB.Tests" />
   </ItemGroup>
 </Project>

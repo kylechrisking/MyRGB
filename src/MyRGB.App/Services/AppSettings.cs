@@ -125,6 +125,9 @@ public sealed class AppSettings
 
     /// <summary>The look, by <see cref="ThemeManager"/> id. Notebook unless picked otherwise.</summary>
     public string Theme { get; set; } = ThemeManager.DefaultId;
+
+    /// <summary>The language MyRGB shows, by code ("de", "pt-BR"); null follows Windows. Applies on the next start.</summary>
+    public string? Language { get; set; }
     public OpenRgbOptions OpenRgb { get; set; } = new();
 }
 

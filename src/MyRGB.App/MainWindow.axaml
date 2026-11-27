@@ -3,6 +3,7 @@
         xmlns:vm="using:MyRGB.App.ViewModels"
         xmlns:ctl="using:MyRGB.App.Controls"
         xmlns:svc="using:MyRGB.App.Services"
+        xmlns:l="using:MyRGB.App.Localization"
         xmlns:presets="using:MyRGB.Core.Presets"
         xmlns:sensors="using:MyRGB.Core.Sensors"
         x:Class="MyRGB.App.MainWindow"
@@ -24,24 +25,24 @@
           </StackPanel>
 
           <Button Grid.Column="2" Classes="ghost" Command="{Binding OpenTourCommand}" Margin="0,0,22,0" VerticalAlignment="Center"
-                  ToolTip.Tip="A quick tour of how MyRGB works">
+                  ToolTip.Tip="{l:Tr top.tourTip}">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <PathIcon Data="{x:Static ctl:NavIcons.Help}" Width="14" Height="14" />
-              <TextBlock Text="How it works" />
+              <TextBlock Text="{l:Tr top.howItWorks}" />
             </StackPanel>
           </Button>
           <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
-            <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowMonitorSlider}" ToolTip.Tip="Your monitors' brightness">
-              <TextBlock Classes="muted" Text="{Binding MonitorLevel, StringFormat='Screens {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <StackPanel Orientation="Horizontal" IsVisible="{Binding ShowMonitorSlider}" ToolTip.Tip="{l:Tr top.screensTip}">
+              <TextBlock Classes="muted" Text="{Binding MonitorLevel, Converter={x:Static l:Tr.Format}, ConverterParameter=top.screens}" VerticalAlignment="Center" Margin="0,0,10,0" />
               <Slider Width="110" Minimum="0" Maximum="100" Value="{Binding MonitorLevel}" VerticalAlignment="Center" Margin="0,0,22,0" />
             </StackPanel>
-            <TextBlock Classes="muted" Text="{Binding Brightness, StringFormat='Brightness {0:0}%'}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            <TextBlock Classes="muted" Text="{Binding Brightness, Converter={x:Static l:Tr.Format}, ConverterParameter=top.brightness}" VerticalAlignment="Center" Margin="0,0,10,0" />
           </StackPanel>
           <Slider Grid.Column="5" Width="150" Minimum="0" Maximum="100" Value="{Binding Brightness}" VerticalAlignment="Center" Margin="0,0,22,0" />
-          <ctl:Switch Grid.Column="6" IsChecked="{Binding Enabled}" OnContent="Lights on" OffContent="Lights off" VerticalAlignment="Center" />
+          <ctl:Switch Grid.Column="6" IsChecked="{Binding Enabled}" OnContent="{l:Tr top.lightsOn}" OffContent="{l:Tr top.lightsOff}" VerticalAlignment="Center" />
           <Button Grid.Column="7" Classes="ghost" Command="{Binding NavigateCommand}" CommandParameter="account" Margin="18,0,0,0"
                   VerticalAlignment="Center" IsVisible="{Binding CloudAvailable}" Padding="6,5,12,5" CornerRadius="{DynamicResource RadiusPill}"
-                  ToolTip.Tip="Your MyRGB account">
+                  ToolTip.Tip="{l:Tr top.accountTip}">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Border Classes="avatar" Width="24" Height="24">
                 <TextBlock Text="{Binding Account.Initial}" FontSize="12" FontWeight="Bold" Foreground="White"
@@ -49,7 +50,7 @@
               </Border>
               <TextBlock Text="{Binding Account.DisplayName}" VerticalAlignment="Center" IsVisible="{Binding Account.IsSignedIn}"
                          MaxWidth="120" TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="Sign in" VerticalAlignment="Center" IsVisible="{Binding !Account.IsSignedIn}" />
+              <TextBlock Text="{l:Tr top.signIn}" VerticalAlignment="Center" IsVisible="{Binding !Account.IsSignedIn}" />
             </StackPanel>
           </Button>
         </Grid>
@@ -60,15 +61,15 @@
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
             <PathIcon Data="{x:Static ctl:NavIcons.Download}" Width="17" Height="17" Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="{Binding Update.Available.Version, StringFormat='MyRGB {0} is available'}" VerticalAlignment="Center" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Update.Available.Version, Converter={x:Static l:Tr.Format}, ConverterParameter=update.available}" VerticalAlignment="Center" FontWeight="SemiBold" />
             <ProgressBar Classes="meter" Width="150" Maximum="1" Value="{Binding Update.Progress}" IsVisible="{Binding Update.Busy}" VerticalAlignment="Center" />
             <TextBlock Classes="muted" Text="{Binding Update.Status}" VerticalAlignment="Center"
                        IsVisible="{Binding Update.Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding !Update.Busy}">
-            <Button Classes="accent" Content="Download and install" Command="{Binding Update.InstallCommand}" />
-            <Button Classes="ghost" Content="What's new" Command="{Binding Update.OpenNotesCommand}" />
-            <Button Classes="link" Content="Dismiss" Command="{Binding Update.DismissCommand}" />
+            <Button Classes="accent" Content="{l:Tr update.install}" Command="{Binding Update.InstallCommand}" />
+            <Button Classes="ghost" Content="{l:Tr update.whatsNew}" Command="{Binding Update.OpenNotesCommand}" />
+            <Button Classes="link" Content="{l:Tr update.dismiss}" Command="{Binding Update.DismissCommand}" />
           </StackPanel>
         </Grid>
       </Border>
