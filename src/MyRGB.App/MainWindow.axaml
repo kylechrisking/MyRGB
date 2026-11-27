@@ -1138,6 +1138,21 @@
                               <TextBlock Text="Follows" VerticalAlignment="Center" />
                               <ComboBox ItemsSource="{Binding Follow}" SelectedItem="{Binding Sensor}" MinWidth="220" />
                             </StackPanel>
+                            <!-- A curve can watch several temperatures and follow the hottest. -->
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                              <TextBlock Classes="muted" Text="Also watch:" VerticalAlignment="Center" Margin="0,0,4,0"
+                                         ToolTip.Tip="The fan follows whichever of these is hottest at the moment." />
+                              <ItemsControl ItemsSource="{Binding AlsoWatch}">
+                                <ItemsControl.ItemsPanel>
+                                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="vm:WatchOption">
+                                    <Button Classes="ghost" Classes.accent="{Binding IsOn}" Content="{Binding Label}" Command="{Binding ToggleCommand}" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
                             <ctl:FanCurveChart Points="{Binding Points}" CurrentTemp="{Binding CurrentTemp}" Height="230" />
                             <StackPanel Orientation="Horizontal" Spacing="6">
                               <TextBlock Classes="muted" Text="Presets:" VerticalAlignment="Center" Margin="0,0,4,0" />
@@ -1148,6 +1163,42 @@
                               <Button Classes="ghost" Content="Full speed" Command="{Binding FullSpeedCommand}" />
                             </StackPanel>
                           </StackPanel>
+
+                          <!-- Copy another fan's speed, so a group of fans runs in step. -->
+                          <StackPanel Spacing="10" IsVisible="{Binding IsMatch}">
+                            <TextBlock Classes="muted" Text="There's no other fan to copy yet." IsVisible="{Binding !HasOtherFans}" />
+                            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasOtherFans}">
+                              <TextBlock Text="Copies" VerticalAlignment="Center" />
+                              <ComboBox ItemsSource="{Binding OtherFans}" SelectedItem="{Binding MatchFan}" MinWidth="220" />
+                            </StackPanel>
+                            <Grid ColumnDefinitions="Auto,*,60" IsVisible="{Binding HasOtherFans}">
+                              <TextBlock Text="Faster or slower by" VerticalAlignment="Center" Margin="0,0,10,0" />
+                              <Slider Grid.Column="1" Minimum="-30" Maximum="30" Value="{Binding MatchOffset}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                              <TextBlock Grid.Column="2" Text="{Binding MatchOffset, StringFormat='{}{0:+0;-0;0} %'}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                         FontFamily="{DynamicResource BrandMono}" />
+                            </Grid>
+                          </StackPanel>
+
+                          <!-- Lowest speed: a fan asked for less than it can turn at just sits still and hums. -->
+                          <Grid ColumnDefinitions="Auto,*,60" IsVisible="{Binding !IsAuto}">
+                            <TextBlock Text="Lowest speed" VerticalAlignment="Center" Margin="0,0,10,0"
+                                       ToolTip.Tip="MyRGB never runs it slower than this, except at 0 %. Testing the fan finds the right number." />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="60" Value="{Binding MinSpinPercent}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                            <TextBlock Grid.Column="2" Text="{Binding MinSpinPercent, StringFormat='{}{0:0} %'}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       FontFamily="{DynamicResource BrandMono}" />
+                          </Grid>
+
+                          <!-- Fan test: finds the top speed, and where it stops and starts again. -->
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel VerticalAlignment="Center" Spacing="2">
+                              <TextBlock Classes="muted" Text="{Binding CalibrationText}" IsVisible="{Binding HasCalibration}" TextWrapping="Wrap" />
+                              <TextBlock Classes="muted" Text="Not tested yet. A test takes about two minutes; the fan speeds up and slows down, and may stop for a moment."
+                                         IsVisible="{Binding !HasCalibration}" TextWrapping="Wrap" />
+                              <TextBlock Classes="body" Text="{Binding TestStatus}" IsVisible="{Binding TestStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="ghost" Content="Test this fan" Command="{Binding StartTestCommand}" IsVisible="{Binding !Testing}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            <Button Grid.Column="1" Classes="ghost" Content="Stop test" Command="{Binding StopTestCommand}" IsVisible="{Binding Testing}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                          </Grid>
                         </StackPanel>
                       </Border>
                     </DataTemplate>

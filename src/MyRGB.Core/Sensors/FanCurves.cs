@@ -1,6 +1,13 @@
 namespace MyRGB.Core.Sensors;
 
-public enum FanMode { Auto, Fixed, Curve }
+public enum FanMode
+{
+    Auto,
+    Fixed,
+    Curve,
+    /// <summary>Runs at whatever speed another fan is running at, plus an offset.</summary>
+    Match,
+}
 
 public readonly record struct CurvePoint(double Temp, double Percent);
 
@@ -12,6 +19,27 @@ public sealed record FanSetting
     public double FixedPercent { get; init; } = 50;
     public string SensorKey { get; init; } = SensorKeys.GpuTemp;
     public List<CurvePoint> Points { get; init; } = [.. FanCurve.Balanced];
+
+    /// <summary>
+    /// More temperatures a curve watches besides <see cref="SensorKey"/>; it follows whichever is
+    /// hottest. Ones that can't be read are skipped.
+    /// </summary>
+    public List<string> AlsoFollow { get; init; } = [];
+
+    /// <summary>For <see cref="FanMode.Match"/>: the fan this one copies.</summary>
+    public string? MatchFanId { get; init; }
+
+    /// <summary>For <see cref="FanMode.Match"/>: added to the other fan's speed, in points (may be negative).</summary>
+    public double MatchOffset { get; init; }
+
+    /// <summary>
+    /// The lowest speed this fan reliably spins at. A speed above 0 but below it is raised to it,
+    /// so the fan never sits stalled at a speed too low to turn. 0 means no minimum.
+    /// </summary>
+    public double MinSpinPercent { get; init; }
+
+    /// <summary>Every temperature the curve watches, its main one first.</summary>
+    public IEnumerable<string> FollowKeys() => AlsoFollow.Prepend(SensorKey).Distinct(StringComparer.OrdinalIgnoreCase);
 }
 
 public static class FanCurve
@@ -102,21 +130,44 @@ public sealed class FanController
     /// <summary>The speed MyRGB last asked each fan for, by fan id; absent when the fan is on its own control.</summary>
     public IReadOnlyDictionary<string, double> Targets => _driven.ToDictionary(p => p.Key, p => p.Value.Percent, StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>The speed a fan should run at, or null to leave it to the hardware.</summary>
-    public static double? Target(FanSetting? setting, Func<string, double?> read, string guardKey)
+    /// <summary>Ids of fans being tested by <see cref="FanCalibrator"/>; left alone until the test ends.</summary>
+    public ISet<string> Paused { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The hottest of the temperatures a curve watches, or null when none can be read.</summary>
+    public static double? Hottest(FanSetting setting, Func<string, double?> read)
+    {
+        double? hottest = null;
+        foreach (var key in setting.FollowKeys())
+            if (read(key) is { } t && (hottest is null || t > hottest)) hottest = t;
+        return hottest;
+    }
+
+    /// <summary>
+    /// The speed a fan should run at, or null to leave it to the hardware. A fan on
+    /// <see cref="FanMode.Match"/> needs <paramref name="other"/>: the speed of the fan it copies
+    /// (null when that fan is on its own control and doesn't report a speed).
+    /// </summary>
+    public static double? Target(FanSetting? setting, Func<string, double?> read, string guardKey, Func<string, double?>? other = null)
     {
         if (setting is null || setting.Mode == FanMode.Auto) return null;
         if (read(guardKey) is >= EmergencyTemp) return 100;
 
         double wanted;
         if (setting.Mode == FanMode.Fixed) wanted = setting.FixedPercent;
-        else if (read(setting.SensorKey) is { } t)
+        else if (setting.Mode == FanMode.Match)
+        {
+            if (setting.MatchFanId is not { } leader || other?.Invoke(leader) is not { } speed) return null;
+            wanted = speed + setting.MatchOffset;
+        }
+        else if (Hottest(setting, read) is { } t)
         {
             if (t >= EmergencyTemp) return 100;
             wanted = FanCurve.Evaluate(setting.Points, t);
         }
         else return null; // can't see the temperature: let the hardware decide
-        return Math.Clamp(wanted, Floor, 100);
+        wanted = Math.Clamp(wanted, Floor, 100);
+        if (wanted > 0 && wanted < setting.MinSpinPercent) wanted = Math.Min(setting.MinSpinPercent, 100);
+        return wanted;
     }
 
     public void Apply(IReadOnlyList<IFanChannel> fans, IReadOnlyDictionary<string, FanSetting> settings, Func<string, double?> read) =>
@@ -125,9 +176,20 @@ public sealed class FanController
     public void Apply(IReadOnlyList<IFanChannel> fans, IReadOnlyDictionary<string, FanSetting> settings,
         Func<string, double?> read, DateTime now)
     {
-        foreach (var fan in fans)
+        // Fans that copy another go after the ones they copy, so they see this round's speed.
+        var byId = fans.ToDictionary(f => f.Id, StringComparer.OrdinalIgnoreCase);
+        var ordered = fans.OrderBy(f => MatchDepth(f.Id, settings)).ToList();
+        double? Other(string id)
         {
-            var target = Target(settings.GetValueOrDefault(fan.Id), read, fan.GuardKey);
+            if (_driven.TryGetValue(id, out var d)) return d.Percent;
+            // The other fan is on its own control: copy what it reports, if it does.
+            return byId.TryGetValue(id, out var f) && settings.GetValueOrDefault(id) is not { Mode: not FanMode.Auto } ? f.Percent : null;
+        }
+
+        foreach (var fan in ordered)
+        {
+            if (Paused.Contains(fan.Id)) continue;
+            var target = Target(settings.GetValueOrDefault(fan.Id), read, fan.GuardKey, Other);
             if (target is not { } percent)
             {
                 if (_driven.Remove(fan.Id)) Try(fan.Reset);
@@ -153,6 +215,26 @@ public sealed class FanController
             Try(() => fan.Set(percent));
             _driven[fan.Id] = (percent, now);
         }
+    }
+
+    /// <summary>How many fans down a chain of copies this one sits; 0 for a fan that copies nothing. Loops count as 0.</summary>
+    private static int MatchDepth(string id, IReadOnlyDictionary<string, FanSetting> settings)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        int depth = 0;
+        while (settings.GetValueOrDefault(id) is { Mode: FanMode.Match, MatchFanId: { } next } && seen.Add(id))
+        {
+            id = next;
+            depth++;
+        }
+        return seen.Contains(id) ? 0 : depth;
+    }
+
+    /// <summary>Forget what was last sent to a fan, so the next round sends again (after a test, say).</summary>
+    public void Forget(string fanId)
+    {
+        _driven.Remove(fanId);
+        _coolingSince.Remove(fanId);
     }
 
     public void ResetAll(IReadOnlyList<IFanChannel> fans)

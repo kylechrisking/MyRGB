@@ -20,6 +20,8 @@ public sealed class SensorHub : IDisposable
     private IReadOnlyList<SensorReading> _latest = [];
     private Dictionary<string, double?> _byKey = new(StringComparer.OrdinalIgnoreCase);
     private volatile IReadOnlyDictionary<string, FanSetting> _settings = new Dictionary<string, FanSetting>();
+    private readonly Dictionary<string, FanCalibrator> _tests = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, FanCalibrator> _ended = new(StringComparer.OrdinalIgnoreCase);
     private int _ticks;
     private Thread? _thread;
     private volatile bool _running;
@@ -62,6 +64,39 @@ public sealed class SensorHub : IDisposable
             for (int i = 0; i < n; i++) result[i] = ring[(start - n + i + HistoryLength * 2) % HistoryLength];
             return result;
         }
+    }
+
+    /// <summary>Raised on the sensor thread when a fan test ends, whether it finished or not.</summary>
+    public event Action<FanCalibrator>? CalibrationEnded;
+
+    /// <summary>
+    /// Start testing a fan (see <see cref="FanCalibrator"/>). Returns why it can't, or null once it
+    /// has started. The fan's own setting is set aside until the test ends.
+    /// </summary>
+    public string? StartCalibration(string fanId)
+    {
+        var fan = _source.Fans.FirstOrDefault(f => f.Id.Equals(fanId, StringComparison.OrdinalIgnoreCase));
+        if (fan is null) return "That fan isn't there any more.";
+        var test = FanCalibrator.TryStart(fan, out var whyNot);
+        if (test is null) return whyNot;
+        lock (_gate)
+        {
+            if (_tests.ContainsKey(fanId)) return "This fan is already being tested.";
+            _tests[fanId] = test;
+            _ended.Remove(fanId);
+        }
+        return null;
+    }
+
+    public void CancelCalibration(string fanId)
+    {
+        lock (_gate) if (_tests.TryGetValue(fanId, out var test)) test.Cancel();
+    }
+
+    /// <summary>The test running on a fan, or the last one that ended (check <see cref="FanCalibrator.Finished"/>).</summary>
+    public FanCalibrator? Calibration(string fanId)
+    {
+        lock (_gate) return _tests.GetValueOrDefault(fanId) ?? _ended.GetValueOrDefault(fanId);
     }
 
     public void SetFanSettings(IEnumerable<FanSetting> settings) =>
@@ -112,6 +147,8 @@ public sealed class SensorHub : IDisposable
             _ticks++;
         }
 
+        StepCalibrations();
+
         try
         {
             _fans.Apply(_source.Fans, _settings, Get);
@@ -121,6 +158,32 @@ public sealed class SensorHub : IDisposable
 
         try { Updated?.Invoke(); }
         catch (Exception ex) { _log.LogWarning(ex, "Sensor listener failed"); }
+    }
+
+    private void StepCalibrations()
+    {
+        List<FanCalibrator> tests;
+        lock (_gate) tests = [.. _tests.Values];
+        foreach (var test in tests)
+        {
+            _fans.Paused.Add(test.FanId);
+            try { test.Step(Get, DateTime.UtcNow); }
+            catch (Exception ex) { _log.LogWarning(ex, "Testing a fan failed"); test.Cancel(); }
+            if (!test.Finished) continue;
+
+            lock (_gate)
+            {
+                _tests.Remove(test.FanId);
+                _ended[test.FanId] = test;
+            }
+            _fans.Paused.Remove(test.FanId);
+            _fans.Forget(test.FanId);
+            // Hand it back; if MyRGB drives it, Apply below sets it again straight away.
+            var fan = _source.Fans.FirstOrDefault(f => f.Id.Equals(test.FanId, StringComparison.OrdinalIgnoreCase));
+            if (fan is not null) try { fan.Reset(); } catch (Exception) { /* keeps its own control */ }
+            try { CalibrationEnded?.Invoke(test); }
+            catch (Exception ex) { _log.LogWarning(ex, "Fan test listener failed"); }
+        }
     }
 
     private void Record(string id, int slot, double? value)
@@ -148,6 +211,14 @@ public sealed class SensorHub : IDisposable
     {
         _running = false;
         _thread?.Join(TimeSpan.FromSeconds(3));
+        try
+        {
+            // A fan left mid-test could be sitting stopped: give it back to the hardware.
+            List<string> testing;
+            lock (_gate) testing = [.. _tests.Keys];
+            foreach (var fan in _source.Fans.Where(f => testing.Contains(f.Id, StringComparer.OrdinalIgnoreCase))) fan.Reset();
+        }
+        catch (Exception ex) { _log.LogWarning(ex, "Handing tested fans back failed"); }
         try { _fans.ResetAll(_source.Fans); } catch (Exception ex) { _log.LogWarning(ex, "Handing fans back failed"); }
         _source.Dispose();
     }

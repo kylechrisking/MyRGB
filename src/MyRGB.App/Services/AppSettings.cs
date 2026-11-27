@@ -55,6 +55,9 @@ public sealed class AppSettings
     /// <summary>Fans the user set to a fixed speed or a curve. Fans not listed are left to the hardware.</summary>
     public List<FanSetting> Fans { get; set; } = [];
 
+    /// <summary>What each fan test found: top RPM, and where the fan stops and starts again.</summary>
+    public List<FanCalibration> FanCalibrations { get; set; } = [];
+
     /// <summary>Curve shapes named and saved from the curve builder, reusable on any fan.</summary>
     public List<SavedCurve> SavedCurves { get; set; } = [];
 

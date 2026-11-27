@@ -208,6 +208,22 @@ public sealed record FollowOption(string Key, string Label)
     public override string ToString() => Label;
 }
 
+/// <summary>Another fan a fan can copy.</summary>
+public sealed record FanChoice(string Id, string Name)
+{
+    public override string ToString() => Name;
+}
+
+/// <summary>A temperature a curve also watches, on or off.</summary>
+public sealed partial class WatchOption(string key, string label, bool on, Action changed) : ObservableObject
+{
+    public string Key => key;
+    public string Label => label;
+    [ObservableProperty] private bool _isOn = on;
+    partial void OnIsOnChanged(bool value) => changed();
+    [RelayCommand] private void Toggle() => IsOn = !IsOn;
+}
+
 /// <summary>
 /// Builds a curve from a description instead of dragging points: what it follows, where the ramp
 /// starts, where it tops out, its minimum, and how hard it climbs - with a live preview. Saved
@@ -293,12 +309,14 @@ public sealed partial class FanRowViewModel : ObservableObject
     public const string AutoMode = "Automatic";
     public const string FixedMode = "Fixed speed";
     public const string CurveMode = "Custom curve";
+    public const string MatchMode = "Same as another fan";
 
     private readonly AppHost _host;
     private bool _loading;
     private IReadOnlyList<string>? _choiceSource;
+    private FanCalibrator? _seenTest;
 
-    public FanRowViewModel(AppHost host, IFanChannel fan, FanSetting? setting, IReadOnlyList<FollowOption> follow)
+    public FanRowViewModel(AppHost host, IFanChannel fan, FanSetting? setting, IReadOnlyList<FollowOption> follow, IReadOnlyList<FanChoice> others)
     {
         _host = host;
         Id = fan.Id;
@@ -306,10 +324,17 @@ public sealed partial class FanRowViewModel : ObservableObject
         GuardKey = fan.GuardKey;
         Follow = follow;
         _loading = true;
-        Mode = setting?.Mode switch { FanMode.Fixed => FixedMode, FanMode.Curve => CurveMode, _ => AutoMode };
+        Mode = setting?.Mode switch { FanMode.Fixed => FixedMode, FanMode.Curve => CurveMode, FanMode.Match => MatchMode, _ => AutoMode };
         FixedPercent = setting?.FixedPercent ?? 50;
         Points = setting?.Points is { Count: > 1 } p ? p : [.. FanCurve.Balanced];
         Sensor = follow.FirstOrDefault(f => f.Key == (setting?.SensorKey ?? fan.GuardKey)) ?? follow.FirstOrDefault();
+        var also = setting?.AlsoFollow ?? [];
+        AlsoWatch = [.. follow.Select(f => new WatchOption(f.Key, f.Label, also.Contains(f.Key, StringComparer.OrdinalIgnoreCase), Save))];
+        OtherFans = others;
+        MatchFan = others.FirstOrDefault(o => o.Id.Equals(setting?.MatchFanId, StringComparison.OrdinalIgnoreCase)) ?? others.FirstOrDefault();
+        MatchOffset = setting?.MatchOffset ?? 0;
+        MinSpinPercent = setting?.MinSpinPercent ?? 0;
+        Calibration = host.Settings.FanCalibrations.FirstOrDefault(c => c.FanId.Equals(fan.Id, StringComparison.OrdinalIgnoreCase));
         _loading = false;
     }
 
@@ -317,7 +342,7 @@ public sealed partial class FanRowViewModel : ObservableObject
     public string Name { get; }
     /// <summary>The temperature that protects this fan, and the builder's default follow.</summary>
     public string GuardKey { get; }
-    public static IReadOnlyList<string> Modes { get; } = [AutoMode, FixedMode, CurveMode];
+    public static IReadOnlyList<string> Modes { get; } = [AutoMode, FixedMode, CurveMode, MatchMode];
 
     /// <summary>
     /// What the mode dropdown offers: the three built-ins plus every saved curve by name. Picking a
@@ -346,8 +371,29 @@ public sealed partial class FanRowViewModel : ObservableObject
     public IReadOnlyList<FollowOption> Follow { get; private set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsFixed), nameof(IsCurve), nameof(IsAuto), nameof(ModeHint))]
+    [NotifyPropertyChangedFor(nameof(IsFixed), nameof(IsCurve), nameof(IsAuto), nameof(IsMatch), nameof(ModeHint))]
     private string _mode = AutoMode;
+
+    /// <summary>The other temperatures a curve can watch; it follows whichever is hottest.</summary>
+    public IReadOnlyList<WatchOption> AlsoWatch { get; }
+
+    /// <summary>The fans this one can copy (every fan but itself).</summary>
+    public IReadOnlyList<FanChoice> OtherFans { get; }
+    public bool HasOtherFans => OtherFans.Count > 0;
+    [ObservableProperty] private FanChoice? _matchFan;
+    [ObservableProperty] private double _matchOffset;
+
+    /// <summary>The lowest speed MyRGB asks for above 0 %, so the fan never sits stalled.</summary>
+    [ObservableProperty] private double _minSpinPercent;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CalibrationText), nameof(HasCalibration))]
+    private FanCalibration? _calibration;
+    public bool HasCalibration => Calibration is not null;
+    public string CalibrationText => Calibration is { } c ? FanCalibrator.Describe(c) : "";
+
+    [ObservableProperty] private bool _testing;
+    [ObservableProperty] private string _testStatus = "";
 
     [ObservableProperty] private double _fixedPercent;
     [ObservableProperty] private IReadOnlyList<CurvePoint> _points = [];
@@ -360,11 +406,13 @@ public sealed partial class FanRowViewModel : ObservableObject
     public bool IsCurve => Mode == CurveMode;
     /// <summary>Automatic rows offer the curve presets inline, so a curve is one click away.</summary>
     public bool IsAuto => Mode == AutoMode;
+    public bool IsMatch => Mode == MatchMode;
 
     public string ModeHint => Mode switch
     {
         FixedMode => "MyRGB holds this fan at one speed, all the time.",
         CurveMode => "MyRGB speeds it up as the temperature rises. Drag the points to shape it; double-click adds one, right-click removes one.",
+        MatchMode => "Runs at the same speed as the fan you pick, so a group of fans stays in step.",
         _ => "Runs on its hardware default until you give MyRGB a speed or a curve to hold.",
     };
 
@@ -381,9 +429,7 @@ public sealed partial class FanRowViewModel : ObservableObject
             ApplyCurve(new FollowOption(saved.SensorKey, label), saved.Points);
             return;
         }
-        if (saved is null && !value.Equals(AutoMode, StringComparison.Ordinal)
-                          && !value.Equals(FixedMode, StringComparison.Ordinal)
-                          && !value.Equals(CurveMode, StringComparison.Ordinal))
+        if (saved is null && !Modes.Contains(value))
         {
             _loading = true;
             Mode = AutoMode; // the saved curve this choice pointed at is gone
@@ -395,6 +441,24 @@ public sealed partial class FanRowViewModel : ObservableObject
     partial void OnFixedPercentChanged(double value) => Save();
     partial void OnPointsChanged(IReadOnlyList<CurvePoint> value) => Save();
     partial void OnSensorChanged(FollowOption? value) => Save();
+    partial void OnMatchFanChanged(FanChoice? value) => Save();
+    partial void OnMatchOffsetChanged(double value) => Save();
+    partial void OnMinSpinPercentChanged(double value) => Save();
+
+    /// <summary>
+    /// Runs the fan through its speeds to find its top RPM and where it stops and starts again.
+    /// About two minutes; the fan's own setting waits until it's done.
+    /// </summary>
+    [RelayCommand]
+    private void StartTest()
+    {
+        var whyNot = _host.Sensors.StartCalibration(Id);
+        TestStatus = whyNot ?? "Testing: full speed first";
+        Testing = whyNot is null;
+    }
+
+    [RelayCommand]
+    private void StopTest() => _host.Sensors.CancelCalibration(Id);
 
     [RelayCommand] private void Silent() => Points = [new(25, 0), new(40, 15), new(55, 35), new(70, 65), new(78, 100)];
     [RelayCommand] private void Quiet() => Points = [new(30, 30), new(55, 35), new(70, 55), new(78, 80), new(83, 100)];
@@ -423,10 +487,14 @@ public sealed partial class FanRowViewModel : ObservableObject
         _host.SetFan(new FanSetting
         {
             FanId = Id,
-            Mode = Mode switch { FixedMode => FanMode.Fixed, CurveMode => FanMode.Curve, _ => FanMode.Auto },
+            Mode = Mode switch { FixedMode => FanMode.Fixed, CurveMode => FanMode.Curve, MatchMode => FanMode.Match, _ => FanMode.Auto },
             FixedPercent = FixedPercent,
             SensorKey = Sensor?.Key ?? SensorKeys.GpuTemp,
             Points = [.. Points],
+            AlsoFollow = [.. AlsoWatch.Where(w => w.IsOn && w.Key != Sensor?.Key).Select(w => w.Key)],
+            MatchFanId = MatchFan?.Id,
+            MatchOffset = MatchOffset,
+            MinSpinPercent = MinSpinPercent,
         });
     }
 
@@ -448,8 +516,46 @@ public sealed partial class FanRowViewModel : ObservableObject
         Speed = fan.Rpm is { } rpm
             ? rpm < 1 ? "Stopped" : $"{rpm:0} RPM"
             : fan.Percent is { } p ? $"{p:0} %" : "–";
-        CurrentTemp = Sensor is { } s ? _host.Sensors.Get(s.Key) : null;
-        Status = target is { } t ? $"MyRGB is running it at {t:0} %" : Mode == AutoMode ? "On automatic" : "Waiting for a temperature reading";
+        // The chart's marker sits at the temperature the curve is actually following: the hottest one watched.
+        var watched = AlsoWatch.Where(w => w.IsOn).Select(w => w.Key).Prepend(Sensor?.Key).OfType<string>()
+            .Select(k => (Key: k, Temp: _host.Sensors.Get(k))).Where(x => x.Temp is not null).MaxBy(x => x.Temp);
+        CurrentTemp = watched.Temp;
+        Status = target is { } t ? $"MyRGB is running it at {t:0} %" : Mode switch
+        {
+            AutoMode => "On automatic",
+            MatchMode => "Waiting for the other fan's speed",
+            _ => "Waiting for a temperature reading",
+        };
+        if (IsCurve && target is not null && AlsoWatch.Count(w => w.IsOn && w.Key != Sensor?.Key) > 0 && watched.Key is { } hot)
+            Status += $", following {Follow.FirstOrDefault(f => f.Key == hot)?.Label ?? hot}";
+
+        var test = _host.Sensors.Calibration(Id);
+        Testing = test is { Finished: false };
+        if (test is null) return;
+        if (!test.Finished)
+        {
+            TestStatus = test.Status;
+            Status = "Being tested";
+            return;
+        }
+        if (ReferenceEquals(test, _seenTest)) return;
+        _seenTest = test;
+        if (test.Result is not { } result)
+        {
+            TestStatus = test.Status;
+            return;
+        }
+
+        // Keep what it found, and, unless a minimum was already chosen, stop the fan stalling below its start speed.
+        _host.Settings.FanCalibrations = [.. _host.Settings.FanCalibrations.Where(c => !c.FanId.Equals(Id, StringComparison.OrdinalIgnoreCase)), result];
+        _host.ScheduleSave();
+        Calibration = result;
+        if (MinSpinPercent <= 0 && result.StartPercent > 0)
+        {
+            MinSpinPercent = result.StartPercent;
+            TestStatus = $"Done. The lowest speed is now {result.StartPercent:0} %, so it won't stall; you can change it below.";
+        }
+        else TestStatus = "Done.";
     }
 }
 
@@ -570,7 +676,11 @@ public sealed partial class CoolingViewModel : ObservableObject
                 .Select(f => new FollowOption(f.Key, f.Label)).ToList();
             var settings = _host.Settings.Fans.ToDictionary(s => s.FanId, StringComparer.OrdinalIgnoreCase);
             Fans.Clear();
-            foreach (var f in fans) Fans.Add(new FanRowViewModel(_host, f, settings.GetValueOrDefault(f.Id), follow));
+            foreach (var f in fans)
+            {
+                var others = fans.Where(o => o.Id != f.Id).Select(o => new FanChoice(o.Id, o.Name)).ToList();
+                Fans.Add(new FanRowViewModel(_host, f, settings.GetValueOrDefault(f.Id), follow, others));
+            }
             HasFans = Fans.Count > 0;
         }
         foreach (var row in Fans) row.SyncChoices(_host.Settings.SavedCurves);
