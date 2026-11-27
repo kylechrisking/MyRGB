@@ -97,6 +97,7 @@ public sealed partial class MainViewModel : ObservableObject
         Update = new UpdateViewModel(host);
         Wallpapers = new WallpapersViewModel(host);
         Language = new LanguageViewModel(host);
+        Games = new GameLightingViewModel(host);
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
         _checkForUpdates = host.Settings.CheckForUpdates;
@@ -180,6 +181,9 @@ public sealed partial class MainViewModel : ObservableObject
     public StudioViewModel Studio { get; }
     public WallpapersViewModel Wallpapers { get; }
     public LanguageViewModel Language { get; }
+
+    /// <summary>Settings > Game lighting.</summary>
+    public GameLightingViewModel Games { get; }
     public VendorAppsViewModel Vendors { get; }
     public AccountViewModel Account { get; }
     public CommunityViewModel Community { get; }

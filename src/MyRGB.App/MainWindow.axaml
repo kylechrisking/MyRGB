@@ -1557,6 +1557,37 @@
                 </StackPanel>
               </Border>
 
+              <!-- Game lighting: Counter-Strike 2 and Dota 2 send their state to MyRGB for the Game Events effect -->
+              <Border Classes="panel">
+                <StackPanel Spacing="10">
+                  <TextBlock Classes="section" Text="{l:Tr settings.games.title}" />
+                  <ctl:Switch IsChecked="{Binding Games.On}" OnContent="{l:Tr settings.games.letGamesTell}" OffContent="{l:Tr settings.games.letGamesTell}" />
+                  <TextBlock Classes="muted" Text="{Binding Games.Status}" TextWrapping="Wrap" />
+                  <StackPanel Spacing="10" IsVisible="{Binding Games.On}">
+                    <ItemsControl ItemsSource="{Binding Games.Games}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:GameRow">
+                          <StackPanel Spacing="4" Margin="0,0,0,8">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                <TextBlock Classes="muted" Text="{Binding Detail}" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <Button Grid.Column="1" Classes="ghost" Content="{Binding ButtonText}" Command="{Binding ToggleCommand}" IsEnabled="{Binding Found}" VerticalAlignment="Center" />
+                            </Grid>
+                            <TextBlock Classes="muted" Text="{Binding Note}" TextWrapping="Wrap" IsVisible="{Binding HasNote}" />
+                            <TextBlock Classes="muted" Text="{Binding Problem}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}"
+                                       IsVisible="{Binding Problem, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Classes="ghost" Content="{l:Tr settings.games.findAgain}" Command="{Binding Games.FindGamesCommand}" />
+                  </StackPanel>
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.games.about}" />
+                </StackPanel>
+              </Border>
+
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <TextBlock Classes="section" Text="{l:Tr settings.monitors.title}" />

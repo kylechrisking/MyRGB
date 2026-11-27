@@ -32,6 +32,7 @@ public sealed class EffectRegistry
             VisualizerEffect.Definition,
             MusicWavesEffect.Definition,
             WallpaperEffect.Definition,
+            GameEventsEffect.Definition,
         })
             r.Register(d);
         return r;

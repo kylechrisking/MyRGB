@@ -82,6 +82,13 @@ public sealed class AppSettings
     public string NightFrom { get; set; } = "23:00";
     public string NightTo { get; set; } = "07:00";
 
+    /// <summary>Listen to Counter-Strike 2 and Dota 2 so the Game Events effect can follow them.</summary>
+    public bool GameLightingOn { get; set; }
+    public int GamePort { get; set; } = GameStateListener.DefaultPort;
+
+    /// <summary>The secret the games send back with each post, written into their config files.</summary>
+    public string? GameToken { get; set; }
+
     /// <summary>Set the monitors' brightness over DDC/CI.</summary>
     public bool MonitorsOn { get; set; }
 

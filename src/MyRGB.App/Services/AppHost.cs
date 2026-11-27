@@ -418,6 +418,7 @@ public sealed class AppHost : IAsyncDisposable
 
         if (_options.EnableApi) await StartApiAsync();
         else ApiError = "disabled";
+        if (Settings.GameLightingOn) StartGameListener();
 
         _dimmer = new IdleDimmer(this);
         _offWatcher = new LightsOffWatcher(this, _options.SessionLocked, _options.Clock, _options.WatchPower, Logs.CreateLogger<LightsOffWatcher>());
@@ -575,6 +576,56 @@ public sealed class AppHost : IAsyncDisposable
         }
     }
 
+    /// <summary>Hears Counter-Strike 2 and Dota 2 while Game lighting is on; null otherwise.</summary>
+    public GameStateListener? GameListener { get; private set; }
+
+    /// <summary>Why the game listener couldn't start (usually another program on its port), or null.</summary>
+    public string? GameListenerError { get; private set; }
+
+    /// <summary>The token the games' config files carry, made once and kept.</summary>
+    public string GameToken
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(Settings.GameToken))
+            {
+                Settings.GameToken = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16));
+                ScheduleSave();
+            }
+            return Settings.GameToken;
+        }
+    }
+
+    /// <summary>Turn listening to games on or off (Settings > Game lighting).</summary>
+    public async Task SetGameLightingAsync(bool on)
+    {
+        Settings.GameLightingOn = on;
+        ScheduleSave();
+        if (GameListener is { } old)
+        {
+            GameListener = null;
+            await old.DisposeAsync();
+        }
+        GameListenerError = null;
+        if (on) StartGameListener();
+    }
+
+    private void StartGameListener()
+    {
+        try
+        {
+            var listener = new GameStateListener(GameToken, Settings.GamePort, Logs.CreateLogger<GameStateListener>());
+            listener.Start();
+            GameListener = listener;
+            _log.LogInformation("Listening for games on port {Port}", Settings.GamePort);
+        }
+        catch (Exception ex)
+        {
+            GameListenerError = ex.Message;
+            _log.LogWarning(ex, "Game listener failed to start on port {Port}", Settings.GamePort);
+        }
+    }
+
     public void SetExcluded(string deviceId, bool excluded)
     {
         var set = Settings.ExcludedDevices.ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -690,6 +741,7 @@ public sealed class AppHost : IAsyncDisposable
         _syncDebounce?.Cancel();
         (Cloud as IDisposable)?.Dispose();
         if (Api is not null) await Api.DisposeAsync();
+        if (GameListener is not null) await GameListener.DisposeAsync();
         await Devices.DisposeAsync();
         Updates.Dispose();
         Wallpaper.Dispose();
