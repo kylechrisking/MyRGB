@@ -39,7 +39,7 @@ public static class Strings
         _userFolder = userFolder;
         _english = Read(Source) ?? [];
         var wanted = string.IsNullOrWhiteSpace(code) ? CultureInfo.CurrentUICulture.Name : code;
-        var picked = Resolve(wanted);
+        var picked = ResolveCode(wanted);
         Current = picked;
         _current = picked == Source ? _english : Read(picked) ?? _english;
     }
@@ -81,7 +81,11 @@ public static class Strings
     private static string NameOf(string code) =>
         Read(code) is { } d && d.TryGetValue(NameKey, out var n) ? n : code;
 
-    private static string Resolve(string wanted)
+    /// <summary>The language code <see cref="Use"/> would pick for this setting (null follows Windows).</summary>
+    public static string Resolve(string? code) =>
+        ResolveCode(string.IsNullOrWhiteSpace(code) ? CultureInfo.CurrentUICulture.Name : code);
+
+    private static string ResolveCode(string wanted)
     {
         var known = BuiltInCodes().Concat(UserCodes()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         string? Match(string c) => known.FirstOrDefault(k => string.Equals(k, c, StringComparison.OrdinalIgnoreCase));

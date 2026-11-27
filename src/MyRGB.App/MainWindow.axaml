@@ -1245,23 +1245,23 @@
           <TabItem.Header>
             <StackPanel Orientation="Horizontal" Spacing="12">
               <PathIcon Data="{x:Static ctl:NavIcons.Settings}" />
-              <TextBlock Text="Settings" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr nav.settings}" VerticalAlignment="Center" />
             </StackPanel>
           </TabItem.Header>
           <ScrollViewer>
             <StackPanel Spacing="14" MaxWidth="760" HorizontalAlignment="Left">
-              <TextBlock Classes="h1" Text="Settings" Margin="0,0,0,6" />
+              <TextBlock Classes="h1" Text="{l:Tr nav.settings}" Margin="0,0,0,6" />
 
               <!-- Vendor apps: only while one is installed; Home links here when one is running. -->
               <Border Classes="panel" IsVisible="{Binding Vendors.HasApps}">
                 <StackPanel Spacing="12">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Spacing="2">
-                      <TextBlock Classes="section" Text="Vendor apps" />
+                      <TextBlock Classes="section" Text="{l:Tr settings.vendorApps.title}" />
                       <TextBlock Classes="muted" TextWrapping="Wrap"
-                                 Text="Brand apps like iCUE, G HUB and Armoury Crate also try to control your lights, and they fight with MyRGB. Once MyRGB runs a brand's devices you can usually uninstall its app. Here's what's on this PC, and what each app does that MyRGB doesn't." />
+                                 Text="{l:Tr settings.vendorApps.brandAppsLikeIcue}" />
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="ghost" Content="Check again" Command="{Binding Vendors.CheckCommand}" IsEnabled="{Binding !Vendors.IsChecking}" VerticalAlignment="Top" Margin="16,0,0,0" />
+                    <Button Grid.Column="1" Classes="ghost" Content="{l:Tr settings.vendorApps.checkAgain}" Command="{Binding Vendors.CheckCommand}" IsEnabled="{Binding !Vendors.IsChecking}" VerticalAlignment="Top" Margin="16,0,0,0" />
                   </Grid>
                   <ItemsControl ItemsSource="{Binding Vendors.Apps}">
                     <ItemsControl.ItemTemplate>
@@ -1288,7 +1288,7 @@
                             <TextBlock Classes="body" Text="{Binding Verdict}" />
         
                             <StackPanel Spacing="6" IsVisible="{Binding HasControlledDevices}">
-                              <TextBlock Classes="kicker" Text="MyRGB now runs" />
+                              <TextBlock Classes="kicker" Text="{l:Tr settings.vendorApps.myrgbNowRuns}" />
                               <ItemsControl ItemsSource="{Binding ControlledDevices}">
                                 <ItemsControl.ItemsPanel>
                                   <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
@@ -1302,7 +1302,7 @@
                             </StackPanel>
         
                             <StackPanel Spacing="6" IsVisible="{Binding HasLosses}">
-                              <TextBlock Classes="kicker" Text="What MyRGB doesn't replace" />
+                              <TextBlock Classes="kicker" Text="{l:Tr settings.vendorApps.notReplaced}" />
                               <ItemsControl ItemsSource="{Binding YouWouldLose}">
                                 <ItemsControl.ItemTemplate>
                                   <DataTemplate x:DataType="x:String">
@@ -1320,13 +1320,13 @@
                             </Border>
         
                             <StackPanel Spacing="6" IsVisible="{Binding HasComponents}">
-                              <TextBlock Classes="kicker" Text="Installed along with it" />
+                              <TextBlock Classes="kicker" Text="{l:Tr settings.vendorApps.installedAlongWithIt}" />
                               <ItemsControl ItemsSource="{Binding Components}">
                                 <ItemsControl.ItemTemplate>
                                   <DataTemplate x:DataType="vm:ComponentViewModel">
                                     <Grid ColumnDefinitions="*,Auto" Margin="0,2">
                                       <TextBlock Classes="body" Text="{Binding Name}" VerticalAlignment="Center" />
-                                      <Button Grid.Column="1" Classes="link" Content="Uninstall" Command="{Binding UninstallCommand}" IsVisible="{Binding CanUninstall}" />
+                                      <Button Grid.Column="1" Classes="link" Content="{l:Tr settings.vendorApps.uninstall}" Command="{Binding UninstallCommand}" IsVisible="{Binding CanUninstall}" />
                                     </Grid>
                                   </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -1334,15 +1334,15 @@
                             </StackPanel>
         
                             <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !Confirming}">
-                              <Button Classes="accent" Content="{Binding Name, StringFormat='Uninstall {0}…'}" Command="{Binding AskUninstallCommand}" IsVisible="{Binding CanUninstall}" />
+                              <Button Classes="accent" Content="{Binding Name, Converter={x:Static l:Tr.Format}, ConverterParameter=settings.vendorApps.uninstallApp}" Command="{Binding AskUninstallCommand}" IsVisible="{Binding CanUninstall}" />
                             </StackPanel>
                             <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource WarningBrush}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,12" IsVisible="{Binding Confirming}">
                               <StackPanel Spacing="10">
                                 <TextBlock Classes="body" TextWrapping="Wrap"
-                                           Text="{Binding Name, StringFormat='This opens {0}’s own uninstaller. Windows will probably ask for permission. Your MyRGB presets and settings are not affected.'}" />
+                                           Text="{Binding Name, Converter={x:Static l:Tr.Format}, ConverterParameter=settings.vendorApps.uninstallConfirm}" />
                                 <StackPanel Orientation="Horizontal" Spacing="10">
-                                  <Button Classes="accent" Content="Open uninstaller" Command="{Binding UninstallCommand}" />
-                                  <Button Classes="ghost" Content="Cancel" Command="{Binding CancelUninstallCommand}" />
+                                  <Button Classes="accent" Content="{l:Tr settings.vendorApps.openUninstaller}" Command="{Binding UninstallCommand}" />
+                                  <Button Classes="ghost" Content="{l:Tr common.cancel}" Command="{Binding CancelUninstallCommand}" />
                                 </StackPanel>
                               </StackPanel>
                             </Border>
@@ -1359,8 +1359,8 @@
               <Border Classes="panel">
                 <StackPanel Spacing="12">
                   <StackPanel Spacing="2">
-                    <TextBlock Classes="section" Text="Appearance" />
-                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="Pick a look for MyRGB. It changes right away; your lights don't change." />
+                    <TextBlock Classes="section" Text="{l:Tr settings.appearance.title}" />
+                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.appearance.pickALookFor}" />
                   </StackPanel>
                   <ItemsControl ItemsSource="{Binding Themes}">
                     <ItemsControl.ItemsPanel>
@@ -1392,13 +1392,26 @@
                 </StackPanel>
               </Border>
 
+              <!-- Language: only once there's a translation to pick. Used from the next start. -->
+              <Border Classes="panel" IsVisible="{Binding Language.ShowPicker}">
+                <StackPanel Spacing="10">
+                  <StackPanel Spacing="2">
+                    <TextBlock Classes="section" Text="{l:Tr settings.language.title}" />
+                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.language.about}" />
+                  </StackPanel>
+                  <ComboBox ItemsSource="{Binding Language.Options}" SelectedItem="{Binding Language.Selected}" MinWidth="220" />
+                  <TextBlock Classes="body" TextWrapping="Wrap" Text="{Binding Language.RestartNote}"
+                             IsVisible="{Binding Language.RestartNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+              </Border>
+
               <!-- Account (only in builds with the account service) -->
               <Border Classes="panel" IsVisible="{Binding CloudAvailable}">
                 <StackPanel Spacing="12">
-                  <TextBlock Classes="section" Text="Account" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.account.title}" />
 
                   <StackPanel Spacing="10" IsVisible="{Binding Account.IsSignedOut}">
-                    <TextBlock Classes="body" Text="An account is optional. Sign in to keep your presets in sync across PCs, share presets with the community, and contact Root Labs. MyRGB never sees your password: you sign in on the provider's own page in your browser." />
+                    <TextBlock Classes="body" Text="{l:Tr settings.account.anAccountIsOptional}" />
                     <ItemsControl ItemsSource="{Binding Account.Providers}" IsEnabled="{Binding !Account.IsBusy}">
                       <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
@@ -1411,7 +1424,7 @@
                     </ItemsControl>
                     <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Account.IsBusy}">
                       <TextBlock Classes="muted" Text="{Binding Account.Status}" VerticalAlignment="Center" />
-                      <Button Classes="link" Content="Cancel" Command="{Binding Account.CancelSignInCommand}" />
+                      <Button Classes="link" Content="{l:Tr common.cancel}" Command="{Binding Account.CancelSignInCommand}" />
                     </StackPanel>
                   </StackPanel>
 
@@ -1430,22 +1443,22 @@
                       </StackPanel>
                     </StackPanel>
                     <Grid ColumnDefinitions="*,Auto">
-                      <ctl:Switch IsChecked="{Binding Account.SyncPresets}" OnContent="Sync my presets across PCs" OffContent="Sync my presets across PCs" />
+                      <ctl:Switch IsChecked="{Binding Account.SyncPresets}" OnContent="{l:Tr settings.account.syncMyPresetsAcross}" OffContent="{l:Tr settings.account.syncMyPresetsAcross}" />
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <TextBlock Classes="muted" Text="{Binding Account.SyncStatus}" VerticalAlignment="Center" />
-                        <Button Classes="ghost" Content="Sync now" Command="{Binding Account.SyncNowCommand}" IsEnabled="{Binding Account.SyncPresets}" />
+                        <Button Classes="ghost" Content="{l:Tr settings.account.syncNow}" Command="{Binding Account.SyncNowCommand}" IsEnabled="{Binding Account.SyncPresets}" />
                       </StackPanel>
                     </Grid>
                     <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !Account.ConfirmingDelete}">
-                      <Button Classes="ghost" Content="Sign out" Command="{Binding Account.SignOutCommand}" />
-                      <Button Classes="link" Content="Delete my account…" Command="{Binding Account.AskDeleteCommand}" Foreground="{DynamicResource DangerBrush}" />
+                      <Button Classes="ghost" Content="{l:Tr settings.account.signOut}" Command="{Binding Account.SignOutCommand}" />
+                      <Button Classes="link" Content="{l:Tr settings.account.askDelete}" Command="{Binding Account.AskDeleteCommand}" Foreground="{DynamicResource DangerBrush}" />
                     </StackPanel>
                     <Border Background="{DynamicResource DangerWashBrush}" BorderBrush="{DynamicResource DangerBrush}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,12" IsVisible="{Binding Account.ConfirmingDelete}">
                       <StackPanel Spacing="10">
-                        <TextBlock Classes="body" Text="This permanently deletes your account, your synced presets and any presets you shared. Presets on this PC stay. It can't be undone." />
+                        <TextBlock Classes="body" Text="{l:Tr settings.account.thisPermanentlyDeletesYour}" />
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                          <Button Classes="ghost" Content="Delete my account" Command="{Binding Account.DeleteAccountCommand}" Foreground="{DynamicResource DangerBrush}" />
-                          <Button Classes="link" Content="Cancel" Command="{Binding Account.CancelDeleteCommand}" />
+                          <Button Classes="ghost" Content="{l:Tr settings.account.confirmDelete}" Command="{Binding Account.DeleteAccountCommand}" Foreground="{DynamicResource DangerBrush}" />
+                          <Button Classes="link" Content="{l:Tr common.cancel}" Command="{Binding Account.CancelDeleteCommand}" />
                         </StackPanel>
                       </StackPanel>
                     </Border>
@@ -1464,14 +1477,14 @@
                 </Border.IsVisible>
                 <StackPanel Spacing="10">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Classes="section" Text="Support MyRGB" />
-                    <Border Classes="supporter" IsVisible="{Binding Account.IsSupporter}"><TextBlock Text="♥ Supporter" /></Border>
+                    <TextBlock Classes="section" Text="{l:Tr settings.supportMyrgb.title}" />
+                    <Border Classes="supporter" IsVisible="{Binding Account.IsSupporter}"><TextBlock Text="{l:Tr settings.supportMyrgb.badge}" /></Border>
                   </StackPanel>
-                  <TextBlock Classes="body" Text="MyRGB is free and open source, and every feature in it, fan control included, stays free. If it replaced a few vendor apps for you, chipping in keeps it going: it pays for the servers behind sync and the community, and for time to support more hardware." />
-                  <TextBlock Classes="body" Text="Supporters get a badge on the presets they share, and room to sync up to 200 presets and share up to 15 (everyone gets 50 and 5)." />
+                  <TextBlock Classes="body" Text="{l:Tr settings.supportMyrgb.myrgbIsFreeAnd}" />
+                  <TextBlock Classes="body" Text="{l:Tr settings.supportMyrgb.supportersGetABadge}" />
                   <TextBlock Classes="body" Foreground="{DynamicResource AccentBrush}" Text="{Binding Account.SupporterText}" IsVisible="{Binding Account.IsSupporter}" />
                   <ctl:Switch IsChecked="{Binding Account.ShowBadge}" IsVisible="{Binding Account.IsSupporter}"
-                                OnContent="Show my supporter badge on shared presets" OffContent="Show my supporter badge on shared presets" />
+                                OnContent="{l:Tr settings.supportMyrgb.showMySupporterBadge}" OffContent="{l:Tr settings.supportMyrgb.showMySupporterBadge}" />
                   <ItemsControl ItemsSource="{Binding Account.SupportLinks}" IsVisible="{Binding Account.HasSupportLinks}">
                     <ItemsControl.ItemsPanel>
                       <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate>
@@ -1483,89 +1496,89 @@
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                   <TextBlock Classes="muted" TextWrapping="Wrap" IsVisible="{Binding Account.HasSupportLinks}"
-                             Text="Support with the same email as your MyRGB account, so your perks can be matched to it." />
+                             Text="{l:Tr settings.supportMyrgb.supportWithTheSame}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Startup" />
-                  <ctl:Switch IsChecked="{Binding StartWithWindows}" OnContent="Start with Windows" OffContent="Start with Windows" />
-                  <ctl:Switch IsChecked="{Binding StartMinimized}" OnContent="Start hidden in the tray" OffContent="Start hidden in the tray" />
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Closing the window never quits MyRGB; it keeps your lights running from the tray. Quit from the tray icon's menu." />
+                  <TextBlock Classes="section" Text="{l:Tr settings.startup.title}" />
+                  <ctl:Switch IsChecked="{Binding StartWithWindows}" OnContent="{l:Tr settings.startup.startWithWindows}" OffContent="{l:Tr settings.startup.startWithWindows}" />
+                  <ctl:Switch IsChecked="{Binding StartMinimized}" OnContent="{l:Tr settings.startup.startHiddenInThe}" OffContent="{l:Tr settings.startup.startHiddenInThe}" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.startup.closingTheWindowNever}" />
                 </StackPanel>
               </Border>
 
               <!-- Updates: quiet checks against the project's GitHub releases -->
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Updates" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.updates.title}" />
                   <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-                    <ctl:Switch IsChecked="{Binding CheckForUpdates}" OnContent="Check for updates when MyRGB starts" OffContent="Check for updates when MyRGB starts" VerticalAlignment="Center" />
+                    <ctl:Switch IsChecked="{Binding CheckForUpdates}" OnContent="{l:Tr settings.updates.checkForUpdatesWhen}" OffContent="{l:Tr settings.updates.checkForUpdatesWhen}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Classes="muted" Text="{Binding Update.VersionText}" VerticalAlignment="Center" />
-                    <Button Grid.Column="2" Classes="ghost" Content="Check now" Command="{Binding Update.CheckCommand}" IsEnabled="{Binding !Update.Busy}" />
+                    <Button Grid.Column="2" Classes="ghost" Content="{l:Tr settings.updates.checkNow}" Command="{Binding Update.CheckCommand}" IsEnabled="{Binding !Update.Busy}" />
                   </Grid>
                   <TextBlock Classes="muted" Text="{Binding Update.Status}" TextWrapping="Wrap"
                              IsVisible="{Binding Update.Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Updates download from the project's GitHub releases and install in place; Windows never asks for permission. A download is checked against the checksum published with the release before it runs." />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.updates.updatesDownloadFromThe}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Idle dimming" />
-                  <ctl:Switch IsChecked="{Binding IdleDimOn}" OnContent="Dim when you step away" OffContent="Dim when you step away" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.idleDimming.title}" />
+                  <ctl:Switch IsChecked="{Binding IdleDimOn}" OnContent="{l:Tr settings.idleDimming.dimWhenYouStep}" OffContent="{l:Tr settings.idleDimming.dimWhenYouStep}" />
                   <Grid ColumnDefinitions="200,*,60" IsEnabled="{Binding IdleDimOn}">
-                    <TextBlock Text="After (minutes)" VerticalAlignment="Center" />
+                    <TextBlock Text="{l:Tr settings.idleDimming.afterMinutes}" VerticalAlignment="Center" />
                     <Slider Grid.Column="1" Minimum="1" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding IdleDimAfterMinutes}" />
                     <TextBlock Grid.Column="2" Text="{Binding IdleDimAfterMinutes}" VerticalAlignment="Center" HorizontalAlignment="Right" />
                   </Grid>
                   <Grid ColumnDefinitions="200,*,60" IsEnabled="{Binding IdleDimOn}">
-                    <TextBlock Text="Dim to (%)" VerticalAlignment="Center" />
+                    <TextBlock Text="{l:Tr settings.idleDimming.dimTo}" VerticalAlignment="Center" />
                     <Slider Grid.Column="1" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding IdleDimPercent}" />
                     <TextBlock Grid.Column="2" Text="{Binding IdleDimPercent}" VerticalAlignment="Center" HorizontalAlignment="Right" />
                   </Grid>
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Lights fade down after you step away from the keyboard and mouse, and come straight back the moment you touch either." />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.idleDimming.lightsFadeDownAfter}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Lights out" />
-                  <ctl:Switch IsChecked="{Binding OffWhenLocked}" OnContent="Off while Windows is locked or asleep" OffContent="Off while Windows is locked or asleep" />
-                  <ctl:Switch IsChecked="{Binding NightOn}" OnContent="Off at night" OffContent="Off at night" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.lightsOut.title}" />
+                  <ctl:Switch IsChecked="{Binding OffWhenLocked}" OnContent="{l:Tr settings.lightsOut.offWhileWindowsIs}" OffContent="{l:Tr settings.lightsOut.offWhileWindowsIs}" />
+                  <ctl:Switch IsChecked="{Binding NightOn}" OnContent="{l:Tr settings.lightsOut.offAtNight}" OffContent="{l:Tr settings.lightsOut.offAtNight}" />
                   <StackPanel Orientation="Horizontal" Spacing="10" IsEnabled="{Binding NightTimesEnabled}">
-                    <TextBlock Text="From" VerticalAlignment="Center" />
+                    <TextBlock Text="{l:Tr settings.lightsOut.from}" VerticalAlignment="Center" />
                     <ComboBox ItemsSource="{Binding NightChoices}" SelectedItem="{Binding NightFrom}" MinWidth="100" />
-                    <TextBlock Text="to" VerticalAlignment="Center" />
+                    <TextBlock Text="{l:Tr settings.lightsOut.to}" VerticalAlignment="Center" />
                     <ComboBox ItemsSource="{Binding NightChoices}" SelectedItem="{Binding NightTo}" MinWidth="100" />
                   </StackPanel>
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Your lights go dark and come back on their own. Turning them on in the meantime (here, from the tray, a hotkey or a Stream Deck) keeps them on until the next lock, sleep or night." />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.lightsOut.yourLightsGoDark}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Monitors" />
-                  <ctl:Switch IsChecked="{Binding MonitorsOn}" IsEnabled="{Binding MonitorsSupported}" OnContent="Set my monitors' brightness" OffContent="Set my monitors' brightness" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.monitors.title}" />
+                  <ctl:Switch IsChecked="{Binding MonitorsOn}" IsEnabled="{Binding MonitorsSupported}" OnContent="{l:Tr settings.monitors.setMyMonitorsBrightness}" OffContent="{l:Tr settings.monitors.setMyMonitorsBrightness}" />
                   <TextBlock Classes="muted" Text="{Binding MonitorStatus}" TextWrapping="Wrap" />
                   <StackPanel Spacing="10" IsEnabled="{Binding ShowMonitorSlider}">
                     <Grid ColumnDefinitions="200,*,60">
-                      <TextBlock Text="Brightness (%)" VerticalAlignment="Center" />
+                      <TextBlock Text="{l:Tr settings.monitors.brightness}" VerticalAlignment="Center" />
                       <Slider Grid.Column="1" Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding MonitorLevel}" />
                       <TextBlock Grid.Column="2" Text="{Binding MonitorLevel}" VerticalAlignment="Center" HorizontalAlignment="Right" />
                     </Grid>
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                      <ctl:Switch IsChecked="{Binding MonitorsFollowLights}" OnContent="Dim with the lights, to" OffContent="Dim with the lights, to" VerticalAlignment="Center" />
+                      <ctl:Switch IsChecked="{Binding MonitorsFollowLights}" OnContent="{l:Tr settings.monitors.dimWithTheLights}" OffContent="{l:Tr settings.monitors.dimWithTheLights}" VerticalAlignment="Center" />
                       <ComboBox ItemsSource="{Binding MonitorSteps}" SelectedItem="{Binding MonitorsOffLevel}" IsEnabled="{Binding MonitorsFollowLights}" MinWidth="80" />
                       <TextBlock Text="%" VerticalAlignment="Center" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                      <ctl:Switch IsChecked="{Binding MonitorsNightOn}" OnContent="At night, set them to" OffContent="At night, set them to" VerticalAlignment="Center" />
+                      <ctl:Switch IsChecked="{Binding MonitorsNightOn}" OnContent="{l:Tr settings.monitors.atNightSetThem}" OffContent="{l:Tr settings.monitors.atNightSetThem}" VerticalAlignment="Center" />
                       <ComboBox ItemsSource="{Binding MonitorSteps}" SelectedItem="{Binding MonitorsNightLevel}" IsEnabled="{Binding MonitorsNightOn}" MinWidth="80" />
                       <TextBlock Text="%" VerticalAlignment="Center" />
                     </StackPanel>
-                    <ctl:Switch IsChecked="{Binding MonitorPresetLevelsOn}" OnContent="Presets set their own monitor brightness" OffContent="Presets set their own monitor brightness" />
+                    <ctl:Switch IsChecked="{Binding MonitorPresetLevelsOn}" OnContent="{l:Tr settings.monitors.presetsSetTheirOwn}" OffContent="{l:Tr settings.monitors.presetsSetTheirOwn}" />
                     <ItemsControl ItemsSource="{Binding MonitorPresetRows}" IsEnabled="{Binding MonitorPresetLevelsOn}">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:MonitorPresetRow">
@@ -1580,18 +1593,18 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <Button Classes="ghost" Content="Add a preset" Command="{Binding AddMonitorPresetLevelCommand}" IsEnabled="{Binding MonitorPresetLevelsOn}" />
+                    <Button Classes="ghost" Content="{l:Tr settings.monitors.addAPreset}" Command="{Binding AddMonitorPresetLevelCommand}" IsEnabled="{Binding MonitorPresetLevelsOn}" />
                     <StackPanel Spacing="6" IsVisible="{Binding ShowMonitorRanges}" Margin="0,6,0,0">
-                      <TextBlock FontWeight="SemiBold" Text="Match your monitors" />
-                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Two monitors at the same number rarely look alike. Give each its own darkest and brightest, and the slider runs between them, so 0% is each one's darkest and 100% its brightest." />
+                      <TextBlock FontWeight="SemiBold" Text="{l:Tr settings.monitors.matchYourMonitors}" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.monitors.twoMonitorsAtThe}" />
                       <ItemsControl ItemsSource="{Binding MonitorRangeRows}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="vm:MonitorRangeRow">
                             <Grid ColumnDefinitions="200,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,6">
                               <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                              <TextBlock Grid.Column="1" Classes="muted" Text="from" VerticalAlignment="Center" />
+                              <TextBlock Grid.Column="1" Classes="muted" Text="{l:Tr settings.monitors.from}" VerticalAlignment="Center" />
                               <ComboBox Grid.Column="2" ItemsSource="{Binding DarkestChoices}" SelectedItem="{Binding Darkest}" MinWidth="80" />
-                              <TextBlock Grid.Column="3" Classes="muted" Text="to" VerticalAlignment="Center" />
+                              <TextBlock Grid.Column="3" Classes="muted" Text="{l:Tr settings.monitors.to}" VerticalAlignment="Center" />
                               <ComboBox Grid.Column="4" ItemsSource="{Binding BrightestChoices}" SelectedItem="{Binding Brightest}" MinWidth="80" />
                               <TextBlock Grid.Column="5" Text="%" VerticalAlignment="Center" />
                             </Grid>
@@ -1600,19 +1613,19 @@
                       </ItemsControl>
                     </StackPanel>
                   </StackPanel>
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Night uses the times under Lights out. Night wins over the lights, which win over a preset's level, which wins over the slider. A change you make with the monitor's own buttons stays until one of these has a reason to change it. The local API has the same control: GET or POST /api/monitors." />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.monitors.nightUsesTheTimes}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="App profiles" />
-                  <ctl:Switch IsChecked="{Binding AppProfilesOn}" OnContent="Switch presets by app" OffContent="Switch presets by app" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.appProfiles.title}" />
+                  <ctl:Switch IsChecked="{Binding AppProfilesOn}" OnContent="{l:Tr settings.appProfiles.switchPresetsByApp}" OffContent="{l:Tr settings.appProfiles.switchPresetsByApp}" />
                   <ItemsControl ItemsSource="{Binding AppProfileRows}" IsEnabled="{Binding AppProfilesOn}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:AppProfileRow">
                         <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="10" Margin="0,0,0,6">
-                          <TextBox Text="{Binding ProcessName}" PlaceholderText="Process name, e.g. cs2" />
+                          <TextBox Text="{Binding ProcessName}" PlaceholderText="{l:Tr settings.appProfiles.processNameEG}" />
                           <ComboBox Grid.Column="1" ItemsSource="{Binding AvailablePresets}"
                                     SelectedValueBinding="{Binding Id}" SelectedValue="{Binding PresetId}"
                                     DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch" />
@@ -1622,22 +1635,22 @@
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsEnabled="{Binding AppProfilesOn}">
-                    <TextBox Text="{Binding NewAppProfileProcess}" PlaceholderText="Process name, e.g. cs2" />
-                    <Button Grid.Column="1" Classes="ghost" Content="Add" Command="{Binding AddAppProfileCommand}" />
+                    <TextBox Text="{Binding NewAppProfileProcess}" PlaceholderText="{l:Tr settings.appProfiles.processNameEG}" />
+                    <Button Grid.Column="1" Classes="ghost" Content="{l:Tr common.add}" Command="{Binding AddAppProfileCommand}" />
                   </Grid>
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="When one of these programs is in the foreground, MyRGB switches to its preset, and switches back when you leave it." />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.appProfiles.whenOneOfThese}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Schedule" />
-                  <ctl:Switch IsChecked="{Binding ScheduleOn}" OnContent="Change presets through the day" OffContent="Change presets through the day" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.schedule.title}" />
+                  <ctl:Switch IsChecked="{Binding ScheduleOn}" OnContent="{l:Tr settings.schedule.changePresetsThroughThe}" OffContent="{l:Tr settings.schedule.changePresetsThroughThe}" />
                   <ItemsControl ItemsSource="{Binding ScheduleRows}" IsEnabled="{Binding ScheduleOn}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:ScheduleRow">
                         <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10" Margin="0,0,0,6">
-                          <TextBlock Text="At" VerticalAlignment="Center" />
+                          <TextBlock Text="{l:Tr settings.schedule.at}" VerticalAlignment="Center" />
                           <ComboBox Grid.Column="1" ItemsSource="{Binding Times}" SelectedItem="{Binding At}" MinWidth="100" />
                           <ComboBox Grid.Column="2" ItemsSource="{Binding AvailablePresets}"
                                     SelectedValueBinding="{Binding Id}" SelectedValue="{Binding PresetId}"
@@ -1647,22 +1660,22 @@
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
-                  <Button Classes="ghost" Content="Add a time" Command="{Binding AddScheduleEntryCommand}" IsEnabled="{Binding ScheduleOn}" />
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="At each time, MyRGB switches to that preset and keeps it until the next one; pick something else in between and it stays until then. When MyRGB starts, it picks up wherever the day has got to. App profiles still win while their program is in front." />
+                  <Button Classes="ghost" Content="{l:Tr settings.schedule.addATime}" Command="{Binding AddScheduleEntryCommand}" IsEnabled="{Binding ScheduleOn}" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.schedule.atEachTimeMyrgb}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Global hotkeys" />
-                  <ctl:Switch IsChecked="{Binding GlobalHotkeyOn}" OnContent="Use keyboard shortcuts from any app" OffContent="Use keyboard shortcuts from any app" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.globalHotkeys.title}" />
+                  <ctl:Switch IsChecked="{Binding GlobalHotkeyOn}" OnContent="{l:Tr settings.globalHotkeys.useKeyboardShortcutsFrom}" OffContent="{l:Tr settings.globalHotkeys.useKeyboardShortcutsFrom}" />
                   <ItemsControl ItemsSource="{Binding Hotkeys}" IsEnabled="{Binding GlobalHotkeyOn}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="svc:HotkeyStatus">
                         <Grid ColumnDefinitions="160,*,Auto" Margin="0,0,0,4">
                           <TextBlock FontFamily="{DynamicResource BrandMono}" FontSize="12" Text="{Binding Keys}" VerticalAlignment="Center" />
                           <TextBlock Grid.Column="1" Text="{Binding Does}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                          <TextBlock Grid.Column="2" Classes="muted" Text="taken by another app" IsVisible="{Binding Taken}" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="2" Classes="muted" Text="{l:Tr settings.globalHotkeys.takenByAnotherApp}" IsVisible="{Binding Taken}" VerticalAlignment="Center" />
                         </Grid>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -1673,66 +1686,66 @@
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Smoothness" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.smoothness.title}" />
                   <Grid ColumnDefinitions="200,*,60">
-                    <TextBlock Text="Updates per second" VerticalAlignment="Center" />
+                    <TextBlock Text="{l:Tr settings.smoothness.updatesPerSecond}" VerticalAlignment="Center" />
                     <Slider Grid.Column="1" Minimum="10" Maximum="60" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding Fps}" />
                     <TextBlock Grid.Column="2" Text="{Binding Fps}" VerticalAlignment="Center" HorizontalAlignment="Right" />
                   </Grid>
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="30 looks smooth for every effect. Higher uses more USB bandwidth, and some wireless devices can't keep up." />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.smoothness.30LooksSmoothFor}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
                   <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Classes="section" Text="Video wallpapers" VerticalAlignment="Center" />
-                    <ctl:Switch Grid.Column="1" IsChecked="{Binding Wallpapers.VideoUseGpu}" OnContent="Use the graphics card" OffContent="Use the graphics card" />
+                    <TextBlock Classes="section" Text="{l:Tr settings.videoWallpapers.title}" VerticalAlignment="Center" />
+                    <ctl:Switch Grid.Column="1" IsChecked="{Binding Wallpapers.VideoUseGpu}" OnContent="{l:Tr settings.videoWallpapers.useTheGraphicsCard}" OffContent="{l:Tr settings.videoWallpapers.useTheGraphicsCard}" />
                   </Grid>
                   <TextBlock Classes="muted" TextWrapping="Wrap"
-                             Text="Your graphics card has a small part built just for playing video. With this on, it does the hard work of a video wallpaper, the same way it does when you watch a video in your browser, and your processor stays free for everything else (it usually takes most of the work off it). Leave it on unless a video wallpaper flickers, shows the wrong colors or won't play; then turn it off and your processor plays it instead. If the graphics card can't handle a video, MyRGB switches to the processor by itself." />
+                             Text="{l:Tr settings.videoWallpapers.yourGraphicsCardHas}" />
                   <TextBlock Classes="body" TextWrapping="Wrap" Text="{Binding Wallpapers.DecodingNote}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="8">
-                  <TextBlock Classes="section" Text="Stream Deck" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.streamDeck.title}" />
                   <TextBlock Classes="body" Text="{Binding StreamDeckStatus}" />
-                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="Keys can switch presets (showing each preset's colors), turn the lights on and off, and change brightness." />
+                  <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.streamDeck.keysCanSwitchPresets}" />
                 </StackPanel>
               </Border>
 
               <Border Classes="panel">
                 <StackPanel Spacing="10">
-                  <TextBlock Classes="section" Text="Help" />
+                  <TextBlock Classes="section" Text="{l:Tr settings.help.title}" />
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button Classes="ghost" Content="Show the welcome tour" Command="{Binding OpenTourCommand}" />
+                    <Button Classes="ghost" Content="{l:Tr settings.help.showTheWelcomeTour}" Command="{Binding OpenTourCommand}" />
                   </StackPanel>
                   <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
                     <StackPanel Spacing="3" VerticalAlignment="Center" Margin="0,0,16,0">
-                      <TextBlock Text="Get in touch" FontWeight="SemiBold" />
-                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Questions, bugs, or a device you'd like supported? Reach Root Labs through our website." />
+                      <TextBlock Text="{l:Tr settings.help.getInTouch}" FontWeight="SemiBold" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.help.questionsBugsOrA}" />
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="accent" Content="Visit rootlabs.us ›" Command="{Binding OpenWebsiteCommand}"
+                    <Button Grid.Column="1" Classes="accent" Content="{l:Tr settings.help.visitRootlabsUs}" Command="{Binding OpenWebsiteCommand}"
                             VerticalAlignment="Center" ToolTip.Tip="{x:Static vm:MainViewModel.WebsiteUrl}" />
                   </Grid>
                 </StackPanel>
               </Border>
 
-              <Expander Classes="panel" Header="Advanced" HorizontalAlignment="Stretch">
+              <Expander Classes="panel" Header="{l:Tr settings.advanced.title}" HorizontalAlignment="Stretch">
                 <StackPanel Spacing="14" Margin="0,6,0,0">
                   <StackPanel Spacing="6">
-                    <TextBlock Text="OpenRGB program" FontWeight="SemiBold" />
-                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="MyRGB starts OpenRGB out of sight to reach most devices. Change this only if you use your own copy. Takes effect the next time MyRGB starts." />
-                    <TextBox Text="{Binding OpenRgbPath}" PlaceholderText="Path to OpenRGB.exe" />
+                    <TextBlock Text="{l:Tr settings.advanced.openrgbProgram}" FontWeight="SemiBold" />
+                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr settings.advanced.myrgbStartsOpenrgbOut}" />
+                    <TextBox Text="{Binding OpenRgbPath}" PlaceholderText="{l:Tr settings.advanced.pathToOpenrgbExe}" />
                   </StackPanel>
                   <StackPanel Spacing="4">
-                    <TextBlock Text="Local API (for scripts and the Stream Deck plugin)" FontWeight="SemiBold" />
+                    <TextBlock Text="{l:Tr settings.advanced.localApiForScripts}" FontWeight="SemiBold" />
                     <SelectableTextBlock Text="{Binding ApiUrl}" FontFamily="{DynamicResource BrandMono}" />
                   </StackPanel>
                   <StackPanel Spacing="4">
-                    <TextBlock Text="Log file" FontWeight="SemiBold" />
+                    <TextBlock Text="{l:Tr settings.advanced.logFile}" FontWeight="SemiBold" />
                     <SelectableTextBlock Text="{Binding LogPath}" FontFamily="{DynamicResource BrandMono}" />
                   </StackPanel>
                 </StackPanel>

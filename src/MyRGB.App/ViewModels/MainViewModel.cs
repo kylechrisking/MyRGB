@@ -96,6 +96,7 @@ public sealed partial class MainViewModel : ObservableObject
         SupportNudge = new SupportNudgeViewModel(host, Account);
         Update = new UpdateViewModel(host);
         Wallpapers = new WallpapersViewModel(host);
+        Language = new LanguageViewModel(host);
         _fps = host.Engine.Fps;
         _startMinimized = host.Settings.StartMinimized;
         _checkForUpdates = host.Settings.CheckForUpdates;
@@ -178,6 +179,7 @@ public sealed partial class MainViewModel : ObservableObject
     public AppHost Host => _host;
     public StudioViewModel Studio { get; }
     public WallpapersViewModel Wallpapers { get; }
+    public LanguageViewModel Language { get; }
     public VendorAppsViewModel Vendors { get; }
     public AccountViewModel Account { get; }
     public CommunityViewModel Community { get; }
