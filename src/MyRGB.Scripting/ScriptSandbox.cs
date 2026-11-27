@@ -63,6 +63,7 @@ internal static class ScriptSandbox
         .Strict()
         .LimitMemory(64L * 1024 * 1024)
         .LimitRecursion(200)
+        .MaxArraySize(1_000_000)
         .TimeoutInterval(CallLimit)
         .DisableStringCompilation());
 
@@ -138,11 +139,13 @@ internal static class ScriptColor
 internal static class ScriptErrors
 {
     public const string TooSlow = "It stopped because it was too slow and would have made the app lag.";
+    public const string TooMuchMemory = "It stopped because it used too much memory.";
+    public const string AppOutOfMemory = "It stopped because MyRGB was using too much memory. An effect that keeps adding to a list without ever clearing it can cause this.";
 
     public static string Describe(Exception e) => (e.InnerException is Acornima.ParseErrorException inner ? inner : e) switch
     {
         TooSlowException or TimeoutException => TooSlow,
-        MemoryLimitExceededException => "It stopped because it used too much memory.",
+        MemoryLimitExceededException => TooMuchMemory,
         RecursionDepthOverflowException => "It stopped because a function kept calling itself.",
         ScriptProblemException p => p.Message,
         JavaScriptException js => $"It hit an error{Where(js.Location)}: {Short(js.Message)}",

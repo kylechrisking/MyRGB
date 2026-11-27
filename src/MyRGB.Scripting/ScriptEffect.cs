@@ -3,6 +3,7 @@ using Jint;
 using Jint.Native;
 using Jint.Native.Function;
 using Jint.Native.Object;
+using Jint.Runtime;
 using MyRGB.Core;
 using MyRGB.Core.Audio;
 using MyRGB.Core.Effects;
@@ -30,6 +31,21 @@ public sealed class ScriptEffect : Effect
 
     internal const int StrikesAllowed = 30;
 
+    /// <summary>
+    /// Most a script may allocate in one frame. The examples use under 1 MB for 300 lights; the per-call
+    /// limit in <see cref="ScriptSandbox"/> doesn't see a script that allocates a little in every call.
+    /// </summary>
+    internal static long FrameAllocationLimit = 48L * 1024 * 1024;
+
+    /// <summary>
+    /// If MyRGB's memory grows past this, running script effects stop. Retained memory can't be
+    /// measured per script, and scripts are the only code in the app that strangers wrote, so a
+    /// slow leak that slips under the per-frame limit is caught here. Settable for tests.
+    /// </summary>
+    internal static long HeapLimit = 1024L * 1024 * 1024;
+
+    private long _nextHeapCheck;
+
     private readonly ScriptSource _source;
     private Engine? _engine;
     private JsValue _effect = JsValue.Undefined;
@@ -53,6 +69,7 @@ public sealed class ScriptEffect : Effect
         if (Problem is not null) { output.Fill(Stopped); return; }
 
         var clock = Stopwatch.StartNew();
+        long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
         try
         {
             var engine = _engine ??= Start();
@@ -75,7 +92,11 @@ public sealed class ScriptEffect : Effect
                 _lightArgs[0] = _points[i];
                 output[i] = ScriptColor.From(engine.Call(_light, _effect, _lightArgs));
                 // Checked as it goes, so a slow script is caught inside the frame, not after it.
-                if ((i & 31) == 31 && clock.Elapsed > HardLimit) throw new TooSlowException();
+                if ((i & 31) == 31)
+                {
+                    if (GC.GetAllocatedBytesForCurrentThread() - allocatedBefore > FrameAllocationLimit) throw new MemoryLimitExceededException("frame");
+                    if (clock.Elapsed > HardLimit) throw new TooSlowException();
+                }
             }
         }
         catch (Exception e)
@@ -85,9 +106,21 @@ public sealed class ScriptEffect : Effect
             return;
         }
 
+        if (GC.GetAllocatedBytesForCurrentThread() - allocatedBefore > FrameAllocationLimit) { Stop(ScriptErrors.TooMuchMemory); return; }
+        if (HeapTooBig()) { Stop(ScriptErrors.AppOutOfMemory); return; }
+
         if (clock.Elapsed > HardLimit) Stop(ScriptErrors.TooSlow);
         else if (clock.Elapsed > SoftLimit && ++_strikes >= StrikesAllowed) Stop(ScriptErrors.TooSlow);
         else if (clock.Elapsed <= SoftLimit) _strikes = 0;
+    }
+
+    /// <summary>Looks at the size of the app's memory after the last garbage collection, at most once a second.</summary>
+    private bool HeapTooBig()
+    {
+        long now = Environment.TickCount64;
+        if (now < _nextHeapCheck) return false;
+        _nextHeapCheck = now + 1000;
+        return GC.GetGCMemoryInfo().HeapSizeBytes > HeapLimit;
     }
 
     private void Stop(string why)

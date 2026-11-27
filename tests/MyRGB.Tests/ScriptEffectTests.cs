@@ -198,11 +198,52 @@ public class ScriptEffectTests
     }
 
     [Fact]
-    public void Using_too_much_memory_stops_the_effect()
+    public void Using_too_much_memory_in_one_call_stops_the_effect()
     {
-        var def = Load("const keep = []; effect({ name: \"x\", light() { keep.push(new Array(100000).fill(1)); return 0; } });");
-        var (effect, _) = RenderFrames(def, 3);
+        var def = Load("effect({ name: \"x\", light() { const a = []; for (let i = 0; i < 200; i++) a.push(new Array(500000).fill(i)); return 0; } });");
+        var (effect, _) = RenderFrames(def, 1, Grid(1, 1));
+        Assert.Equal(ScriptErrors.TooMuchMemory, effect.Problem);
+    }
+
+    [Fact]
+    public void Huge_arrays_are_refused()
+    {
+        var (effect, _) = RenderFrames(Load("effect({ name: \"x\", light() { return new Array(50000000).length; } });"), 1, Grid(1, 1));
         Assert.NotNull(effect.Problem);
+    }
+
+    [Fact]
+    public void Allocating_a_little_in_every_call_still_counts_for_the_frame()
+    {
+        // Each call stays far under the per-call limit; the frame as a whole doesn't.
+        var def = Load("const keep = []; effect({ name: \"x\", light(p) { keep.push(\"ab\".repeat(500000) + p.index); return 0; } });");
+        var (effect, _) = RenderFrames(def, 1, Grid(10, 10));
+        Assert.Equal(ScriptErrors.TooMuchMemory, effect.Problem);
+    }
+
+    [Fact]
+    public void A_slow_leak_is_caught_when_the_app_grows_too_big()
+    {
+        long saved = ScriptEffect.HeapLimit;
+        try
+        {
+            GC.Collect();
+            ScriptEffect.HeapLimit = GC.GetGCMemoryInfo().HeapSizeBytes + 64L * 1024 * 1024;
+            // About 4 MB kept every frame: under the per-frame limit, but it never stops growing.
+            var def = Load("const keep = []; effect({ name: \"x\", frame() { keep.push(new Array(500000).fill(1)); }, light() { return 0; } });");
+            var effect = (ScriptEffect)def.Create(new EffectSettings(null));
+            var points = Grid(1, 1);
+            var colors = new Rgb[1];
+            var clock = Stopwatch.StartNew();
+            for (int f = 0; f < 400 && effect.Problem is null && clock.Elapsed < TimeSpan.FromSeconds(20); f++)
+            {
+                effect.Render(new FrameContext(f / 30.0, 1 / 30.0), points, colors);
+                if (f % 10 == 0) GC.Collect();
+                Thread.Sleep(10);
+            }
+            Assert.Equal(ScriptErrors.AppOutOfMemory, effect.Problem);
+        }
+        finally { ScriptEffect.HeapLimit = saved; }
     }
 
     [Fact]
