@@ -314,12 +314,16 @@ public sealed class WallpaperRenderer : IDisposable
         var preset = _settings.WallpaperSource == WallpaperSource.Lights
             ? _lightsPreset()
             : _settings.WallpaperPresetId is { } id ? _presets.Find(id) : null;
-        // Mirroring Match Wallpaper would be the wallpaper copying itself: nothing to show.
-        if (preset is null || preset.EffectId == WallpaperFeed.EffectId || _effects.Find(preset.EffectId) is not { } def)
+        // Mirroring Match Wallpaper would be the wallpaper copying itself, and mirroring Match Screen would
+        // copy the screen the wallpaper is on: nothing to show either way.
+        if (preset is null || preset.EffectId is WallpaperFeed.EffectId or MyRGB.Core.Screen.ScreenFeed.EffectId || _effects.Find(preset.EffectId) is not { } def)
         {
-            Problem = preset?.EffectId == WallpaperFeed.EffectId
-                ? "Your lights are matching the wallpaper, so the wallpaper has nothing of theirs to show. Pick a preset for it instead."
-                : null;
+            Problem = preset?.EffectId switch
+            {
+                WallpaperFeed.EffectId => "Your lights are matching the wallpaper, so the wallpaper has nothing of theirs to show. Pick a preset for it instead.",
+                MyRGB.Core.Screen.ScreenFeed.EffectId => "Your lights are matching your screen, so the wallpaper would only copy itself. Pick a preset for it instead.",
+                _ => null,
+            };
             Latest = null;
             WallpaperFeed.Publish(null);
             FrameReady?.Invoke();

@@ -144,6 +144,8 @@ public sealed class AppHost : IAsyncDisposable
         Sensors.SetFanSettings(Settings.Fans);
         SensorFeed.Use(Sensors.Get);
         if (_options.ListenToAudio) Audio = new AudioListener(Logs.CreateLogger<AudioListener>());
+        if (OperatingSystem.IsWindows()) Screen = new MyRGB.Core.Screen.ScreenWatcher(
+            () => Engine.Enabled && !Engine.HeldOff && Engine.Playing(MyRGB.Core.Screen.ScreenFeed.EffectId), Logs.CreateLogger<MyRGB.Core.Screen.ScreenWatcher>());
         Wallpaper = new MyRGB.App.Services.Wallpaper.WallpaperRenderer(() => Engine.ActivePreset, Presets, Effects, Settings,
             Logs.CreateLogger<MyRGB.App.Services.Wallpaper.WallpaperRenderer>());
         Wallpaper.Refresh();
@@ -206,6 +208,9 @@ public sealed class AppHost : IAsyncDisposable
     public BatteryMonitor Batteries { get; }
     public SensorHub Sensors { get; }
     public AudioListener? Audio { get; }
+
+    /// <summary>Copies the main screen for Match Screen, only while that effect is playing.</summary>
+    public IDisposable? Screen { get; }
 
     /// <summary>Draws MyRGB's desktop wallpaper, and feeds the Match Wallpaper effect.</summary>
     public MyRGB.App.Services.Wallpaper.WallpaperRenderer Wallpaper { get; }
@@ -737,6 +742,7 @@ public sealed class AppHost : IAsyncDisposable
         Engine.Dispose();
         Sensors.Dispose(); // hands any fans MyRGB was driving back to the hardware
         Audio?.Dispose();
+        Screen?.Dispose();
         await Batteries.DisposeAsync();
         _syncDebounce?.Cancel();
         (Cloud as IDisposable)?.Dispose();

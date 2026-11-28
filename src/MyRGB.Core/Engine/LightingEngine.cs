@@ -85,6 +85,9 @@ public sealed class LightingEngine : IDisposable
     private bool Lit => _enabled && !_heldOff;
     private readonly Fade _fade = new();
 
+    /// <summary>True when some device is playing <paramref name="effectId"/> right now (not just a preview of it).</summary>
+    public bool Playing(string effectId) => _plan.Groups.Any(g => string.Equals(g.EffectId, effectId, StringComparison.OrdinalIgnoreCase));
+
     /// <summary>Skip the fade on the next frame and go straight to black or full, e.g. just before the PC sleeps.</summary>
     public void SkipFade() => _fade.SnapNext = true;
 

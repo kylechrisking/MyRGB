@@ -33,6 +33,7 @@ public sealed class EffectRegistry
             MusicWavesEffect.Definition,
             WallpaperEffect.Definition,
             GameEventsEffect.Definition,
+            ScreenEffect.Definition,
         })
             r.Register(d);
         return r;

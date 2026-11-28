@@ -196,7 +196,7 @@ public sealed partial class WallpapersViewModel : ObservableObject
     private void RefreshScenes()
     {
         Scenes = _host.Presets.All
-            .Where(p => p.EffectId != WallpaperFeed.EffectId && p.Id != "lights-off")
+            .Where(p => p.EffectId != WallpaperFeed.EffectId && p.EffectId != MyRGB.Core.Screen.ScreenFeed.EffectId && p.Id != "lights-off")
             .Select(p => new WallpaperSceneViewModel(p, _host.Effects.Find(p.EffectId), this) { IsSelected = p.Id == _host.Settings.WallpaperPresetId })
             .ToList();
         OnPropertyChanged(nameof(Scenes));

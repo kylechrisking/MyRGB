@@ -33,6 +33,7 @@ public static class BuiltInPresets
         P("visualizer-glow", "Bass Glow", "visualizer", ("style", "Single color"), ("foreground", "Spectrum Cycle"), ("background", "Color Wheel"), ("bgBrightness", "5")),
         P("music-waves", "Music Waves", "audio-waves"),
         P("wallpaper", "Match Wallpaper", "wallpaper"),
+        P("screen", "Match Screen", "screen"),
         P("breathing-red", "Breathing Red", "breathing", ("color", "#FF0020")),
         P("arctic-white", "Arctic White", "static", ("color", "#DDEEFF")),
         P("lights-off", "Lights Off", "static", ("color", "#000000")),
