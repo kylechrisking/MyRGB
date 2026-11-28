@@ -115,6 +115,8 @@
   "settings.videoWallpapers.title": "Video wallpapers",
   "settings.videoWallpapers.useTheGraphicsCard": "Use the graphics card",
   "settings.videoWallpapers.yourGraphicsCardHas": "Your graphics card has a small part built just for playing video. With this on, it does the hard work of a video wallpaper, the same way it does when you watch a video in your browser, and your processor stays free for everything else (it usually takes most of the work off it). Leave it on unless a video wallpaper flickers, shows the wrong colors or won't play; then turn it off and your processor plays it instead. If the graphics card can't handle a video, MyRGB switches to the processor by itself.",
+  "settings.videoWallpapers.pauseOnBattery": "Pause on battery",
+  "settings.videoWallpapers.playingAVideoAll": "Playing a video all the time drains a laptop's battery faster. With this on, when you unplug the charger the video stops on the picture it was showing, and it carries on when you plug back in. Lights that match the wallpaper keep the colors of that picture while it waits. On a desktop PC this does nothing.",
   "settings.streamDeck.title": "Stream Deck",
   "settings.streamDeck.keysCanSwitchPresets": "Keys can switch presets (showing each preset's colors), turn the lights on and off, and change brightness.",
   "settings.help.title": "Help",

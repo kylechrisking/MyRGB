@@ -134,6 +134,9 @@ public sealed class AppSettings
     /// <summary>Video wallpapers are decoded by the graphics card (falls back to the processor by itself).</summary>
     public bool VideoUseGpu { get; set; } = true;
 
+    /// <summary>Video wallpapers stop on their current frame while a laptop runs on battery, and carry on when it's plugged in.</summary>
+    public bool VideoPauseOnBattery { get; set; } = true;
+
     /// <summary>The look, by <see cref="ThemeManager"/> id. Notebook unless picked otherwise.</summary>
     public string Theme { get; set; } = ThemeManager.DefaultId;
 
