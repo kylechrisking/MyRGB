@@ -41,7 +41,12 @@ public sealed partial class WallpapersViewModel : ObservableObject
         _picture = host.Settings.WallpaperPicture;
         _video = host.Settings.WallpaperVideo;
         _videoUseGpu = host.Settings.VideoUseGpu;
-        host.Wallpaper.StatusChanged += () => Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(DecodingNote)));
+        _videoPauseOnBattery = host.Settings.VideoPauseOnBattery;
+        host.Wallpaper.StatusChanged += () => Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(DecodingNote));
+            OnPropertyChanged(nameof(Status));
+        });
         RefreshScenes();
         host.Presets.Changed += (_, _) => Dispatcher.UIThread.Post(RefreshScenes);
         host.Lights.StateChanged += (_, _) => Dispatcher.UIThread.Post(() =>
@@ -101,6 +106,16 @@ public sealed partial class WallpapersViewModel : ObservableObject
         OnPropertyChanged(nameof(DecodingNote)); // the playing video reopens with the new choice on its next frame
     }
 
+    /// <summary>Settings: video wallpapers wait on their current frame while a laptop runs on battery.</summary>
+    [ObservableProperty] private bool _videoPauseOnBattery;
+
+    partial void OnVideoPauseOnBatteryChanged(bool value)
+    {
+        _host.Settings.VideoPauseOnBattery = value;
+        _host.ScheduleSave();
+        _host.Wallpaper.Refresh(); // the wallpaper thread pauses or carries on right away
+    }
+
     /// <summary>How the video wallpaper is being decoded right now, in a sentence.</summary>
     public string DecodingNote
     {
@@ -109,6 +124,7 @@ public sealed partial class WallpapersViewModel : ObservableObject
             var w = _host.Wallpaper;
             if (!On || Source != WallpaperSource.Video || w.VideoSize.Width == 0)
                 return VideoUseGpu ? "No video is playing right now. When one is, your graphics card will play it." : "No video is playing right now. When one is, your processor will play it.";
+            if (w.PausedForBattery) return "Right now: the video is paused because your PC is running on battery. It plays again when you plug in.";
             if (w.VideoOnGpu) return "Right now: your graphics card is playing the video.";
             return VideoUseGpu && w.VideoGpuProblem is { } why
                 ? $"Right now: your processor is playing the video, because the graphics card couldn't ({why.TrimEnd('.')})."
@@ -141,6 +157,8 @@ public sealed partial class WallpapersViewModel : ObservableObject
                 WallpaperSource.Video => VideoName,
                 _ => Scenes.FirstOrDefault(s => s.IsSelected)?.Name ?? "a preset",
             };
+            if (screens > 0 && Source == WallpaperSource.Video && _host.Wallpaper.PausedForBattery)
+                return $"Showing {what}, paused because your PC is running on battery. It plays again when you plug in, or turn off \"Pause on battery\" in Settings > Video wallpapers.";
             return screens > 0 ? $"Showing {what} behind your desktop icons." : $"Set to show {what}.";
         }
     }

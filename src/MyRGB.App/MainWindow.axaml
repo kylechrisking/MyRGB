@@ -1736,6 +1736,9 @@
                   <TextBlock Classes="muted" TextWrapping="Wrap"
                              Text="{l:Tr settings.videoWallpapers.yourGraphicsCardHas}" />
                   <TextBlock Classes="body" TextWrapping="Wrap" Text="{Binding Wallpapers.DecodingNote}" />
+                  <ctl:Switch IsChecked="{Binding Wallpapers.VideoPauseOnBattery}" OnContent="{l:Tr settings.videoWallpapers.pauseOnBattery}" OffContent="{l:Tr settings.videoWallpapers.pauseOnBattery}" Margin="0,6,0,0" />
+                  <TextBlock Classes="muted" TextWrapping="Wrap"
+                             Text="{l:Tr settings.videoWallpapers.playingAVideoAll}" />
                 </StackPanel>
               </Border>
 

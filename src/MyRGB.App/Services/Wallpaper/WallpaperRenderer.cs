@@ -66,6 +66,8 @@ public sealed class WallpaperRenderer : IDisposable
     private TimeSpan _videoNext;
     private int _videoFrames;
     private bool _videoGpu;
+    private bool _videoHasFrame;
+    private DateTime _powerCheckedAt;
 
     /// <summary>Biggest frame asked of the decoder: full HD keeps copying cheap; Windows scales it to the screen.</summary>
     private const int VideoMaxWidth = 1920, VideoMaxHeight = 1080;
@@ -96,7 +98,13 @@ public sealed class WallpaperRenderer : IDisposable
     /// <summary>Why the graphics card couldn't decode the playing video, when it was asked to.</summary>
     public string? VideoGpuProblem { get; private set; }
 
-    /// <summary>Raised (on the wallpaper thread) when a video starts, so pages can say how it's decoded.</summary>
+    /// <summary>True while the video waits on its current frame because the PC runs on battery.</summary>
+    public bool PausedForBattery { get; private set; }
+
+    /// <summary>True while Windows says the PC runs on battery (checked every few seconds while a video wallpaper plays).</summary>
+    public bool OnBattery { get; private set; }
+
+    /// <summary>Raised (on the wallpaper thread) when a video starts or pauses for the battery, so pages can say what it's doing.</summary>
     public event Action? StatusChanged;
 
     /// <summary>Size of the current video frame (0 when no video plays).</summary>
@@ -177,7 +185,7 @@ public sealed class WallpaperRenderer : IDisposable
             double interval = 1.0 / 30;
             try
             {
-                if (_settings.WallpaperSource != WallpaperSource.Video || !_settings.WallpaperOn) CloseVideo();
+                if (_settings.WallpaperSource != WallpaperSource.Video || !_settings.WallpaperOn) { CloseVideo(); SetPaused(false); }
                 if (!_settings.WallpaperOn)
                 {
                     Latest = null;
@@ -193,9 +201,15 @@ public sealed class WallpaperRenderer : IDisposable
                 else if (_settings.WallpaperSource == WallpaperSource.Video)
                 {
                     Latest = null;
-                    // Hidden by a game and no lights following: the video waits where it is.
-                    if (!Hidden || WallpaperFeed.Wanted(TimeSpan.FromSeconds(2))) PlayVideo(dt);
-                    interval = 1.0 / 60; // check often; frames are only decoded when they're due
+                    CheckPower();
+                    if (PausedForBattery && _videoHasFrame && _settings.WallpaperVideo == _videoFor && _settings.VideoUseGpu == _videoGpu)
+                        interval = 0.5; // on battery: the video stays on the frame it showed last, decoding nothing
+                    else
+                    {
+                        // Hidden by a game and no lights following: the video waits where it is.
+                        if (!Hidden || WallpaperFeed.Wanted(TimeSpan.FromSeconds(2))) PlayVideo(PausedForBattery ? 0 : dt); // paused: just the first frame
+                        interval = 1.0 / 60; // check often; frames are only decoded when they're due
+                    }
                 }
                 else if (Hidden && !WallpaperFeed.Wanted(TimeSpan.FromSeconds(2)))
                 {
@@ -216,6 +230,27 @@ public sealed class WallpaperRenderer : IDisposable
             double sleep = interval - (clock.Elapsed.TotalSeconds - started);
             if (sleep > 0) _wake.WaitOne(TimeSpan.FromSeconds(sleep));
         }
+    }
+
+    /// <summary>Asks Windows about the battery every few seconds and pauses or resumes the video; the setting takes effect at once.</summary>
+    private void CheckPower()
+    {
+        if (DateTime.UtcNow - _powerCheckedAt >= TimeSpan.FromSeconds(5))
+        {
+            _powerCheckedAt = DateTime.UtcNow;
+            bool battery = PowerSource.OnBattery();
+            if (battery != OnBattery) _log.LogInformation("The PC is now running on {Power}", battery ? "battery" : "mains power");
+            OnBattery = battery;
+        }
+        SetPaused(_settings.VideoPauseOnBattery && OnBattery);
+    }
+
+    private void SetPaused(bool paused)
+    {
+        if (paused == PausedForBattery) return;
+        PausedForBattery = paused;
+        if (_video is not null) _log.LogInformation(paused ? "Wallpaper video paused: the PC is on battery" : "Wallpaper video playing again");
+        StatusChanged?.Invoke();
     }
 
     private void PlayVideo(double dt)
@@ -267,6 +302,7 @@ public sealed class WallpaperRenderer : IDisposable
             }
             _videoNext = at.Value;
             fresh = true;
+            _videoHasFrame = true;
         }
         if (!fresh) return;
         lock (_videoGate) (_videoFront, _videoBack) = (_videoBack, _videoFront);
@@ -282,6 +318,7 @@ public sealed class WallpaperRenderer : IDisposable
         _video = null;
         if (!keepPath) _videoFor = null;
         VideoSize = default;
+        _videoHasFrame = false;
         VideoOnGpu = false;
         VideoGpuProblem = null;
         lock (_videoGate) { _videoFront = []; _videoBack = []; }
