@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 
@@ -12,7 +11,7 @@ public sealed record FoundLight(NetworkLightKind Kind, string Address, string Na
 }
 
 /// <summary>
-/// Finds and checks lights on the home network. Only runs when the user asks ("Find lights" or "Add"),
+/// Finds and checks lights on the home network (WLED and Govee). Only runs when the user asks ("Find lights" or "Add"),
 /// never in the background.
 /// </summary>
 public static class LightFinder
@@ -27,8 +26,28 @@ public static class LightFinder
         if (address.StartsWith("http://", StringComparison.OrdinalIgnoreCase)) address = address[7..];
         address = address.TrimEnd('/');
         if (address.Length == 0) return null;
-        var info = await ReadWledInfoAsync(address, ct);
-        return info is null ? null : new FoundLight(NetworkLightKind.Wled, address, info.Name, info.LedCount);
+        // Ask both ways at once: a WLED light answers over the web, a Govee light over Govee's own protocol.
+        var wled = ReadWledInfoAsync(address, ct);
+        var govee = IPAddress.TryParse(address, out var ip) && ip.AddressFamily == AddressFamily.InterNetwork
+            ? CheckGoveeAsync(ip, ct) : Task.FromResult<FoundLight?>(null);
+        if (await wled is { } info) return new FoundLight(NetworkLightKind.Wled, address, info.Name, info.LedCount);
+        return await govee;
+    }
+
+    private static async Task<FoundLight?> CheckGoveeAsync(IPAddress ip, CancellationToken ct)
+    {
+        try
+        {
+            if (!await GoveeLan.AnswersAsync(ip, ct)) return null;
+            // The status answer doesn't say which model it is; a scan does.
+            var scan = await GoveeLan.ScanAsync(TimeSpan.FromSeconds(1.5), ct);
+            var model = scan.FirstOrDefault(s => s.Address.Equals(ip))?.Model ?? "";
+            return new FoundLight(NetworkLightKind.Govee, ip.ToString(), model.Length > 0 ? $"Govee {model}" : "Govee light", 1);
+        }
+        catch (SocketException)
+        {
+            return null;
+        }
     }
 
     internal static async Task<WledInfo?> ReadWledInfoAsync(string address, CancellationToken ct)
@@ -53,12 +72,33 @@ public static class LightFinder
     /// </summary>
     public static async Task<IReadOnlyList<FoundLight>> FindAsync(TimeSpan listenFor, CancellationToken ct = default)
     {
+        var govee = FindGoveeAsync(listenFor, ct);
+        var wled = FindWledAsync(listenFor, ct);
+        return [.. (await wled).Concat(await govee).OrderBy(l => l.Name, StringComparer.CurrentCultureIgnoreCase)];
+    }
+
+    private static async Task<IReadOnlyList<FoundLight>> FindGoveeAsync(TimeSpan listenFor, CancellationToken ct)
+    {
+        try
+        {
+            var found = await GoveeLan.ScanAsync(listenFor, ct);
+            return found.Select(g => new FoundLight(NetworkLightKind.Govee, g.Address.ToString(),
+                g.Model.Length > 0 ? $"Govee {g.Model}" : "Govee light", 1)).ToList();
+        }
+        catch (SocketException)
+        {
+            return []; // 4002 couldn't be opened: WLED lights can still be found
+        }
+    }
+
+    private static async Task<IReadOnlyList<FoundLight>> FindWledAsync(TimeSpan listenFor, CancellationToken ct)
+    {
         var query = MdnsQuery("_wled._tcp.local");
         var answered = new HashSet<IPAddress>();
         var sockets = new List<UdpClient>();
         try
         {
-            foreach (var local in LocalIPv4Addresses())
+            foreach (var local in GoveeLan.LocalIPv4Addresses())
             {
                 try
                 {
@@ -94,8 +134,9 @@ public static class LightFinder
 
         List<IPAddress> addresses;
         lock (answered) addresses = [.. answered];
-        var checks = await Task.WhenAll(addresses.Select(a => CheckAsync(a.ToString(), ct)));
-        return checks.OfType<FoundLight>().OrderBy(l => l.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        var checks = await Task.WhenAll(addresses.Select(async a =>
+            await ReadWledInfoAsync(a.ToString(), ct) is { } info ? new FoundLight(NetworkLightKind.Wled, a.ToString(), info.Name, info.LedCount) : null));
+        return checks.OfType<FoundLight>().ToList();
     }
 
     private static async Task ReceiveAsync(UdpClient udp, HashSet<IPAddress> answered, CancellationToken ct)
@@ -131,17 +172,4 @@ public static class LightFinder
     /// <summary>True for an mDNS response (QR bit set) that carries the "_wled" label anywhere in it.</summary>
     internal static bool MentionsWled(ReadOnlySpan<byte> packet) =>
         packet.Length > 12 && (packet[2] & 0x80) != 0 && packet.IndexOf("\u0005_wled"u8) >= 0;
-
-    private static IEnumerable<IPAddress> LocalIPv4Addresses()
-    {
-        foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
-        {
-            if (nic.OperationalStatus != OperationalStatus.Up || !nic.SupportsMulticast
-                || nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel)
-                continue;
-            foreach (var a in nic.GetIPProperties().UnicastAddresses)
-                if (a.Address.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(a.Address))
-                    yield return a.Address;
-        }
-    }
 }

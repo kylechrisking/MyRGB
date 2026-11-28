@@ -7,7 +7,7 @@ using MyRGB.Core.Devices;
 namespace MyRGB.Providers.Network;
 
 /// <summary>
-/// Lights on the home network that the user added in Settings: WLED for now. With none added it does
+/// Lights on the home network that the user added on the Devices page: WLED and Govee. With none added it does
 /// nothing at all, not even a network scan.
 /// </summary>
 public sealed class NetworkLightsProvider : IDeviceProvider, IHardwareRescan
@@ -20,7 +20,7 @@ public sealed class NetworkLightsProvider : IDeviceProvider, IHardwareRescan
     private readonly Func<IReadOnlyList<NetworkLight>> _lights;
     private readonly ILogger _log;
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly Dictionary<string, WledDevice> _online = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, IRgbDevice> _online = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _offlineSince = new(StringComparer.OrdinalIgnoreCase);
     private CancellationTokenSource? _retry;
     private bool _forceCheck;
@@ -64,16 +64,16 @@ public sealed class NetworkLightsProvider : IDeviceProvider, IHardwareRescan
         await _gate.WaitAsync(ct);
         try
         {
-            var wanted = _lights().Where(l => l.Kind == NetworkLightKind.Wled)
-                .Select(l => l.Address.Trim()).Where(a => a.Length > 0)
-                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var lights = _lights().Where(l => l.Address.Trim().Length > 0)
+                .DistinctBy(l => l.Address.Trim(), StringComparer.OrdinalIgnoreCase).ToList();
+            var wanted = lights.Select(l => l.Address.Trim()).ToList();
 
             // Forget lights the user removed.
             lock (_online)
             {
                 foreach (var gone in _online.Keys.Except(wanted, StringComparer.OrdinalIgnoreCase).ToList())
                 {
-                    _online[gone].Dispose();
+                    (_online[gone] as IDisposable)?.Dispose();
                     _online.Remove(gone);
                 }
             }
@@ -90,9 +90,11 @@ public sealed class NetworkLightsProvider : IDeviceProvider, IHardwareRescan
             bool force = _forceCheck;
             _forceCheck = false;
             var now = DateTime.UtcNow;
-            var toCheck = wanted.Where(a => !_online.ContainsKey(a)
-                && (force || !_offlineSince.TryGetValue(a, out var since) || now - since >= RetryOffline)).ToList();
-            await Task.WhenAll(toCheck.Select(a => ConnectAsync(a, ct)));
+            List<NetworkLight> toCheck;
+            lock (_online)
+                toCheck = lights.Where(l => !_online.ContainsKey(l.Address.Trim())
+                    && (force || !_offlineSince.TryGetValue(l.Address.Trim(), out var since) || now - since >= RetryOffline)).ToList();
+            await Task.WhenAll(toCheck.Select(l => ConnectAsync(l, ct)));
 
             List<IRgbDevice> devices;
             lock (_online) devices = wanted.Where(_online.ContainsKey).Select(a => (IRgbDevice)_online[a]).ToList();
@@ -108,24 +110,74 @@ public sealed class NetworkLightsProvider : IDeviceProvider, IHardwareRescan
         }
     }
 
-    private async Task ConnectAsync(string address, CancellationToken ct)
+    private async Task ConnectAsync(NetworkLight light, CancellationToken ct)
     {
-        var info = await LightFinder.ReadWledInfoAsync(address, ct);
-        var ip = info is null ? null : await ResolveAsync(address, ct);
+        string address = light.Address.Trim();
+        IRgbDevice? device = null;
+        try
+        {
+            device = light.Kind switch
+            {
+                NetworkLightKind.Wled => await ConnectWledAsync(address, ct),
+                NetworkLightKind.Govee => await ConnectGoveeAsync(address, light.Name, ct),
+                _ => null,
+            };
+        }
+        catch (SocketException ex)
+        {
+            _log.LogWarning("Couldn't reach {Kind} light at {Address}: {Reason}", light.Kind, address, ex.Message);
+        }
         lock (_online)
         {
-            if (info is null || ip is null)
+            if (device is null)
             {
                 if (!_offlineSince.ContainsKey(address))
-                    _log.LogInformation("WLED light at {Address} isn't answering", address);
+                    _log.LogInformation("{Kind} light at {Address} isn't answering", light.Kind, address);
                 _offlineSince[address] = DateTime.UtcNow;
                 return;
             }
             _offlineSince.Remove(address);
-            _online[address] = new WledDevice(ip, info);
+            _online[address] = device;
         }
+    }
+
+    private async Task<IRgbDevice?> ConnectWledAsync(string address, CancellationToken ct)
+    {
+        var info = await LightFinder.ReadWledInfoAsync(address, ct);
+        var ip = info is null ? null : await ResolveAsync(address, ct);
+        if (info is null || ip is null) return null;
         _log.LogInformation("WLED light {Name} at {Address}: {Leds} LEDs{Matrix}, WLED {Version}",
             info.Name, address, info.LedCount, info.MatrixWidth > 0 ? $" ({info.MatrixWidth}x{info.MatrixHeight})" : "", info.Version);
+        return new WledDevice(ip, info);
+    }
+
+    private async Task<IRgbDevice?> ConnectGoveeAsync(string address, string? name, CancellationToken ct)
+    {
+        if (await ResolveAsync(address, ct) is not { AddressFamily: AddressFamily.InterNetwork } ip) return null;
+        if (!await GoveeLan.AnswersAsync(ip, ct)) return null;
+        // The scan answer carries the light's own id, so its place on the canvas survives a new IP address.
+        var scan = await GoveeLan.ScanAsync(TimeSpan.FromSeconds(1.5), ct);
+        var info = scan.FirstOrDefault(s => s.Address.Equals(ip));
+        _log.LogInformation("Govee light {Model} at {Address}", info?.Model ?? "(model unknown)", address);
+        return new GoveeDevice(ip, info?.DeviceId ?? address, info?.Model ?? "", name);
+    }
+
+    /// <summary>True if the light answers now; used while waiting for a missing one to come back.</summary>
+    private static async Task<bool> AnswersAsync(NetworkLight light, CancellationToken ct)
+    {
+        try
+        {
+            return light.Kind switch
+            {
+                NetworkLightKind.Wled => await LightFinder.ReadWledInfoAsync(light.Address.Trim(), ct) is not null,
+                NetworkLightKind.Govee => await ResolveAsync(light.Address.Trim(), ct) is { } ip && await GoveeLan.AnswersAsync(ip, ct),
+                _ => false,
+            };
+        }
+        catch (SocketException)
+        {
+            return false;
+        }
     }
 
     private static async Task<IPAddress?> ResolveAsync(string address, CancellationToken ct)
@@ -152,14 +204,14 @@ public sealed class NetworkLightsProvider : IDeviceProvider, IHardwareRescan
             if (t.IsCanceled) return;
             try
             {
-                List<string> missing;
+                List<NetworkLight> missing;
                 await _gate.WaitAsync(cts.Token);
-                try { missing = [.. _offlineSince.Keys]; }
+                try { missing = _lights().Where(l => _offlineSince.ContainsKey(l.Address.Trim())).ToList(); }
                 finally { _gate.Release(); }
                 if (missing.Count == 0) return;
 
-                var answers = await Task.WhenAll(missing.Select(a => LightFinder.ReadWledInfoAsync(a, cts.Token)));
-                if (answers.Any(a => a is not null)) LightsChanged();
+                var answers = await Task.WhenAll(missing.Select(l => AnswersAsync(l, cts.Token)));
+                if (answers.Any(a => a)) LightsChanged();
                 else ScheduleRetry();
             }
             catch (OperationCanceledException) { }
@@ -176,7 +228,7 @@ public sealed class NetworkLightsProvider : IDeviceProvider, IHardwareRescan
     public ValueTask DisposeAsync()
     {
         _retry?.Cancel();
-        foreach (var d in _online.Values) d.Dispose();
+        foreach (var d in _online.Values) (d as IDisposable)?.Dispose();
         _online.Clear();
         SetStatus(ProviderStatus.Stopped, null);
         return ValueTask.CompletedTask;

@@ -897,13 +897,13 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <!-- Lights on the home network (WLED for now). Nothing on the network is touched until one is added. -->
+                <!-- Lights on the home network (WLED and Govee). Nothing on the network is touched until one is added. -->
                 <Border Classes="panel" DataContext="{Binding NetworkLights}" x:DataType="vm:NetworkLightsViewModel">
                   <StackPanel Spacing="10">
                     <StackPanel Spacing="2">
                       <TextBlock Classes="section" Text="Lights on your network" />
                       <TextBlock Classes="muted" TextWrapping="Wrap"
-                                 Text="Room lights running WLED, the free software for LED strips, can join in with your PC. Add one by its address, or let MyRGB look for them. MyRGB only talks to lights you add here." />
+                                 Text="Room lights can join in with your PC: LED strips running WLED, and Govee lights. For Govee, first turn on LAN Control for each light in the Govee Home app. Add a light by its address, or let MyRGB look for them. MyRGB only talks to lights you add here." />
                     </StackPanel>
                     <ItemsControl ItemsSource="{Binding Lights}" IsVisible="{Binding HasLights}">
                       <ItemsControl.ItemTemplate>
@@ -940,7 +940,7 @@
                     </ItemsControl>
                     <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding Note}" IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
-                               Text="While MyRGB runs, it sets the light's colors itself. Close MyRGB or remove the light and it goes back to its own effect after a few seconds. Philips Hue, Nanoleaf and Govee aren't supported yet." />
+                               Text="While MyRGB runs, it sets the light's colors itself. A Govee light takes one color for the whole light. Close MyRGB or remove a WLED light and it goes back to its own effect after a few seconds; a Govee light keeps the last color it was given. Philips Hue and Nanoleaf aren't supported yet." />
                   </StackPanel>
                 </Border>
 

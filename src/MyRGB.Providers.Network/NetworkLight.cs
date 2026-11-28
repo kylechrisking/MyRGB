@@ -2,9 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace MyRGB.Providers.Network;
 
-/// <summary>What kind of light lives at an address. Only WLED for now; Hue, Nanoleaf and Govee come next.</summary>
+/// <summary>What kind of light lives at an address. Nanoleaf and Hue come next.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<NetworkLightKind>))]
-public enum NetworkLightKind { Wled }
+public enum NetworkLightKind { Wled, Govee }
 
 /// <summary>
 /// A light on the home network the user added (by hand or with "Find lights"). MyRGB only talks to

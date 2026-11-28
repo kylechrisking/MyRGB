@@ -8,7 +8,7 @@ using MyRGB.Providers.Network;
 namespace MyRGB.App.ViewModels;
 
 /// <summary>
-/// "Lights on your network" on the Devices page: WLED lights the user adds by address or finds with a
+/// "Lights on your network" on the Devices page: WLED and Govee lights the user adds by address or finds with a
 /// short look around the network. Nothing on the network is touched until a light is added here.
 /// </summary>
 public sealed partial class NetworkLightsViewModel : ObservableObject
@@ -39,7 +39,7 @@ public sealed partial class NetworkLightsViewModel : ObservableObject
     private async Task Add()
     {
         var address = NewAddress.Trim();
-        if (address.Length == 0) { Note = "Type the light's address first, as shown in the WLED app."; return; }
+        if (address.Length == 0) { Note = "Type the light's address first. The WLED app shows it; for Govee, look in your router's list of devices."; return; }
         IsBusy = true;
         Note = $"Asking {address}…";
         try
@@ -47,7 +47,7 @@ public sealed partial class NetworkLightsViewModel : ObservableObject
             var light = await LightFinder.CheckAsync(address);
             if (light is null)
             {
-                Note = $"Nothing at {address} answered like a WLED light. Check the address in the WLED app, and that this PC is on the same network.";
+                Note = $"Nothing at {address} answered like a WLED or Govee light. Check the address, that this PC is on the same network, and for Govee that LAN Control is on in the Govee Home app.";
                 return;
             }
             AddLight(light);
@@ -65,7 +65,7 @@ public sealed partial class NetworkLightsViewModel : ObservableObject
         IsBusy = true;
         Found.Clear();
         OnPropertyChanged(nameof(HasFound));
-        Note = "Looking for WLED lights on your network…";
+        Note = "Looking for lights on your network…";
         try
         {
             var found = await LightFinder.FindAsync(TimeSpan.FromSeconds(3));
@@ -73,7 +73,7 @@ public sealed partial class NetworkLightsViewModel : ObservableObject
                 Found.Add(new FoundLightRow(f, this));
             OnPropertyChanged(nameof(HasFound));
             Note = found.Count == 0
-                ? "No WLED lights answered. If you know a light's address, type it in and press Add."
+                ? "No lights answered. Govee lights only answer once LAN Control is on in the Govee Home app. If you know a light's address, type it in and press Add."
                 : Found.Count == 0 ? "Found only lights you've already added." : "";
         }
         catch (Exception ex)
@@ -97,7 +97,7 @@ public sealed partial class NetworkLightsViewModel : ObservableObject
         foreach (var f in Found.Where(f => SameLight(f.Light.Address, light.Address)).ToList()) Found.Remove(f);
         OnPropertyChanged(nameof(HasLights));
         OnPropertyChanged(nameof(HasFound));
-        Note = $"Added {light.Name} ({light.LedCount} LEDs). To put it where it sits in your room, turn on Arrange devices in the Studio.";
+        Note = $"Added {light.Name} ({Size(light)}). To put it where it sits in your room, turn on Arrange devices in the Studio.";
         Save();
     }
 
@@ -116,6 +116,10 @@ public sealed partial class NetworkLightsViewModel : ObservableObject
         var provider = _host.Devices.Providers.OfType<NetworkLightsProvider>().FirstOrDefault();
         foreach (var l in Lights) l.Online = provider?.IsOnline(l.Light.Address) ?? false;
     }
+
+    /// <summary>"60 LEDs" for a strip; Govee's local control only sets the whole light.</summary>
+    internal static string Size(FoundLight light) =>
+        light.Kind == NetworkLightKind.Govee ? "one color for the whole light" : light.LedCount == 1 ? "1 LED" : $"{light.LedCount} LEDs";
 
     private static bool SameLight(string a, string b) => string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
 }
@@ -140,7 +144,7 @@ public sealed partial class FoundLightRow(FoundLight light, NetworkLightsViewMod
 {
     public FoundLight Light { get; } = light;
     public string Name => Light.Name;
-    public string Detail => $"{Light.Address} · {Light.LedCount} LEDs";
+    public string Detail => $"{Light.Address} · {NetworkLightsViewModel.Size(Light)}";
 
     [RelayCommand]
     private void Add() => owner.AddLight(Light);

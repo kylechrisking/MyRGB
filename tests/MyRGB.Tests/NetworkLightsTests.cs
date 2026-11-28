@@ -73,3 +73,27 @@ public class NetworkLightsTests
         Assert.True(LightFinder.MentionsWled(answer));
     }
 }
+
+public class GoveeLanTests
+{
+    [Fact]
+    public void Writes_govee_commands()
+    {
+        Assert.Equal("""{"msg":{"cmd":"colorwc","data":{"color":{"r":255,"g":16,"b":0},"colorTemInKelvin":0}}}""",
+            System.Text.Encoding.UTF8.GetString(GoveeLan.Color(new Rgb(255, 16, 0))));
+        Assert.Equal("""{"msg":{"cmd":"turn","data":{"value":0}}}""", System.Text.Encoding.UTF8.GetString(GoveeLan.Turn(false)));
+        Assert.Equal("""{"msg":{"cmd":"scan","data":{"account_topic":"reserve"}}}""", System.Text.Encoding.UTF8.GetString(GoveeLan.Scan()));
+    }
+
+    [Fact]
+    public void Reads_a_scan_answer()
+    {
+        var msg = GoveeLan.Parse("""{"msg":{"cmd":"scan","data":{"ip":"192.168.1.23","device":"1F:80:C5:32:32:36:72:4E","sku":"H6199","bleVersionHard":"3.01.01","bleVersionSoft":"1.03.01","wifiVersionHard":"1.00.10","wifiVersionSoft":"1.02.03"}}}"""u8);
+        Assert.Equal("scan", msg?.Cmd);
+        var info = GoveeLan.ReadScan(msg?.Data);
+        Assert.Equal("192.168.1.23", info?.Address.ToString());
+        Assert.Equal("H6199", info?.Model);
+        Assert.Null(GoveeLan.Parse("not json"u8));
+        Assert.Null(GoveeLan.ReadScan(GoveeLan.Parse("""{"msg":{"cmd":"scan","data":{"ip":"nope"}}}"""u8)?.Data));
+    }
+}
