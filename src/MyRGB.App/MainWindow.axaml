@@ -897,6 +897,53 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
+                <!-- Lights on the home network (WLED for now). Nothing on the network is touched until one is added. -->
+                <Border Classes="panel" DataContext="{Binding NetworkLights}" x:DataType="vm:NetworkLightsViewModel">
+                  <StackPanel Spacing="10">
+                    <StackPanel Spacing="2">
+                      <TextBlock Classes="section" Text="Lights on your network" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap"
+                                 Text="Room lights running WLED, the free software for LED strips, can join in with your PC. Add one by its address, or let MyRGB look for them. MyRGB only talks to lights you add here." />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Lights}" IsVisible="{Binding HasLights}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:NetworkLightRow">
+                          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Margin="0,0,0,6">
+                            <StackPanel Spacing="1">
+                              <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Classes="muted" FontSize="12" Text="{Binding Address}" FontFamily="{DynamicResource BrandMono}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Classes="muted" Text="{Binding StatusText}" VerticalAlignment="Center" />
+                            <Button Grid.Column="2" Classes="ghost" Content="Remove" Command="{Binding RemoveCommand}" VerticalAlignment="Center" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                      <TextBox Text="{Binding NewAddress}" PlaceholderText="Address, e.g. 192.168.1.40" />
+                      <Button Grid.Column="1" Classes="accent" Content="Add" Command="{Binding AddCommand}" IsEnabled="{Binding IsIdle}" />
+                      <Button Grid.Column="2" Classes="ghost" Content="Find lights" Command="{Binding FindCommand}" IsEnabled="{Binding IsIdle}" />
+                    </Grid>
+                    <TextBlock Classes="kicker" Text="Found on your network" IsVisible="{Binding HasFound}" />
+                    <ItemsControl ItemsSource="{Binding Found}" IsVisible="{Binding HasFound}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FoundLightRow">
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,0,0,6">
+                            <StackPanel Spacing="1">
+                              <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Classes="muted" FontSize="12" Text="{Binding Detail}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="ghost" Content="Add" Command="{Binding AddCommand}" VerticalAlignment="Center" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding Note}" IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+                               Text="While MyRGB runs, it sets the light's colors itself. Close MyRGB or remove the light and it goes back to its own effect after a few seconds. Philips Hue, Nanoleaf and Govee aren't supported yet." />
+                  </StackPanel>
+                </Border>
+
                 <Border Classes="panel">
                   <StackPanel Spacing="8">
                     <TextBlock Classes="section" Text="Something missing?" />

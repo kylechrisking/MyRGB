@@ -5,6 +5,7 @@ using MyRGB.Core.Devices;
 using MyRGB.Core.Layout;
 using MyRGB.Core.Presets;
 using MyRGB.Core.Sensors;
+using MyRGB.Providers.Network;
 using MyRGB.Providers.OpenRgb;
 
 namespace MyRGB.App.Services;
@@ -139,6 +140,9 @@ public sealed class AppSettings
     /// <summary>The language MyRGB shows, by code ("de", "pt-BR"); null follows Windows. Applies on the next start.</summary>
     public string? Language { get; set; }
     public OpenRgbOptions OpenRgb { get; set; } = new();
+
+    /// <summary>Lights on the home network (WLED for now) the user added; none until they add one.</summary>
+    public List<NetworkLight> NetworkLights { get; set; } = [];
 }
 
 public sealed class SettingsStore(string dataDirectory)

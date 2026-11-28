@@ -89,6 +89,7 @@ public sealed partial class MainViewModel : ObservableObject
         _host = host;
         Studio = new StudioViewModel(host);
         Vendors = new VendorAppsViewModel(host);
+        NetworkLights = new NetworkLightsViewModel(host);
         Account = new AccountViewModel(host);
         Community = new CommunityViewModel(host, Account);
         Monitoring = new MonitoringViewModel(host);
@@ -185,6 +186,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Settings > Game lighting.</summary>
     public GameLightingViewModel Games { get; }
     public VendorAppsViewModel Vendors { get; }
+    public NetworkLightsViewModel NetworkLights { get; }
     public AccountViewModel Account { get; }
     public CommunityViewModel Community { get; }
     public MonitoringViewModel Monitoring { get; }

@@ -13,6 +13,7 @@ using MyRGB.Core.Presets;
 using MyRGB.Core.Sensors;
 using MyRGB.Core.Vendors;
 using MyRGB.Providers.Corsair;
+using MyRGB.Providers.Network;
 using MyRGB.Providers.OpenRgb;
 using MyRGB.Scripting;
 using MyRGB.Sensors;
@@ -110,6 +111,7 @@ public sealed class AppHost : IAsyncDisposable
         [
             new CorsairProvider(Logs.CreateLogger<CorsairProvider>(), Path.Combine(_options.DataDirectory, "screens", "corsair-keyboard")),
             new OpenRgbProvider(Settings.OpenRgb, Logs.CreateLogger<OpenRgbProvider>(), () => Settings.ZoneSizes),
+            new NetworkLightsProvider(() => Settings.NetworkLights, Logs.CreateLogger<NetworkLightsProvider>()),
             // More native providers (Razer, Logitech, ...) register here as they're written.
         ];
         foreach (var p in providers) Devices.AddProvider(p);
@@ -658,6 +660,14 @@ public sealed class AppHost : IAsyncDisposable
         Engine.Fps = fps;
         Settings.Fps = Engine.Fps;
         ScheduleSave();
+    }
+
+    /// <summary>The user added or removed a network light: save, and have the provider look again now.</summary>
+    public void SetNetworkLights(IEnumerable<NetworkLight> lights)
+    {
+        Settings.NetworkLights = [.. lights]; // a new list: the provider reads it on another thread
+        ScheduleSave();
+        Devices.Providers.OfType<NetworkLightsProvider>().FirstOrDefault()?.LightsChanged();
     }
 
     public void ScheduleSave()
