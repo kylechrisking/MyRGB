@@ -13,6 +13,13 @@ class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // The background copy that repaints the desktop if the main one is ended with its wallpaper up.
+        if (args.Length == 2 && args[0] == Services.Wallpaper.DesktopGuard.WatchArgument)
+        {
+            if (int.TryParse(args[1], out int owner)) Services.Wallpaper.DesktopGuard.Watch(owner);
+            return;
+        }
+
         StartMinimized = args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
         LogCrashes();
 

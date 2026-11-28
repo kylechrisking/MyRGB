@@ -34,6 +34,7 @@ public sealed class WallpaperDisplay : IDisposable
         _renderer.FrameReady += OnFrame;
         _renderer.Changed += () => Dispatcher.UIThread.Post(Update);
         _watch = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => Watch());
+        DesktopGuard.CleanUpAfterLastRun();
         Update();
     }
 
@@ -74,6 +75,7 @@ public sealed class WallpaperDisplay : IDisposable
         if (_windows.Count > 0)
         {
             _log.LogInformation("Wallpaper showing on {Count} screen(s), source {Source}", _windows.Count, _renderer.Source);
+            DesktopGuard.Showing();
             _watch.Start();
         }
         StatusChanged?.Invoke();
@@ -177,6 +179,7 @@ public sealed class WallpaperDisplay : IDisposable
         _windows.Clear();
         _renderer.Hidden = false;
         DesktopLayer.RepaintWallpaper();
+        DesktopGuard.Clear();
     }
 
     public void Dispose()
