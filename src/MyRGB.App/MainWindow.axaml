@@ -81,13 +81,13 @@
           <TabItem.Header>
             <StackPanel Orientation="Horizontal" Spacing="12">
               <PathIcon Data="{x:Static ctl:NavIcons.Home}" />
-              <TextBlock Text="Home" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr nav.home}" VerticalAlignment="Center" />
             </StackPanel>
           </TabItem.Header>
           <ScrollViewer>
             <StackPanel Spacing="24" Margin="0,0,8,8">
               <StackPanel Spacing="4">
-                <TextBlock Classes="h1" Text="Your setup" />
+                <TextBlock Classes="h1" Text="{l:Tr home.yourSetup}" />
                 <TextBlock Classes="muted" Text="{Binding HomeSummary}" />
               </StackPanel>
 
@@ -97,7 +97,7 @@
                   <StackPanel Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                       <TextBlock Classes="section" Text="{Binding WhatsNewTitle}" VerticalAlignment="Center" />
-                      <TextBlock Classes="hand" Text="fresh!" VerticalAlignment="Center" />
+                      <TextBlock Classes="hand" Text="{l:Tr home.fresh}" VerticalAlignment="Center" />
                     </StackPanel>
                     <ItemsControl ItemsSource="{Binding WhatsNewLines}">
                       <ItemsControl.ItemTemplate>
@@ -108,8 +108,8 @@
                     </ItemsControl>
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="6" Margin="16,0,0,0" VerticalAlignment="Top">
-                    <Button Classes="ghost" Content="Got it" Command="{Binding DismissWhatsNewCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-                    <Button Classes="link" Content="Full notes ›" Command="{Binding OpenReleaseNotesCommand}" />
+                    <Button Classes="ghost" Content="{l:Tr home.gotIt}" Command="{Binding DismissWhatsNewCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                    <Button Classes="link" Content="{l:Tr home.fullNotes}" Command="{Binding OpenReleaseNotesCommand}" />
                   </StackPanel>
                 </Grid>
               </Border>
@@ -120,7 +120,7 @@
                   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Classes="kicker" Text="{Binding PlayingLabel}" VerticalAlignment="Center" />
-                      <Button Grid.Column="1" Classes="link" Content="Studio ›" Command="{Binding NavigateCommand}" CommandParameter="studio" Margin="0,-6,-8,-6" />
+                      <Button Grid.Column="1" Classes="link" Content="{l:Tr home.studio}" Command="{Binding NavigateCommand}" CommandParameter="studio" Margin="0,-6,-8,-6" />
                     </Grid>
                     <Panel Grid.Row="1" Height="64">
                       <ctl:EffectPreview Definition="{Binding ActiveCard.Effect}" Settings="{Binding ActiveCard.Settings}" Animate="{Binding !Paused}"
@@ -130,16 +130,16 @@
                     <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
                       <TextBlock Text="{Binding ActivePresetName}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" Margin="8,-6,-8,-6">
-                        <Button Classes="icon" Command="{Binding PreviousPresetCommand}" ToolTip.Tip="Previous preset">
+                        <Button Classes="icon" Command="{Binding PreviousPresetCommand}" ToolTip.Tip="{l:Tr home.previousPreset}">
                           <PathIcon Data="{x:Static ctl:NavIcons.Previous}" />
                         </Button>
                         <Button Classes="icon" Command="{Binding TogglePauseCommand}" ToolTip.Tip="{Binding PauseTip}">
                           <PathIcon Data="{Binding PauseIcon}" />
                         </Button>
-                        <Button Classes="icon" Command="{Binding NextPresetCommand}" ToolTip.Tip="Next preset">
+                        <Button Classes="icon" Command="{Binding NextPresetCommand}" ToolTip.Tip="{l:Tr home.nextPreset}">
                           <PathIcon Data="{x:Static ctl:NavIcons.Next}" />
                         </Button>
-                        <Button Classes="icon" Command="{Binding ShuffleCommand}" ToolTip.Tip="Random preset">
+                        <Button Classes="icon" Command="{Binding ShuffleCommand}" ToolTip.Tip="{l:Tr home.randomPreset}">
                           <PathIcon Data="{x:Static ctl:NavIcons.Shuffle}" />
                         </Button>
                       </StackPanel>
@@ -150,33 +150,33 @@
                 <Border Grid.Column="1" Classes="panel" Padding="16,14">
                   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
                     <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Classes="kicker" Text="System" VerticalAlignment="Center" />
-                      <Button Grid.Column="1" Classes="link" Content="Monitoring ›" Command="{Binding NavigateCommand}" CommandParameter="monitoring" Margin="0,-6,-8,-6" />
+                      <TextBlock Classes="kicker" Text="{l:Tr home.system}" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="link" Content="{l:Tr home.monitoring}" Command="{Binding NavigateCommand}" CommandParameter="monitoring" Margin="0,-6,-8,-6" />
                     </Grid>
                     <StackPanel Grid.Row="1" Spacing="7" VerticalAlignment="Center">
                       <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Classes="muted" FontSize="13" Text="CPU" />
+                        <TextBlock Classes="muted" FontSize="13" Text="{l:Tr home.cpu}" />
                         <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{Binding Monitoring.CpuSummary}" />
                       </Grid>
                       <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Classes="muted" FontSize="13" Text="GPU" />
+                        <TextBlock Classes="muted" FontSize="13" Text="{l:Tr home.gpu}" />
                         <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{Binding Monitoring.GpuSummary}" />
                       </Grid>
                       <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Classes="muted" FontSize="13" Text="Memory" />
+                        <TextBlock Classes="muted" FontSize="13" Text="{l:Tr home.memory}" />
                         <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{Binding Monitoring.MemorySummary}" />
                       </Grid>
                     </StackPanel>
                     <ctl:Sparkline Grid.Row="2" Values="{Binding Monitoring.Cpu.History}" Color="{Binding Monitoring.Cpu.Color}" Maximum="100" Height="26"
-                                   ToolTip.Tip="CPU load, last few minutes" />
+                                   ToolTip.Tip="{l:Tr home.cpuLoadLastFew}" />
                   </Grid>
                 </Border>
 
                 <Border Grid.Column="2" Classes="panel" Padding="16,14">
                   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
                     <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Classes="kicker" Text="Cooling" VerticalAlignment="Center" />
-                      <Button Grid.Column="1" Classes="link" Content="Cooling ›" Command="{Binding NavigateCommand}" CommandParameter="cooling" Margin="0,-6,-8,-6" />
+                      <TextBlock Classes="kicker" Text="{l:Tr home.cooling}" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="link" Content="{l:Tr home.coolingLink}" Command="{Binding NavigateCommand}" CommandParameter="cooling" Margin="0,-6,-8,-6" />
                     </Grid>
                     <StackPanel Grid.Row="1" Spacing="2" VerticalAlignment="Center">
                       <TextBlock Text="{Binding Cooling.Hottest}" FontSize="30" FontWeight="Bold" Foreground="{Binding Cooling.HottestBrush}" />
@@ -206,11 +206,11 @@
               <!-- Devices -->
               <StackPanel Spacing="12">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Classes="section" Text="Devices" VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Classes="link" Content="Manage devices ›" Command="{Binding NavigateCommand}" CommandParameter="devices" />
+                  <TextBlock Classes="section" Text="{l:Tr home.devices}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="link" Content="{l:Tr home.manageDevices}" Command="{Binding NavigateCommand}" CommandParameter="devices" />
                 </Grid>
                 <Border Classes="panel" IsVisible="{Binding !HasDevices}">
-                  <TextBlock Classes="body" Text="Looking for your devices. This takes a few seconds the first time, while OpenRGB scans your hardware." />
+                  <TextBlock Classes="body" Text="{l:Tr home.lookingForYourDevices}" />
                 </Border>
                 <ItemsControl ItemsSource="{Binding Devices}">
                   <ItemsControl.ItemsPanel>
@@ -229,7 +229,7 @@
                               <TextBlock Classes="muted" Text="{Binding Type}" />
                             </StackPanel>
                             <Button Grid.Column="2" Classes="icon" Command="{Binding FlashCommand}" IsVisible="{Binding CanFlash}" VerticalAlignment="Top"
-                                    Margin="6,-4,-6,0" ToolTip.Tip="Flash: pulse this device white so you can spot it">
+                                    Margin="6,-4,-6,0" ToolTip.Tip="{l:Tr home.flashPulseThisDevice}">
                               <PathIcon Data="{x:Static ctl:NavIcons.Flash}" />
                             </Button>
                           </Grid>
@@ -270,8 +270,8 @@
               <!-- Quick presets -->
               <StackPanel Spacing="12">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Classes="section" Text="Quick presets" VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Classes="link" Content="All presets ›" Command="{Binding NavigateCommand}" CommandParameter="presets" />
+                  <TextBlock Classes="section" Text="{l:Tr home.quickPresets}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="link" Content="{l:Tr home.allPresets}" Command="{Binding NavigateCommand}" CommandParameter="presets" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding QuickPresets}">
                   <ItemsControl.ItemsPanel>
@@ -297,33 +297,33 @@
                 <StackPanel Spacing="16">
                   <Grid ColumnDefinitions="*,Auto,Auto">
                     <StackPanel Spacing="3">
-                      <TextBlock Classes="section" Text="How MyRGB works" />
-                      <TextBlock Classes="muted" Text="Four ideas, and you know the whole app." />
+                      <TextBlock Classes="section" Text="{l:Tr home.howMyrgbWorks}" />
+                      <TextBlock Classes="muted" Text="{l:Tr home.fourIdeasAndYou}" />
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="link" Content="Hide" Command="{Binding HideHomeGuideCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
-                            ToolTip.Tip="The tour stays under How it works at the top, and in Settings." />
-                    <Button Grid.Column="2" Classes="ghost" Content="Take the tour" Command="{Binding OpenTourCommand}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Classes="link" Content="{l:Tr home.hide}" Command="{Binding HideHomeGuideCommand}" VerticalAlignment="Center" Margin="0,0,8,0"
+                            ToolTip.Tip="{l:Tr home.theTourStaysUnder}" />
+                    <Button Grid.Column="2" Classes="ghost" Content="{l:Tr home.takeTheTour}" Command="{Binding OpenTourCommand}" VerticalAlignment="Center" />
                   </Grid>
                   <UniformGrid Columns="4">
                     <StackPanel Spacing="6" Margin="0,0,18,0">
-                      <TextBlock Classes="kicker" Text="1 · Devices" />
-                      <TextBlock FontWeight="SemiBold" Text="It finds your hardware" />
-                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Every brand, through MyRGB's own drivers and the bundled OpenRGB." />
+                      <TextBlock Classes="kicker" Text="{l:Tr home.1Devices}" />
+                      <TextBlock FontWeight="SemiBold" Text="{l:Tr home.itFindsYourHardware}" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr home.everyBrandThroughMyrgb}" />
                     </StackPanel>
                     <StackPanel Spacing="6" Margin="0,0,18,0">
-                      <TextBlock Classes="kicker" Text="2 · Layout" />
-                      <TextBlock FontWeight="SemiBold" Text="Your desk is one canvas" />
-                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Place devices where they sit, and effects flow across all of them." />
+                      <TextBlock Classes="kicker" Text="{l:Tr home.2Layout}" />
+                      <TextBlock FontWeight="SemiBold" Text="{l:Tr home.yourDeskIsOne}" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr home.placeDevicesWhereThey}" />
                     </StackPanel>
                     <StackPanel Spacing="6" Margin="0,0,18,0">
-                      <TextBlock Classes="kicker" Text="3 · Presets" />
-                      <TextBlock FontWeight="SemiBold" Text="Pick a look, or make one" />
-                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Apply a preset in one click, or tune any effect live in the Studio." />
+                      <TextBlock Classes="kicker" Text="{l:Tr home.3Presets}" />
+                      <TextBlock FontWeight="SemiBold" Text="{l:Tr home.pickALookOr}" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr home.applyAPresetIn}" />
                     </StackPanel>
                     <StackPanel Spacing="6">
-                      <TextBlock Classes="kicker" Text="4 · Anywhere" />
-                      <TextBlock FontWeight="SemiBold" Text="It runs in the tray" />
-                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="Close the window and the lights stay on. Use the tray or a Stream Deck." />
+                      <TextBlock Classes="kicker" Text="{l:Tr home.4Anywhere}" />
+                      <TextBlock FontWeight="SemiBold" Text="{l:Tr home.itRunsInThe}" />
+                      <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr home.closeTheWindowAnd}" />
                     </StackPanel>
                   </UniformGrid>
                 </StackPanel>
@@ -337,18 +337,18 @@
           <TabItem.Header>
             <StackPanel Orientation="Horizontal" Spacing="12">
               <PathIcon Data="{x:Static ctl:NavIcons.Presets}" />
-              <TextBlock Text="Presets" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr nav.presets}" VerticalAlignment="Center" />
             </StackPanel>
           </TabItem.Header>
           <DockPanel>
             <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8">
               <StackPanel Spacing="4">
-                <TextBlock Classes="h1" Text="Presets" />
-                <TextBlock Classes="muted" Text="Click a preset to light everything with it. Right-click to edit, delete or export. Editing a built-in makes your own copy." />
+                <TextBlock Classes="h1" Text="{l:Tr nav.presets}" />
+                <TextBlock Classes="muted" Text="{l:Tr presets.clickAPresetTo}" />
               </StackPanel>
-              <TextBox Grid.Column="1" Text="{Binding ImportPresetPath}" PlaceholderText="Path to a .myrgb-preset.json file" Width="260" VerticalAlignment="Center" Margin="16,0,10,0" />
-              <Button Grid.Column="2" Classes="ghost" Content="Import" Command="{Binding ImportPresetCommand}" VerticalAlignment="Center" Margin="0,0,10,0" />
-              <Button Grid.Column="3" Classes="accent" Content="+ New preset" Command="{Binding NewPresetCommand}" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding ImportPresetPath}" PlaceholderText="{l:Tr presets.pathToAMyrgb}" Width="260" VerticalAlignment="Center" Margin="16,0,10,0" />
+              <Button Grid.Column="2" Classes="ghost" Content="{l:Tr presets.import}" Command="{Binding ImportPresetCommand}" VerticalAlignment="Center" Margin="0,0,10,0" />
+              <Button Grid.Column="3" Classes="accent" Content="{l:Tr presets.newPreset}" Command="{Binding NewPresetCommand}" VerticalAlignment="Center" />
             </Grid>
             <TextBlock DockPanel.Dock="Top" Classes="muted" TextWrapping="Wrap" Margin="0,0,0,16" Text="{Binding PresetIoStatus}"
                        IsVisible="{Binding PresetIoStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -363,10 +363,10 @@
                       <Button Classes="card" Classes.active="{Binding IsActive}" BorderBrush="{Binding Outline}" Command="{Binding ActivateCommand}">
                         <Button.ContextMenu>
                           <ContextMenu>
-                            <MenuItem Header="Apply" Command="{Binding ActivateCommand}" />
-                            <MenuItem Header="Edit in Studio" Command="{Binding EditCommand}" />
-                            <MenuItem Header="Export to file" Command="{Binding ExportCommand}" />
-                            <MenuItem Header="Delete" Command="{Binding DeleteCommand}" IsVisible="{Binding !IsBuiltIn}" />
+                            <MenuItem Header="{l:Tr common.apply}" Command="{Binding ActivateCommand}" />
+                            <MenuItem Header="{l:Tr common.editInStudio}" Command="{Binding EditCommand}" />
+                            <MenuItem Header="{l:Tr presets.exportToFile}" Command="{Binding ExportCommand}" />
+                            <MenuItem Header="{l:Tr common.delete}" Command="{Binding DeleteCommand}" IsVisible="{Binding !IsBuiltIn}" />
                           </ContextMenu>
                         </Button.ContextMenu>
                         <Grid RowDefinitions="*,Auto" Margin="8">
@@ -402,16 +402,16 @@
           <TabItem.Header>
             <StackPanel Orientation="Horizontal" Spacing="12">
               <PathIcon Data="{x:Static ctl:NavIcons.Community}" />
-              <TextBlock Text="Community" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr nav.community}" VerticalAlignment="Center" />
             </StackPanel>
           </TabItem.Header>
           <DockPanel>
             <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,16">
               <StackPanel Spacing="4">
-                <TextBlock Classes="h1" Text="Community" />
-                <TextBlock Classes="muted" TextWrapping="Wrap" Text="Presets other MyRGB users made. Install one to add it to your presets; anyone can browse, and sharing needs an account." />
+                <TextBlock Classes="h1" Text="{l:Tr nav.community}" />
+                <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr community.presetsOtherMyrgbUsers}" />
               </StackPanel>
-              <TextBox Grid.Column="1" Text="{Binding Community.Search}" PlaceholderText="Search presets" Width="220" VerticalAlignment="Center" Margin="16,0,10,0" />
+              <TextBox Grid.Column="1" Text="{Binding Community.Search}" PlaceholderText="{l:Tr community.searchPresets}" Width="220" VerticalAlignment="Center" Margin="16,0,10,0" />
               <ComboBox Grid.Column="2" ItemsSource="{Binding Community.SortOptions}" SelectedItem="{Binding Community.Sort}" VerticalAlignment="Center" MinWidth="150" />
             </Grid>
 
@@ -419,7 +419,7 @@
             <Border DockPanel.Dock="Top" Classes="panel" Margin="0,0,0,16" Padding="16,12">
               <Grid>
                 <StackPanel Spacing="8" IsVisible="{Binding Community.IsSignedIn}">
-                  <TextBlock Classes="section" Text="Share a preset" />
+                  <TextBlock Classes="section" Text="{l:Tr community.shareAPreset}" />
                   <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Community.HasShareable}">
                     <ComboBox ItemsSource="{Binding Community.Shareable}" SelectedItem="{Binding Community.ToShare}" MinWidth="220">
                       <ComboBox.ItemTemplate>
@@ -428,21 +428,21 @@
                         </DataTemplate>
                       </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <TextBox Text="{Binding Community.ShareDescription}" PlaceholderText="Say something about it (optional)" Width="360" MaxLength="280" />
-                    <Button Classes="accent" Content="Share" Command="{Binding Community.ShareCommand}" />
+                    <TextBox Text="{Binding Community.ShareDescription}" PlaceholderText="{l:Tr community.saySomethingAboutIt}" Width="360" MaxLength="280" />
+                    <Button Classes="accent" Content="{l:Tr community.share}" Command="{Binding Community.ShareCommand}" />
                   </StackPanel>
-                  <TextBlock Classes="muted" Text="Make a preset in the Studio first; then you can share it here." IsVisible="{Binding !Community.HasShareable}" />
+                  <TextBlock Classes="muted" Text="{l:Tr community.makeAPresetIn}" IsVisible="{Binding !Community.HasShareable}" />
                   <TextBlock Classes="muted" Text="{Binding Community.ShareStatus}" />
                 </StackPanel>
                 <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !Community.IsSignedIn}">
-                  <TextBlock Classes="body" Text="Sign in to share your own presets with everyone." VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Classes="ghost" Content="Sign in" Command="{Binding NavigateCommand}" CommandParameter="account" />
+                  <TextBlock Classes="body" Text="{l:Tr community.signInToShare}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="ghost" Content="{l:Tr community.signIn}" Command="{Binding NavigateCommand}" CommandParameter="account" />
                 </Grid>
               </Grid>
             </Border>
 
             <TextBlock DockPanel.Dock="Top" Classes="muted" Text="{Binding Community.Status}" Margin="2,0,0,8" />
-            <TextBlock DockPanel.Dock="Top" Classes="body" Text="Nobody has shared a preset that matches yet." IsVisible="{Binding Community.IsEmpty}" />
+            <TextBlock DockPanel.Dock="Top" Classes="body" Text="{l:Tr community.nobodyHasSharedA}" IsVisible="{Binding Community.IsEmpty}" />
 
             <ScrollViewer>
               <ItemsControl ItemsSource="{Binding Community.Items}">
@@ -466,7 +466,7 @@
                               <Run Text=" · " />
                               <Run Text="{Binding Downloads}" />
                             </TextBlock>
-                            <Border Classes="supporter" IsVisible="{Binding AuthorSupporter}" ToolTip.Tip="Supports MyRGB"><TextBlock Text="♥" /></Border>
+                            <Border Classes="supporter" IsVisible="{Binding AuthorSupporter}" ToolTip.Tip="{l:Tr community.supportsMyrgb}"><TextBlock Text="♥" /></Border>
                           </StackPanel>
                           <TextBlock Classes="muted" Text="{Binding Description}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                      IsVisible="{Binding HasDescription}" Margin="0,4,0,0" />
@@ -476,26 +476,26 @@
                         <Grid ColumnDefinitions="Auto,*" Margin="2,0" ToolTip.Tip="{Binding VoteTip}">
                           <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                             <Button Classes="ghost" Classes.accent="{Binding VotedUp}" Content="▲" Padding="9,3" FontSize="11"
-                                    Command="{Binding UpVoteCommand}" IsEnabled="{Binding CanVote}" ToolTip.Tip="Vote up" />
+                                    Command="{Binding UpVoteCommand}" IsEnabled="{Binding CanVote}" ToolTip.Tip="{l:Tr community.voteUp}" />
                             <TextBlock Text="{Binding ScoreText}" FontFamily="{DynamicResource NumberFont}" FontWeight="SemiBold"
                                        MinWidth="26" TextAlignment="Center" VerticalAlignment="Center" />
                             <Button Classes="ghost" Classes.accent="{Binding VotedDown}" Content="▼" Padding="9,3" FontSize="11"
-                                    Command="{Binding DownVoteCommand}" IsEnabled="{Binding CanVote}" ToolTip.Tip="Vote down" />
+                                    Command="{Binding DownVoteCommand}" IsEnabled="{Binding CanVote}" ToolTip.Tip="{l:Tr community.voteDown}" />
                           </StackPanel>
                           <Button Grid.Column="1" Classes="link" Content="{Binding NominateText}" Command="{Binding ToggleNominateCommand}"
                                   IsEnabled="{Binding CanVote}" HorizontalAlignment="Right" FontSize="12"
-                                  ToolTip.Tip="Suggest this as one of the presets MyRGB comes with. The most suggested are considered for the next release." />
+                                  ToolTip.Tip="{l:Tr community.suggestThisAsOne}" />
                         </Grid>
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="2,0">
-                          <Button Classes="accent" Content="Install" Command="{Binding InstallCommand}" />
-                          <Button Classes="link" Content="Remove" Command="{Binding RemoveCommand}" IsVisible="{Binding IsMine}" />
-                          <Button Classes="link" Content="Report" Command="{Binding AskReportCommand}" IsVisible="{Binding CanReport}" />
+                          <Button Classes="accent" Content="{l:Tr community.install}" Command="{Binding InstallCommand}" />
+                          <Button Classes="link" Content="{l:Tr common.remove}" Command="{Binding RemoveCommand}" IsVisible="{Binding IsMine}" />
+                          <Button Classes="link" Content="{l:Tr community.report}" Command="{Binding AskReportCommand}" IsVisible="{Binding CanReport}" />
                         </StackPanel>
                         <StackPanel Spacing="6" IsVisible="{Binding Reporting}" Margin="2,0">
-                          <TextBox Text="{Binding ReportReason}" PlaceholderText="What's wrong with it?" MaxLength="500" />
+                          <TextBox Text="{Binding ReportReason}" PlaceholderText="{l:Tr community.reportWhy}" MaxLength="500" />
                           <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Button Classes="ghost" Content="Send report" Command="{Binding SendReportCommand}" />
-                            <Button Classes="link" Content="Cancel" Command="{Binding CancelReportCommand}" />
+                            <Button Classes="ghost" Content="{l:Tr community.sendReport}" Command="{Binding SendReportCommand}" />
+                            <Button Classes="link" Content="{l:Tr common.cancel}" Command="{Binding CancelReportCommand}" />
                           </StackPanel>
                         </StackPanel>
                         <TextBlock Classes="muted" Text="{Binding Status}" TextWrapping="Wrap" Margin="2,0" />
