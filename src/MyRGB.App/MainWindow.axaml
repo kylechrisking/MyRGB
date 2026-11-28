@@ -1842,13 +1842,13 @@
       <StackPanel>
         <Border Classes="dialogstripe" />
         <StackPanel Margin="18,14,18,14" Spacing="6">
-          <TextBlock Classes="section" Text="Like MyRGB?" />
-          <TextBlock Classes="body" Text="Buy the devs a cup of joe; it keeps them going." />
+          <TextBlock Classes="section" Text="{l:Tr support.title}" />
+          <TextBlock Classes="body" Text="{l:Tr support.body}" />
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
-            <Button Classes="accent" Content="Buy a coffee" Command="{Binding SupportNudge.SupportCommand}" />
-            <Button Classes="ghost" Content="Maybe later" Command="{Binding SupportNudge.LaterCommand}" />
+            <Button Classes="accent" Content="{l:Tr support.buyACoffee}" Command="{Binding SupportNudge.SupportCommand}" />
+            <Button Classes="ghost" Content="{l:Tr support.maybeLater}" Command="{Binding SupportNudge.LaterCommand}" />
           </StackPanel>
-          <Button Classes="link" Content="Don't ask again" Command="{Binding SupportNudge.NeverCommand}" HorizontalAlignment="Left" Margin="-6,0,0,0" FontSize="12" />
+          <Button Classes="link" Content="{l:Tr support.never}" Command="{Binding SupportNudge.NeverCommand}" HorizontalAlignment="Left" Margin="-6,0,0,0" FontSize="12" />
         </StackPanel>
       </StackPanel>
     </Border>
@@ -1861,47 +1861,47 @@
           <Border Classes="dialogstripe" />
           <StackPanel Margin="32,24,32,24" Spacing="14">
             <StackPanel Spacing="2">
-              <TextBlock Classes="kicker" Text="New custom curve" />
-              <TextBlock Text="Build a shape, give it a name, and it joins every fan's mode dropdown." FontSize="14"
+              <TextBlock Classes="kicker" Text="{l:Tr curve.title}" />
+              <TextBlock Text="{l:Tr curve.about}" FontSize="14"
                          TextWrapping="Wrap" Foreground="{DynamicResource InkSecondaryBrush}" />
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <TextBlock Text="Follows" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr curve.follows}" VerticalAlignment="Center" />
               <ComboBox ItemsSource="{Binding Follows}" SelectedItem="{Binding Follow}" MinWidth="250" />
             </StackPanel>
             <Grid ColumnDefinitions="150,*,56">
-              <TextBlock Text="Starts ramping at" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr curve.startsRampingAt}" VerticalAlignment="Center" />
               <Slider Grid.Column="1" Minimum="25" Maximum="70" Value="{Binding Start}" TickFrequency="1" IsSnapToTickEnabled="True" />
               <TextBlock Grid.Column="2" Text="{Binding Start, StringFormat='{}{0:0}°'}" HorizontalAlignment="Right" VerticalAlignment="Center"
                          FontFamily="{DynamicResource BrandMono}" />
             </Grid>
             <Grid ColumnDefinitions="150,*,56">
-              <TextBlock Text="Full speed at" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr curve.fullSpeedAt}" VerticalAlignment="Center" />
               <Slider Grid.Column="1" Minimum="45" Maximum="95" Value="{Binding Full}" TickFrequency="1" IsSnapToTickEnabled="True" />
               <TextBlock Grid.Column="2" Text="{Binding Full, StringFormat='{}{0:0}°'}" HorizontalAlignment="Right" VerticalAlignment="Center"
                          FontFamily="{DynamicResource BrandMono}" />
             </Grid>
             <Grid ColumnDefinitions="150,*,56">
-              <TextBlock Text="Minimum speed" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr curve.minimumSpeed}" VerticalAlignment="Center" />
               <Slider Grid.Column="1" Minimum="0" Maximum="60" Value="{Binding Min}" TickFrequency="1" IsSnapToTickEnabled="True" />
               <TextBlock Grid.Column="2" Text="{Binding Min, StringFormat='{}{0:0} %'}" HorizontalAlignment="Right" VerticalAlignment="Center"
                          FontFamily="{DynamicResource BrandMono}" />
             </Grid>
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <TextBlock Text="Shape" VerticalAlignment="Center" />
+              <TextBlock Text="{l:Tr curve.shape}" VerticalAlignment="Center" />
               <ComboBox ItemsSource="{Binding Shapes}" SelectedItem="{Binding Shape}" MinWidth="170" />
             </StackPanel>
 
             <ctl:FanCurveChart Points="{Binding Preview}" CurrentTemp="{Binding CurrentTemp}" Height="170" />
 
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <TextBox PlaceholderText="Name this curve…" Text="{Binding ShapeName}" Width="200" VerticalContentAlignment="Center" />
-              <Button Classes="accent" Content="Save curve" Command="{Binding SaveShapeCommand}" />
-              <Button Classes="ghost" Content="Close" Command="{Binding CancelCommand}" />
+              <TextBox PlaceholderText="{l:Tr curve.nameThisCurve}" Text="{Binding ShapeName}" Width="200" VerticalContentAlignment="Center" />
+              <Button Classes="accent" Content="{l:Tr curve.saveCurve}" Command="{Binding SaveShapeCommand}" />
+              <Button Classes="ghost" Content="{l:Tr common.close}" Command="{Binding CancelCommand}" />
             </StackPanel>
             <TextBlock Classes="muted" TextWrapping="Wrap"
-                       Text="Saved curves appear by name in every fan's mode dropdown. Pick one there and the fan follows it; editing that fan's points afterwards gives it its own copy." />
+                       Text="{l:Tr curve.savedCurvesAppearBy}" />
 
             <ItemsControl ItemsSource="{Binding Saved}" IsVisible="{Binding Saved.Count}">
               <ItemsControl.ItemTemplate>
@@ -1911,7 +1911,7 @@
                       <TextBlock Text="{Binding Name, StringFormat='{}“{0}”'}" FontWeight="SemiBold" />
                       <TextBlock Classes="muted" Text="{Binding SensorKey}" FontFamily="{DynamicResource BrandMono}" FontSize="11" />
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="link" Content="Remove" Foreground="{DynamicResource DangerBrush}"
+                    <Button Grid.Column="1" Classes="link" Content="{l:Tr common.remove}" Foreground="{DynamicResource DangerBrush}"
                             Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).Cooling.Builder.DeleteSavedCommand}"
                             CommandParameter="{Binding}" Margin="10,0,0,0" />
                   </Grid>
@@ -1954,20 +1954,20 @@
               </ItemsControl>
               <TextBlock Classes="muted" Text="{Binding FoundText}" />
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <TextBlock Text="Is everything pulsing?" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <Button Classes="ghost" Content="Yes, all of it" Command="{Binding AnswerCommand}" CommandParameter="yes" />
-                <Button Classes="ghost" Content="Something isn't" Command="{Binding AnswerCommand}" CommandParameter="no" />
+                <TextBlock Text="{l:Tr tour.check.isEverythingPulsing}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <Button Classes="ghost" Content="{l:Tr tour.check.yes}" Command="{Binding AnswerCommand}" CommandParameter="yes" />
+                <Button Classes="ghost" Content="{l:Tr tour.check.no}" Command="{Binding AnswerCommand}" CommandParameter="no" />
               </StackPanel>
               <Border Classes="note" IsVisible="{Binding AnsweredYes}">
-                <TextBlock Classes="body" Text="Great, MyRGB can reach all of it. Next, put each device where it sits on your desk." />
+                <TextBlock Classes="body" Text="{l:Tr tour.check.greatMyrgbCanReach}" />
               </Border>
               <Border Classes="note" IsVisible="{Binding AnsweredNo}">
                 <StackPanel Spacing="8">
-                  <TextBlock Classes="body" Text="A few things usually explain it:" />
-                  <TextBlock Classes="body" Text="• A vendor app (iCUE, Synapse, G HUB, Armoury Crate) is running and holding on to the device. Close it, then scan again on the Devices page." />
-                  <TextBlock Classes="body" Text="• Fans and strips on a controller need their LED count set before they light. The Devices page asks for it." />
-                  <TextBlock Classes="body" Text="• The device is off, asleep, or not supported yet. Wake it up; if it still isn't on the Devices page, MyRGB can't light it yet." />
-                  <Button Classes="link" Content="Open the Devices page ›" Command="{Binding GoCommand}" CommandParameter="devices" HorizontalAlignment="Left" Margin="-6,0,0,0" />
+                  <TextBlock Classes="body" Text="{l:Tr tour.check.aFewThingsUsually}" />
+                  <TextBlock Classes="body" Text="{l:Tr tour.check.aVendorAppIcue}" />
+                  <TextBlock Classes="body" Text="{l:Tr tour.check.fansAndStripsOn}" />
+                  <TextBlock Classes="body" Text="{l:Tr tour.check.theDeviceIsOff}" />
+                  <Button Classes="link" Content="{l:Tr tour.check.openTheDevicesPage}" Command="{Binding GoCommand}" CommandParameter="devices" HorizontalAlignment="Left" Margin="-6,0,0,0" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -1975,8 +1975,8 @@
                     IsVisible="{Binding Current.HasAction}" HorizontalAlignment="Left" Margin="-6,0,0,0" />
             <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,8,0,0">
               <TextBlock Classes="muted" Text="{Binding Progress}" VerticalAlignment="Center" />
-              <Button Grid.Column="1" Classes="link" Content="Skip tour" Command="{Binding SkipCommand}" HorizontalAlignment="Left" Margin="16,0,0,0" />
-              <Button Grid.Column="2" Classes="ghost" Content="Back" Command="{Binding BackCommand}" IsVisible="{Binding !IsFirst}" Margin="0,0,10,0" />
+              <Button Grid.Column="1" Classes="link" Content="{l:Tr tour.skip}" Command="{Binding SkipCommand}" HorizontalAlignment="Left" Margin="16,0,0,0" />
+              <Button Grid.Column="2" Classes="ghost" Content="{l:Tr common.back}" Command="{Binding BackCommand}" IsVisible="{Binding !IsFirst}" Margin="0,0,10,0" />
               <Button Grid.Column="3" Classes="accent" Content="{Binding NextLabel}" Command="{Binding NextCommand}" MinWidth="110" HorizontalContentAlignment="Center" />
             </Grid>
           </StackPanel>

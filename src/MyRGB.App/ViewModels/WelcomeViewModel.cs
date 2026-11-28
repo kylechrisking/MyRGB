@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyRGB.App.Controls;
 using MyRGB.Core;
+using MyRGB.Core.Localization;
 
 namespace MyRGB.App.ViewModels;
 
@@ -49,33 +50,15 @@ public sealed partial class WelcomeViewModel : ObservableObject
 
     public IReadOnlyList<WelcomeStep> Steps { get; } =
     [
-        new("Welcome", "One app for all your RGB",
-            "MyRGB lights every device you own, from any brand, together. Your keyboard, mouse, headset, RAM, fans and motherboard all follow the same look, so you don't need a different app for each brand.",
-            NavIcons.Home),
-        new("Step 1", "MyRGB finds your devices",
-            "When it starts, MyRGB looks for everything it can light. Some devices it talks to directly; the rest go through OpenRGB, which comes with MyRGB and runs out of sight. You'll see everything on the Home page, with battery levels for wireless gear.",
-            NavIcons.Devices, "See my devices", "devices"),
-        new("Check", "Are all your devices pulsing?",
-            "MyRGB is pulsing everything it found in the color below. Pick one that's easy to see, then look around your desk and inside your PC.",
-            NavIcons.Flash, IsCheck: true),
-        new("Step 2", "Effects paint one big canvas",
-            "Think of your desk as one picture. In the Studio, switch on Arrange devices and put each one where it really sits. An effect like Rainbow Wave then sweeps across all of them in one motion, from the keyboard to the mouse to the headset stand.",
-            NavIcons.Layout, "Arrange my layout", "layout"),
-        new("Step 3", "Pick a preset, or make your own",
-            "Presets are ready-made looks: click one to apply it. In the Studio you can change any effect's colors and speed and watch it change on your devices live. You can even give one device its own look, then save the result as your own preset.",
-            NavIcons.Presets, "Browse presets", "presets"),
-        new("Step 4", "Retire the vendor apps",
-            "iCUE, G HUB, Synapse and Armoury Crate all try to control lighting too, and they fight with MyRGB and with each other. Settings lists the ones installed, whether MyRGB has taken over their devices, and what else you'd lose by uninstalling them.",
-            NavIcons.Vendors, "Review vendor apps", "vendors"),
-        new("Step 5", "Keep an eye on your PC",
-            "Monitoring shows your CPU, graphics card, memory, drives and network live. Its Cooling view lets you give your fans a fixed speed or a curve that follows a temperature, with safety limits MyRGB always keeps. The System Heat effect even turns your lights warmer as your PC works harder.",
-            NavIcons.Monitoring, "Open Monitoring", "monitoring"),
-        new("Step 6", "Control it from anywhere",
-            "Closing the window keeps MyRGB running in the system tray, so your lights stay on. Use Home for presets, the top bar for power and brightness, the tray icon for quick switches, or Stream Deck keys if you have one.",
-            NavIcons.Settings),
-        new("Step 7", "Make it look like yours",
-            "MyRGB itself comes in several looks: its own dark slate, plain light and dark, a paper notebook, a blueprint, a late-nineties grey desktop and a green-screen terminal. Pick one under Settings > Appearance, or let it follow Windows' light and dark mode.",
-            NavIcons.Settings, "Pick a look", "settings"),
+        new(Strings.Get("tour.welcome.kicker"), Strings.Get("tour.welcome.title"), Strings.Get("tour.welcome.body"), NavIcons.Home),
+        new(Strings.Format("tour.step", 1), Strings.Get("tour.devices.title"), Strings.Get("tour.devices.body"), NavIcons.Devices, Strings.Get("tour.devices.action"), "devices"),
+        new(Strings.Get("tour.check.kicker"), Strings.Get("tour.check.title"), Strings.Get("tour.check.body"), NavIcons.Flash, IsCheck: true),
+        new(Strings.Format("tour.step", 2), Strings.Get("tour.canvas.title"), Strings.Get("tour.canvas.body"), NavIcons.Layout, Strings.Get("tour.canvas.action"), "layout"),
+        new(Strings.Format("tour.step", 3), Strings.Get("tour.presets.title"), Strings.Get("tour.presets.body"), NavIcons.Presets, Strings.Get("tour.presets.action"), "presets"),
+        new(Strings.Format("tour.step", 4), Strings.Get("tour.vendors.title"), Strings.Get("tour.vendors.body"), NavIcons.Vendors, Strings.Get("tour.vendors.action"), "vendors"),
+        new(Strings.Format("tour.step", 5), Strings.Get("tour.monitoring.title"), Strings.Get("tour.monitoring.body"), NavIcons.Monitoring, Strings.Get("tour.monitoring.action"), "monitoring"),
+        new(Strings.Format("tour.step", 6), Strings.Get("tour.anywhere.title"), Strings.Get("tour.anywhere.body"), NavIcons.Settings),
+        new(Strings.Format("tour.step", 7), Strings.Get("tour.looks.title"), Strings.Get("tour.looks.body"), NavIcons.Settings, Strings.Get("tour.looks.action"), "settings"),
     ];
 
     public IReadOnlyList<FlashSwatch> Swatches { get; }
@@ -95,14 +78,14 @@ public sealed partial class WelcomeViewModel : ObservableObject
     public WelcomeStep Current => Steps[Index];
     public bool IsFirst => Index == 0;
     public bool IsLast => Index == Steps.Count - 1;
-    public string NextLabel => IsLast ? "Get started" : "Next";
-    public string Progress => $"{Index + 1} of {Steps.Count}";
+    public string NextLabel => Strings.Get(IsLast ? "tour.getStarted" : "tour.next");
+    public string Progress => Strings.Format("tour.progress", Index + 1, Steps.Count);
 
     public string FoundText => _deviceCount() switch
     {
-        0 => "MyRGB hasn't found any devices yet. If it's still starting up, give it a few seconds.",
-        1 => "MyRGB found 1 device.",
-        int n => $"MyRGB found {n} devices.",
+        0 => Strings.Get("tour.check.foundNone"),
+        1 => Strings.Get("tour.check.foundOne"),
+        int n => Strings.Format("tour.check.foundMany", n),
     };
 
     partial void OnIndexChanged(int value)
